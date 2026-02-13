@@ -1,0 +1,48 @@
+# Descriptors Addon - Distinctive adjectives
+# Format: descriptor,gender
+# Gender: male, female, both, genderless
+# Visual qualities
+bioluminescent,both
+crystalline,both
+ethereal,both
+weathered-by-time,both
+impossibly-geometric,both
+art-deco-inspired,both
+biomechanical,both
+holographic,both
+iridescent,both
+translucent,both
+# Atmospheric
+otherworldly,both
+dreamlike,both
+haunting,both
+serene,both
+chaotic,both
+melancholic,both
+euphoric,both
+ominous,both
+tranquil,both
+turbulent,both
+# Stylistic
+minimalist,both
+maximalist,both
+brutalist,both
+ornate,both
+austere,both
+baroque-inspired,both
+neo-classical,both
+avant-garde,both
+retro-futuristic,both
+post-apocalyptic,both
+# Textural
+gossamer,both
+rugged,both
+polished,both
+corroded,both
+pristine,both
+weathered,both
+smooth,both
+rough-hewn,both
+delicate,both
+robust,both
+# Add your own descriptors below:
