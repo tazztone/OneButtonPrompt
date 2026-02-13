@@ -9,9 +9,10 @@ import os
 import argparse
 import collections
 import json
+import datetime
 from analyze_obp_generations import OBPAnalyzer
 
-def run_sweep(iterations=200, levels=[1, 3, 5, 7, 10]):
+def run_sweep(iterations=200, levels=[1, 3, 5, 7, 10], output_filename="insanity_sweep_results.json", output_dir="analysis_results", timestamp=False):
     print(f"\n{'#'*80}")
     print(f"#  OneButtonPrompt Insanity Level Sweep")
     print(f"#  Testing variety profile across levels: {levels}")
@@ -49,13 +50,33 @@ def run_sweep(iterations=200, levels=[1, 3, 5, 7, 10]):
               f"{res['imagetypes_count']:>9} | "
               f"{subj_str}")
     
-    with open("analysis_results/insanity_sweep_results.json", "w") as f:
+    # Ensure output directory exists
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        
+    # Handle timestamping
+    if timestamp:
+        base, ext = os.path.splitext(output_filename)
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"{base}_{ts}{ext}"
+        
+    full_path = os.path.join(output_dir, output_filename)
+    
+    with open(full_path, "w") as f:
         json.dump(sweep_results, f, indent=2)
-    print("\n✓ Sweep data saved to analysis_results/insanity_sweep_results.json")
+    print(f"\n✓ Sweep data saved to {full_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OBP Insanity Sweep")
     parser.add_argument("--iterations", type=int, default=200, help="Iterations per level")
+    parser.add_argument("--output", type=str, default="insanity_sweep_results.json", help="Output JSON filename")
+    parser.add_argument("--output-dir", type=str, default="analysis_results", help="Directory to save results")
+    parser.add_argument("--timestamp", action="store_true", help="Include timestamp in filename")
     args = parser.parse_args()
     
-    run_sweep(iterations=args.iterations)
+    run_sweep(
+        iterations=args.iterations,
+        output_filename=args.output,
+        output_dir=args.output_dir,
+        timestamp=args.timestamp
+    )

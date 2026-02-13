@@ -10,6 +10,7 @@ import re
 import json
 import collections
 import argparse
+import datetime
 from pathlib import Path
 
 # Add current directory to path to import OBP modules
@@ -139,9 +140,10 @@ class OBPAnalyzer:
         words_keyword = re.split(r'[,\(\)\[\]:]', prompt_lower)
         words_keyword = [w.strip() for w in words_keyword if w.strip()]
         
-        # Match artists (case-insensitive)
+        # Match artists (whole phrase match)
         for artist in self.ref_artists:
-            if artist.lower() in prompt_lower:
+            pattern = r'\b' + re.escape(artist.lower()) + r'\b'
+            if re.search(pattern, prompt_lower):
                 self.results['artists'][artist] += 1
                 if metadata:
                     main_subj = metadata.get('mainchooser', 'unknown')
@@ -149,22 +151,26 @@ class OBPAnalyzer:
                 
         # Match image types
         for imagetype in self.ref_imagetypes:
-            if imagetype.lower() in prompt_lower:
+            pattern = r'\b' + re.escape(imagetype.lower()) + r'\b'
+            if re.search(pattern, prompt_lower):
                 self.results['imagetypes'][imagetype] += 1
                 
         # Match art movements
         for movement in self.ref_artmovements:
-            if movement.lower() in prompt_lower:
+            pattern = r'\b' + re.escape(movement.lower()) + r'\b'
+            if re.search(pattern, prompt_lower):
                 self.results['art_movements'][movement] += 1
                 
         # Match colors
         for color in self.ref_colors:
-            if color.lower() in prompt_lower:
+            pattern = r'\b' + re.escape(color.lower()) + r'\b'
+            if re.search(pattern, prompt_lower):
                 self.results['colors'][color] += 1
                 
         # Match lighting
         for light in self.ref_lighting:
-            if light.lower() in prompt_lower:
+            pattern = r'\b' + re.escape(light.lower()) + r'\b'
+            if re.search(pattern, prompt_lower):
                 self.results['lighting'][light] += 1
         
         # Detect camera terms (common patterns)
@@ -428,9 +434,21 @@ class OBPAnalyzer:
         if not recommendations:
             print("✓ No major issues detected! Distribution looks balanced.")
             
-    def save_results(self, filename="obp_analysis_results.json"):
+    def save_results(self, filename="obp_analysis_results.json", output_dir="analysis_results", timestamp=False):
         """Save analysis results to JSON file"""
         
+        # Ensure output directory exists
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            
+        # Handle timestamping
+        if timestamp:
+            base, ext = os.path.splitext(filename)
+            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{base}_{ts}{ext}"
+            
+        full_path = os.path.join(output_dir, filename)
+
         # Convert Counter objects to dicts for JSON serialization
         output = {
             'total_prompts': len(self.results['all_prompts']),
@@ -455,19 +473,20 @@ class OBPAnalyzer:
             'sample_prompts': self.results['all_prompts'][:20]
         }
         
-        with open(filename, 'w', encoding='utf-8') as f:
+        with open(full_path, 'w', encoding='utf-8') as f:
             json.dump(output, f, indent=2, ensure_ascii=False)
             
-        print(f"\n✓ Results saved to {filename}")
+        print(f"\n✓ Results saved to {full_path}")
 
 
 def main():
     """Main execution function"""
     
-    parser = argparse.ArgumentParser(description="OneButtonPrompt Generation Analyzer")
     parser.add_argument("--iterations", type=int, default=1000, help="Number of generations to run")
     parser.add_argument("--insanity", type=int, default=5, help="Insanity level (1-10)")
-    parser.add_argument("--output", type=str, default="analysis_results/obp_analysis_results.json", help="Output JSON file")
+    parser.add_argument("--output", type=str, default="obp_analysis_results.json", help="Output JSON filename")
+    parser.add_argument("--output-dir", type=str, default="analysis_results", help="Directory to save results")
+    parser.add_argument("--timestamp", action="store_true", help="Include timestamp in filename")
     
     args = parser.parse_args()
     
@@ -487,7 +506,11 @@ def main():
     analyzer.generate_report()
     
     # Save results
-    analyzer.save_results(filename=args.output)
+    analyzer.save_results(
+        filename=args.output,
+        output_dir=args.output_dir,
+        timestamp=args.timestamp
+    )
     
     print(f"\n{'='*60}")
     print("Analysis complete!")
