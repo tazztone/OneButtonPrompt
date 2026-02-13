@@ -328,43 +328,75 @@ class OneButtonPrompt:
             "required": {
                 "insanitylevel": ("INT", {
                     "default": 5,
-                    "min": 1, #Minimum value
-                    "max": 10, #Maximum value
-                    "step": 1 #Slider's step
+                    "min": 1,
+                    "max": 10,
+                    "step": 1,
+                    "tooltip": "Controls randomness: 1-3 conservative, 4-6 balanced (recommended), 7-9 creative, 10 maximum chaos"
                 }),
                 },
             "optional": {
-                "artist": (artists, {"default": "all"}),
-                "imagetype": (imagetypes, {"default": "all"}),
+                "artist": (artists, {
+                    "default": "all",
+                    "tooltip": "Filter artists by category (fantasy, sci-fi, portrait, etc.) or 'all' for random selection"
+                }),
+                "imagetype": (imagetypes, {
+                    "default": "all",
+                    "tooltip": "Forces a specific style (photograph, digital art) or triggers special generation modes"
+                }),
                 "imagemodechance": ("INT", {
                     "default": 20,
-                    "min": 1, #Minimum value
-                    "max": 100, #Maximum value
-                    "step": 1 #Slider's step
+                    "min": 1,
+                    "max": 100,
+                    "step": 1,
+                    "tooltip": "The 1-in-X chance of triggering a special generation mode (e.g., 20 = 5% chance). Lower number = higher frequency."
                 }),
-                "subject": (subjects, {"default": "------ all"}),
+                "subject": (subjects, {
+                    "default": "------ all",
+                    "tooltip": "Filters the primary subject category (Human, Animal, etc.)"
+                }),
                 "custom_subject": ("STRING", {
-                    "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": ""
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Forces a specific subject. OBP will use its 'Smart Subject' logic to build descriptors and environments around it."
                 }),
                 "custom_outfit": ("STRING", {
-                    "multiline": False, # This is the overwrite for an outfit, super nice
-                    "default": ""
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Forces a specific outfit. Overrides the random clothing selection for humanoids."
                 }),
                 "prompt_prefix": ("STRING", {
-                    "multiline": False, # prefix the prompt
-                    "default": ""
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Hardcoded text added to the very beginning of the prompt."
                 }),
                 "prompt_suffix": ("STRING", {
-                    "multiline": False, # Suffix of the prompt
-                    "default": ""
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Hardcoded text added to the very end of the prompt."
                 }),
-                "humanoids_gender": (genders, {"default": "all"}),
-                "emojis":(emojis, {"default": False}),
-                "base_model":(models, {"default": "SDXL"}),
-                "prompt_enhancer":(prompt_enhancers, {"default": "none"}),
+                "humanoids_gender": (genders, {
+                    "default": "all",
+                    "tooltip": "Filters names, jobs, and outfits based on gender."
+                }),
+                "emojis":(emojis, {
+                    "default": False,
+                    "tooltip": "Inject relevant emojis into the prompt."
+                }),
+                "base_model":(models, {
+                    "default": "SDXL",
+                    "tooltip": "Optimizes prompt structure: SD1.5 (tags), SDXL (natural language), Cascade (no weights)"
+                }),
+                "prompt_enhancer":(prompt_enhancers, {
+                    "default": "none",
+                    "tooltip": "Uses AI (SuperPrompt) to expand your prompt with more descriptive detail."
+                }),
                 
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {
+                    "default": 0, 
+                    "min": 0, 
+                    "max": 0xFFFFFFFFFFFFFFFF,
+                    "tooltip": "Controls the random seed for generation."
+                }),
             },
         }
 
@@ -398,16 +430,26 @@ class CreatePromptVariant:
                
         return {
             "required": {
-                "prompt_input": ("STRING", {"default": '', "multiline": True}),
+                "prompt_input": ("STRING", {
+                    "default": '', 
+                    "multiline": True,
+                    "tooltip": "The base prompt to create a variation from."
+                }),
             },
             "optional": {
                 "insanitylevel": ("INT", {
                     "default": 5,
-                    "min": 1, #Minimum value
-                    "max": 10, #Maximum value
-                    "step": 1 #Slider's step
+                    "min": 1,
+                    "max": 10,
+                    "step": 1,
+                    "tooltip": "Controls how much the variation deviates from the original prompt."
                 }),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {
+                    "default": 0, 
+                    "min": 0, 
+                    "max": 0xFFFFFFFFFFFFFFFF,
+                    "tooltip": "Random seed for variation generation."
+                }),
             },
         }
 
@@ -438,13 +480,28 @@ class SavePromptToFile:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "filename_prefix": ("STRING", {"default": "Prompt"}),
-                "positive_prompt": ("STRING",{"multiline": True}),
-                "negative_prompt": ("STRING",{"multiline": True}),
+                "filename_prefix": ("STRING", {
+                    "default": "Prompt",
+                    "tooltip": "Prefix for the filename. Supports date tags like %date:yyyy-MM-dd%."
+                }),
+                "positive_prompt": ("STRING", {
+                    "multiline": True,
+                    "tooltip": "The full positive prompt to save."
+                }),
+                "negative_prompt": ("STRING", {
+                    "multiline": True,
+                    "tooltip": "The negative prompt to save."
+                }),
             },
             "optional": {
-                "prompt_g": ("STRING",{"multiline": True}),
-                "prompt_l": ("STRING",{"multiline": True}),
+                "prompt_g": ("STRING", {
+                    "multiline": True,
+                    "tooltip": "SDXL Global prompt block (if applicable)."
+                }),
+                "prompt_l": ("STRING", {
+                    "multiline": True,
+                    "tooltip": "SDXL Local prompt block (if applicable)."
+                }),
             },
         }
 
@@ -583,20 +640,36 @@ class OneButtonPreset:
                
         return {
             "required": {
-                "OneButtonPreset": (allpresets, {"default": "Standard"}),
+                "OneButtonPreset": (allpresets, {
+                    "default": "Standard",
+                    "tooltip": "Select a pre-defined generation profile."
+                }),
             },
             "optional": {
-                "base_model":(models, {"default": "SDXL"}),
-                "prompt_enhancer":(prompt_enhancers, {"default": "none"}),
+                "base_model":(models, {
+                    "default": "SDXL",
+                    "tooltip": "Optimizes prompt structure for target model architecture."
+                }),
+                "prompt_enhancer":(prompt_enhancers, {
+                    "default": "none",
+                    "tooltip": "Expand the preset output with AI details."
+                }),
                 "preset_prefix": ("STRING", {
-                    "multiline": False, # prefix the preset
-                    "default": ""
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Add fixed text before the preset-generated prompt."
                 }),
                 "preset_suffix": ("STRING", {
-                    "multiline": False, # Suffix of the preset
-                    "default": ""
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Add fixed text after the preset-generated prompt."
                 }),   
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {
+                    "default": 0, 
+                    "min": 0, 
+                    "max": 0xFFFFFFFFFFFFFFFF,
+                    "tooltip": "Random seed for the preset generation."
+                }),
             },
         }
 
@@ -674,28 +747,43 @@ class AutoNegativePrompt:
                
         return {
             "required": {
-                "postive_prompt": ("STRING", {"default": '', "multiline": True}),
+                "postive_prompt": ("STRING", {
+                    "default": '', 
+                    "multiline": True,
+                    "tooltip": "The positive prompt to generate a matching negative for."
+                }),
             },
             "optional": {
                 "base_negative": ("STRING", {
-                    "multiline": True, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": "text, watermark"
+                    "multiline": True,
+                    "default": "text, watermark",
+                    "tooltip": "Static negative terms to always include."
                 }),
                 "enhancenegative": ("INT", {
                     "default": 0, 
-                    "min": 0, #Minimum value
-                    "max": 1, #Maximum value
-                    "step": 1, #Slider's step
+                    "min": 0, 
+                    "max": 1, 
+                    "step": 1,
+                    "tooltip": "Adds extra negative weight to common artifacts (1 = on, 0 = off)."
                 }),
                 "insanitylevel": ("INT", {
                     "default": 0,
-                    "min": 0, #Minimum value
-                    "max": 10, #Maximum value
-                    "step": 1 #Slider's step
+                    "min": 0,
+                    "max": 10,
+                    "step": 1,
+                    "tooltip": "Adds random negative terms based on the positive prompt's content."
                 }),
-                "base_model":(models, {"default": "SDXL"}),
+                "base_model":(models, {
+                    "default": "SDXL",
+                    "tooltip": "Format the negative prompt for a specific model architecture."
+                }),
                 
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {
+                    "default": 0, 
+                    "min": 0, 
+                    "max": 0xFFFFFFFFFFFFFFFF,
+                    "tooltip": "Random seed for negative term selection."
+                }),
             },
         }
 
@@ -725,13 +813,31 @@ class OneButtonArtify:
                
         return {
             "required": {
-                "prompt": ("STRING", {"default": '', "multiline": True}),
-                "artist": (artifyartists, {"default": "all"}),
-                "amount_of_artists": (artifyamountofartistslist, {"default": "1"}),
-                "artify_mode": (artifymodeslist, {"default": "standard"})
+                "prompt": ("STRING", {
+                    "default": '', 
+                    "multiline": True,
+                    "tooltip": "The base prompt to apply artistic styles onto."
+                }),
+                "artist": (artifyartists, {
+                    "default": "all",
+                    "tooltip": "Filter the artistic style by category."
+                }),
+                "amount_of_artists": (artifyamountofartistslist, {
+                    "default": "1",
+                    "tooltip": "Number of random artists to blend into the prompt."
+                }),
+                "artify_mode": (artifymodeslist, {
+                    "default": "standard",
+                    "tooltip": "How the artists are integrated: Standard (added), Remix (switched/hybrid), Super Remix (chaos)."
+                })
             },
             "optional": {                
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {
+                    "default": 0, 
+                    "min": 0, 
+                    "max": 0xFFFFFFFFFFFFFFFF,
+                    "tooltip": "Random seed for artist selection."
+                }),
             },
         }
 
@@ -762,12 +868,27 @@ class OneButtonFlufferize:
                
         return {
             "required": {
-                "prompt": ("STRING", {"default": '', "multiline": True}),
-                "amount_of_fluff": (amountofflufflist, {"default": "dynamic"}),
-                "reverse_polarity": (fluff_reverse_polarity, {"default": False}),
+                "prompt": ("STRING", {
+                    "default": '', 
+                    "multiline": True,
+                    "tooltip": "The base prompt to add descriptive 'fluff' to."
+                }),
+                "amount_of_fluff": (amountofflufflist, {
+                    "default": "dynamic",
+                    "tooltip": "How many extra descriptors to add (dynamic = based on input length)."
+                }),
+                "reverse_polarity": (fluff_reverse_polarity, {
+                    "default": False,
+                    "tooltip": "If True, adds 'negative' or gritty descriptors instead of high-quality ones."
+                }),
             },
             "optional": {                
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {
+                    "default": 0, 
+                    "min": 0, 
+                    "max": 0xFFFFFFFFFFFFFFFF,
+                    "tooltip": "Random seed for descriptor selection."
+                }),
             },
         }
 
@@ -798,17 +919,30 @@ class OneButtonSuperPrompt:
                
         return {
             "required": {
-                "prompt": ("STRING", {"default": '', "multiline": True}),
+                "prompt": ("STRING", {
+                    "default": '', 
+                    "multiline": True,
+                    "tooltip": "Short prompt to be expanded by AI."
+                }),
                 "insanitylevel": ("INT", {
                     "default": 5,
-                    "min": 1, #Minimum value
-                    "max": 10, #Maximum value
-                    "step": 1 #Slider's step
+                    "min": 1,
+                    "max": 10,
+                    "step": 1,
+                    "tooltip": "Higher levels allow the AI more creative freedom."
                 }),
-                "superpromptstyle": (superprompterstyleslist, {"default": "all"}),
+                "superpromptstyle": (superprompterstyleslist, {
+                    "default": "all",
+                    "tooltip": "Filter the expansion style (fantasy, sci-fi, etc.)."
+                }),
             },
             "optional": {                
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {
+                    "default": 0, 
+                    "min": 0, 
+                    "max": 0xFFFFFFFFFFFFFFFF,
+                    "tooltip": "Seed for AI generation."
+                }),
             },
         }
 
