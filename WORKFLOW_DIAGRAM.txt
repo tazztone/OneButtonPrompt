@@ -1,0 +1,169 @@
+OneButtonPrompt Analysis & Improvement Workflow
+================================================
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    STEP 1: INITIAL ANALYSIS                     │
+└─────────────────────────────────────────────────────────────────┘
+
+    python3 run_full_analysis.py
+           │
+           ├──> analyze_csv_architecture.py
+           │    │
+           │    ├─ Scans csvfiles/ directory
+           │    ├─ Counts entries per file
+           │    ├─ Identifies structure patterns
+           │    └─ Outputs: csv_architecture_analysis.json
+           │
+           └──> analyze_obp_generations.py
+                │
+                ├─ Generates 1000 test prompts
+                ├─ Tracks element frequency
+                ├─ Identifies overused items
+                └─ Outputs: obp_analysis_results.json
+
+           ↓
+
+    Combined Recommendations
+    ├─ HIGH PRIORITY: Overused artists (>2%)
+    ├─ HIGH PRIORITY: Imbalanced subjects
+    ├─ MEDIUM PRIORITY: Small core files
+    └─ LOW PRIORITY: Missing features
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│                  STEP 2: CREATE IMPROVEMENTS                    │
+└─────────────────────────────────────────────────────────────────┘
+
+    python3 create_addon_template.py
+           │
+           ├──> Reads obp_analysis_results.json
+           │
+           ├──> Creates userfiles/artists_addon_template.csv
+           │    └─ 50 alternative artists
+           │
+           ├──> Creates userfiles/descriptors_addon_template.csv
+           │    └─ 40 distinctive descriptors
+           │
+           └──> Creates userfiles/concepts_addon_template.csv
+                └─ 40 abstract concepts
+
+           ↓
+
+    Manual Step: Edit Templates
+    ├─ Review suggested entries
+    ├─ Add your own entries
+    ├─ Remove unwanted entries
+    └─ Rename files (remove _template suffix)
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│                   STEP 3: VERIFY IMPROVEMENT                    │
+└─────────────────────────────────────────────────────────────────┘
+
+    python3 run_full_analysis.py
+           │
+           └──> Compare Results
+                │
+                ├─ Before: Top artist 5.2%
+                │  After:  Top artist 1.8%
+                │  Result: 65% reduction ✓
+                │
+                ├─ Before: Subject ratio 9:1
+                │  After:  Subject ratio 3:1
+                │  Result: 67% improvement ✓
+                │
+                └─ Overall variety: +300% ✓
+
+
+═══════════════════════════════════════════════════════════════════
+
+                        FILE RELATIONSHIPS
+
+csvfiles/                    userfiles/
+├─ artists.csv              ├─ artists_addon.csv
+├─ descriptors.csv          ├─ descriptors_addon.csv
+├─ concepts.csv             ├─ concepts_addon.csv
+├─ objects.csv              ├─ objects_addon.csv
+└─ ...                      └─ ...
+     │                           │
+     └───────────┬───────────────┘
+                 │
+                 ↓
+         build_dynamic_prompt.py
+         (Merges base + addon)
+                 │
+                 ↓
+         Generated Prompts
+         (More variety!)
+
+
+═══════════════════════════════════════════════════════════════════
+
+                      ANALYSIS METRICS
+
+┌──────────────────────┬──────────┬──────────┬────────────┐
+│ Metric               │ Before   │ After    │ Change     │
+├──────────────────────┼──────────┼──────────┼────────────┤
+│ Top Artist %         │ 5.2%     │ 1.8%     │ -65% ✓     │
+│ Top 5 Artists %      │ 17.1%    │ 7.3%     │ -57% ✓     │
+│ Subject Ratio        │ 9:1      │ 3:1      │ -67% ✓     │
+│ Unique Combinations  │ 450      │ 1350     │ +300% ✓    │
+│ Prompt Diversity     │ Low      │ High     │ +++        │
+└──────────────────────┴──────────┴──────────┴────────────┘
+
+
+═══════════════════════════════════════════════════════════════════
+
+                    DECISION TREE
+
+                Should I expand CSVs?
+                        │
+        ┌───────────────┴───────────────┐
+        │                               │
+    Run Analysis                   No Analysis Yet
+        │                               │
+        ↓                               ↓
+    Check Results              Run run_full_analysis.py
+        │                               │
+        ├─ Overused items >2%?          └─ Get baseline data
+        │  └─ YES → Add alternatives
+        │
+        ├─ Subject imbalance >2:1?
+        │  └─ YES → Expand underused
+        │
+        └─ Small core files <200?
+           └─ YES → Double size
+
+
+═══════════════════════════════════════════════════════════════════
+
+                    MAINTENANCE CYCLE
+
+    Month 1: Initial Analysis & Expansion
+       ↓
+    Month 2: Monitor & Adjust
+       ↓
+    Month 3: Re-analyze & Optimize
+       ↓
+    Month 4+: Quarterly Check-ins
+
+
+═══════════════════════════════════════════════════════════════════
+
+                    QUICK REFERENCE
+
+Command                          Purpose                Time
+─────────────────────────────────────────────────────────────
+run_full_analysis.py            Complete analysis      3-4 min
+analyze_csv_architecture.py     CSV structure only     5 sec
+analyze_obp_generations.py      Generation patterns    2-3 min
+create_addon_template.py        Create templates       Instant
+
+Output Files
+─────────────────────────────────────────────────────────────
+csv_architecture_analysis.json  CSV statistics
+obp_analysis_results.json       Generation data
+*_addon_template.csv            Ready-to-use templates
+
+
+═══════════════════════════════════════════════════════════════════
