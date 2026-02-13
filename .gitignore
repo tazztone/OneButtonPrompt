@@ -7,3 +7,8 @@ userfiles/*.json
 superprompter/model_files
 superprompter/model_files/*.*
 *.gz
+
+# Analysis output files
+csv_architecture_analysis.json
+obp_analysis_results.json
+
