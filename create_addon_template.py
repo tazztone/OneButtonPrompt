@@ -53,13 +53,70 @@ class CategoryMapper:
                         self.artist_tags[artist].add(tag)
 
     def get_artists_for_tag(self, tag):
-        return self.tag_to_artists.get(tag.lower(), set())
+        return self.tag_to_artists.get(tag, set())
 
     def get_tags_for_artist(self, artist):
         return self.artist_tags.get(artist, set())
 
     def get_all_tags(self):
         return sorted(list(self.tag_to_artists.keys()))
+
+
+class SensitivityAnalyzer:
+    """Analyze CSV file sizes to find high-sensitivity candidates"""
+    def __init__(self, directory="csvfiles/"):
+        self.directory = Path(directory)
+        self.stats = {}
+        self._analyze()
+
+    def _analyze(self):
+        if not self.directory.exists(): return
+        
+        for csv_path in self.directory.glob("*.csv"):
+            try:
+                with open(csv_path, 'r', encoding='utf-8') as f:
+                    lines = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+                
+                size = len(lines)
+                if size == 0: continue
+                
+                # Rank sensitivity: smaller = higher impact
+                if size < 50:
+                    rank = "CRITICAL"
+                elif size < 150:
+                    rank = "HIGH"
+                elif size < 500:
+                    rank = "MEDIUM"
+                else:
+                    rank = "LOW"
+                    
+                self.stats[csv_path.name] = {
+                    'size': size,
+                    'rank': rank,
+                    'sensitivity': 1.0 / (size + 1.0)
+                }
+            except Exception:
+                continue
+
+    def get_ranked_candidates(self, min_rank="HIGH"):
+        ranks = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        min_idx = ranks.index(min_rank)
+        target_ranks = ranks[:min_idx + 1]
+        
+        candidates = [ (k, v) for k, v in self.stats.items() if v['rank'] in target_ranks ]
+        return sorted(candidates, key=lambda x: x[1]['sensitivity'], reverse=True)
+
+    def print_report(self):
+        print(f"\n{'='*60}")
+        print("SENSITIVITY REPORT (High-Impact Expansion Candidates)")
+        print(f"{'='*60}\n")
+        
+        print(f"{'CSV FILENAME':<25} | {'SIZE':<8} | {'RANK':<10} | {'SENSITIVITY'}")
+        print("-" * 60)
+        
+        candidates = self.get_ranked_candidates("MEDIUM")
+        for name, data in candidates:
+            print(f"{name:<25} | {data['size']:<8} | {data['rank']:<10} | {data['sensitivity']:.4f}")
 
 
 class TechnicalTermMapper:
@@ -444,6 +501,84 @@ def create_technical_addon(results, tech_mapper):
     print(f"\n✓ Template saved to: {save_path}")
 
 
+def create_character_addon(results):
+    """Create template for character_addon_template.csv"""
+    print(f"\n{'='*60}")
+    print("CHARACTER ADDON TEMPLATE (High Sensitivity)")
+    print(f"{'='*60}\n")
+    
+    template = """# Character Addon - Suggested High-Impact Details
+# Add these to diversify your characters:
+
+# Face Details
+heterochromia
+vitiligo
+widow's peak
+prominent cheekbones
+dimples
+high forehead
+heavy brow
+cleft chin
+strong jawline
+
+# Hair Details
+buzz cut
+undercut
+pompadour
+wolf cut
+pixie cut
+layered bob
+box braids
+cornrows
+locs
+
+# Body Features
+athletic
+lanky
+heavyset
+petite
+imposing
+wiry
+"""
+    save_path = Path("userfiles/character_addon_template.csv")
+    with open(save_path, 'w', encoding='utf-8') as f:
+        f.write(template)
+    print(f"✓ Template saved to: {save_path}")
+
+
+def create_material_addon(results):
+    """Create template for material_addon_template.csv"""
+    print(f"\n{'='*60}")
+    print("MATERIAL ADDON TEMPLATE (Expansion)")
+    print(f"{'='*60}\n")
+    
+    template = """# Material Addon - Modern & Sci-Fi Textures
+# Force your generations out of plastic/metal/wood loops:
+
+# Advanced Textures
+Carbon Fiber
+Graphene
+Aerogel
+Liquid Metal
+Bioluminescent Moss
+Iridescent Polycarbonate
+Brushed Aluminum
+Corroded Bronze
+Patinated Copper
+Reclaimed Wood
+Obsidian
+Frosted Glass
+Etched Silicon
+Nanolaminate
+Smart Fabric
+Conductive Ink
+"""
+    save_path = Path("userfiles/material_addon_template.csv")
+    with open(save_path, 'w', encoding='utf-8') as f:
+        f.write(template)
+    print(f"✓ Template saved to: {save_path}")
+
+
 def create_tag_coverage_matrix(results, mapper):
     """Calculate appearance rates for each tag"""
     appeared_artists = set(results.get('artists', {}).keys())
@@ -541,6 +676,14 @@ def main():
     tech_mapper = TechnicalTermMapper()
     create_technical_addon(results, tech_mapper)
     
+    # Sensitivity Analysis
+    analyzer = SensitivityAnalyzer()
+    analyzer.print_report()
+    
+    # Create specific expansion templates
+    create_character_addon(results)
+    create_material_addon(results)
+    
     create_weighted_report(results, mapper)
     
     # Final instructions
@@ -555,6 +698,8 @@ def main():
     print("   • descriptors_addon_template.csv → descriptors_addon.csv")
     print("   • concepts_addon_template.csv → concepts_addon.csv")
     print("   • technical_addon_template.csv → technical_addon.csv")
+    print("   • character_addon_template.csv → character_addon.csv")
+    print("   • material_addon_template.csv → material_addon.csv")
     print("4. Test with sample generations")
     print("5. Re-run analysis to verify improvements")
     print()
