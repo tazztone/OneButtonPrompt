@@ -39,6 +39,7 @@ Any other AI tool you are using? Midjourney? Dalle? No problem, I got it working
 - Integration is available with the __superprompt-v1__ model ==> [guide to super prompt](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/superprompt.md)
 - Stay in control, and fine-tune One Button Prompt with a __config__ file ==> [config file](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/config_file.md)
 - __Flufferize__ your prompt to enhance your results with Prompt Magic
+- __Deep Analysis & Expansion__, run a data-driven audit of your variety and generate expansion templates. ==> [Analysis Guide](docs/ANALYSIS.md)
 
 ## Important Notice
 

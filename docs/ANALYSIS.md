@@ -6,19 +6,20 @@
 
 **Step 1: Run Analysis (3 minutes)**
 ```bash
-python3 run_full_analysis.py
+python3 run_full_analysis.py --iterations 1000 --timestamp
 ```
-This will generate 1000 test prompts, analyze them, and output:
+This will generate 1000 test prompts, analyze them using **Ground Truth Tracking**, and output:
 *   `csv_architecture_analysis.json`
 *   `obp_analysis_results.json`
-*   Console report with recommendations.
+*   Console report with **Tag Coverage Matrix** and recommendations.
 
 **Step 2: Create Improvements (5 minutes)**
 ```bash
 python3 create_addon_template.py
 ```
-This generates template files in `userfiles/`:
-*   `artists_addon_template.csv`
+This generates data-driven template files in `userfiles/`:
+*   `artists_addon_template.csv` (Targeted to fill style blind spots)
+*   `technical_addon_template.csv` (Lenses, Lighting, Cameras, Moods)
 *   `descriptors_addon_template.csv`
 *   `concepts_addon_template.csv`
 
@@ -31,18 +32,12 @@ This generates template files in `userfiles/`:
 
 ## 2. Design Philosophy & Methodology
 
-This system was built to address repetition issues using a **data-driven approach** rather than complex history tracking.
+This system uses a **data-driven approach** to solve variety problems at the source.
 
-### Why This Approach Works
-1.  **Data Beats Guessing**: Analysis reveals the *real* distribution of artists and subjects, often exposing biases (e.g., "Red" matching inside "Dark Red") that aren't obvious from just looking at code.
-2.  **Strategic Expansion > Random Addition**: Instead of adding 1000 random items, we use analysis to identify the 10 most overused items and add 50 specific alternatives to them. This provides 10x the variety improvement with 1/10th the effort.
-3.  **Architectural Awareness**: The tools understand OBP's probability distributions, ensuring that expanding a "Rare" category has a precise impact on generation.
-
-### Design Decisions: Why Not History Tracking?
-We explicitly chose **not** to implement a history tracking system (preventing "last 5 prompts" from repeating) for several reasons:
-*   **Complexity**: State management across sessions is fragile and hard to debug.
-*   **Root Cause**: Repetition is usually a data distribution problem (too few items in a "Common" category), not a random number generator problem.
-*   **Performance**: Simple list expansion adds zero runtime overhead, whereas history checking adds latency.
+### Key Innovations
+1.  **Ground Truth Tracking**: Unlike regex-based analysis, the engine now logs exactly which items it selected through the `_metadata` system. This results in 100% accuracy for artist, lighting, and camera tracking.
+2.  **Tag Coverage Matrix**: The analyzer performs a reverse-lookup against `artists_and_category.csv` to identify "Blind Spots"—style categories (like `ukiyo-e` or `brutalist`) where you have data but it's never being selected.
+3.  **High Sensitivity Expansion**: Small lists (like Lenses or Moods) have the highest "sensitivity." Adding just 10 items to a 25-item list changes your variety faster than adding 1000 artists to a 3000-artist list.
 
 ---
 
@@ -51,33 +46,23 @@ We explicitly chose **not** to implement a history tracking system (preventing "
 ### `analyze_csv_architecture.py`
 **Purpose**: Audits the CSV data layer.
 *   Identifying files with <100 entries (candidates for expansion).
-*   Detecting huge files (>1000 entries).
-*   Checking for gender support and multi-column structures.
-*   **Run time**: ~5 seconds.
+*   Checking for header consistency and multi-column support.
 
 ### `analyze_obp_generations.py`
-**Purpose**: Analyzes actual generation patterns.
-*   Generates 1000 prompts.
-*   Tracks frequency of Artists, Subject Types, Image Types, and Styles.
+**Purpose**: Analyzes actual generation patterns with ground truth accuracy.
+*   Uses `_metadata` interception to track engine choices.
+*   Tracks frequency of Artists, Subject Types, Lighting, Cameras, and Moods.
 *   Identifies overused elements (>2% frequency).
-*   **Run time**: ~2-3 minutes.
 
-### `run_full_analysis.py`
-**Purpose**: Orchestrator.
-*   Runs both architecture and generation analysis.
-*   Merges findings into actionable High/Medium/Low priority recommendations.
+### `create_addon_template.py`
+**Purpose**: Smart Advisor for content expansion.
+*   **Artist Gaps**: Suggests specific artists from underrepresented style tags.
+*   **Technical Gaps**: Identifies unused Lenses, Cameras, and Lighting modes.
+*   **Actionable Templates**: Outputs pre-formatted CSV rows ready for your `userfiles/`.
 
 ---
 
 ## 4. Interpreting Reports & Fixing Issues
-
-### High Priority: Overused Artists
-*   **Issue**: An artist appearing in >2% of generations.
-*   **Fix**: Create `userfiles/artists_addon.csv` with 10-20 alternative artists. This dilutes the pool and reduces the frequency of the top artists.
-
-### High Priority: Subject Types Imbalance
-*   **Issue**: e.g., "Humanoids" appearing 45% of the time, while "Concepts" appear only 5%.
-*   **Fix**: Expand the `concepts.csv` (via `concepts_addon.csv`) to increase its pool size and selection probability. The analysis revealed that small subject lists are selected less frequently in specific modes.
 
 ### Medium Priority: Small Descriptor Files
 *   **Issue**: Core files with <200 entries lead to repetitive descriptions (e.g., "detailed" appearing in 15% of prompts).

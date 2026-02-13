@@ -81,3 +81,11 @@ Example values:
 
 ## loading subject from a file with a special wildcard
 In the user_files folder, you can place a file called custom_subjects.csv . If you use this -subjectfromfile- wildcard, it will select a random value from this file. Suggested use is on the Overwrite Subject field.
+## Data-Driven Expansion with the Analysis Suite
+
+Generating these addon files manually can be hard. One Button Prompt includes a set of tools to analyze your history and suggest improvements automatically.
+
+See the [Analysis Guide](../docs/ANALYSIS.md) for more details on how to:
+1.  **Analyze** your generation statistics and style coverage.
+2.  **Detect Blind Spots** in your artistic and technical palette.
+3.  **Generate Templates** for `artists_addon.csv` and `technical_addon.csv` automatically.
