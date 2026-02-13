@@ -56,7 +56,16 @@ class OBPAnalyzer:
             },
             'phrase_sequences': collections.Counter(),
             'prompt_lengths': [],
-            'all_prompts': []
+            'all_prompts': [],
+            # New ground-truth fields
+            'generation_modes': collections.Counter(),
+            'chosen_lighting': collections.Counter(),
+            'chosen_camera': collections.Counter(),
+            'chosen_quality': collections.Counter(),
+            'chosen_lens': collections.Counter(),
+            'chosen_artmovement': collections.Counter(),
+            'chosen_colorscheme': collections.Counter(),
+            'chosen_artists': collections.Counter(),
         }
         
         # Load reference data from CSVs for matching
@@ -112,9 +121,24 @@ class OBPAnalyzer:
         if metadata:
             main_subj = metadata.get('mainchooser', 'unknown')
             eff_img = metadata.get('imagetype', 'unknown')
+            gen_mode = metadata.get('generationmode', 'standard')
+            
             self.results['main_subject_types'][main_subj] += 1
             self.results['subject_choosers'][metadata.get('subjectchooser', 'unknown')] += 1
             self.results['effective_imagetypes'][eff_img] += 1
+            self.results['generation_modes'][gen_mode or 'standard'] += 1
+            
+            # Record Ground Truth chosen values
+            for key in ['chosen_lighting', 'chosen_camera', 'chosen_quality', 'chosen_lens', 'chosen_artmovement', 'chosen_colorscheme']:
+                vals = metadata.get(key, [])
+                if isinstance(vals, list):
+                    for v in vals:
+                        if v: self.results[key][v] += 1
+                elif vals:
+                    self.results[key][vals] += 1
+                    
+            if metadata.get('chosen_artist'):
+                self.results['chosen_artists'][metadata['chosen_artist']] += 1
             
             # Subject-ImageType Co-occurrence
             self.results['co_occurrence']['subject_imagetype'][f"{main_subj} x {eff_img}"] += 1
@@ -277,6 +301,15 @@ class OBPAnalyzer:
             percentage = (count / total_prompts) * 100
             bar = '█' * int(percentage / 2)
             print(f"{subject_type:12s}: {percentage:5.1f}% {bar} ({count})")
+
+        # Generation Mode distribution
+        print(f"\n{'='*60}")
+        print("GENERATION MODE DISTRIBUTION (Ground Truth)")
+        print(f"{'='*60}")
+        for mode, count in self.results['generation_modes'].most_common():
+            percentage = (count / total_prompts) * 100
+            bar = '█' * int(percentage / 2)
+            print(f"{mode:18s}: {percentage:5.1f}% {bar} ({count})")
             
         # Top artists
         print(f"\n{'='*60}")
@@ -361,6 +394,21 @@ class OBPAnalyzer:
                 print(f"{percentage:5.1f}% - {term:40s} ({count:3d} times)")
         else:
             print("No quality terms detected in prompts")
+
+        # Ground Truth Attributes (Expanded Tracking)
+        print(f"\n{'='*60}")
+        print("GROUND TRUTH ATTRIBUTE DISTRIBUTION (Direct from Engine)")
+        print(f"{'='*60}")
+        
+        for key in ['chosen_lighting', 'chosen_camera', 'chosen_quality', 'chosen_artists', 'chosen_lens', 'chosen_artmovement']:
+            name = key.replace('chosen_', '').upper()
+            if self.results[key]:
+                print(f"\n[{name}] Top 5:")
+                for val, count in self.results[key].most_common(5):
+                    percentage = (count / total_prompts) * 100
+                    print(f"  {percentage:5.1f}% - {val[:40]}")
+            else:
+                print(f"\n[{name}] No direct metadata recorded")
             
         # Generate recommendations
         self.generate_recommendations()
@@ -469,8 +517,19 @@ class OBPAnalyzer:
                 'subject_imagetype': dict(self.results['co_occurrence']['subject_imagetype'].most_common(20)),
                 'subject_artist': dict(self.results['co_occurrence']['subject_artist'].most_common(20)),
             },
-            'top_phrase_sequences': dict(self.results['phrase_sequences'].most_common(20)),
-            'sample_prompts': self.results['all_prompts'][:20]
+            'phrase_sequences': dict(self.results['phrase_sequences'].most_common(20)),
+            'sample_prompts': self.results['all_prompts'][:20],
+            # Ground truth fields
+            'generation_modes': dict(self.results['generation_modes']),
+            'ground_truth': {
+                'lighting': dict(self.results['chosen_lighting'].most_common(50)),
+                'camera': dict(self.results['chosen_camera'].most_common(50)),
+                'quality': dict(self.results['chosen_quality'].most_common(50)),
+                'lens': dict(self.results['chosen_lens'].most_common(30)),
+                'art_movement': dict(self.results['chosen_artmovement'].most_common(30)),
+                'colorscheme': dict(self.results['chosen_colorscheme'].most_common(30)),
+                'artists': dict(self.results['chosen_artists'].most_common(50)),
+            }
         }
         
         with open(full_path, 'w', encoding='utf-8') as f:

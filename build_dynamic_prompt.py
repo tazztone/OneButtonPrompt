@@ -27,6 +27,16 @@ OBPresets = OneButtonPresets()
 # Set artistmode to none, to exclude artists 
 def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", _return_metadata = False):
 
+    _metadata = None
+    wildcard_to_metadata = {
+        "-lighting-": "chosen_lighting",
+        "-camera-": "chosen_camera",
+        "-quality-": "chosen_quality",
+        "-lens-": "chosen_lens",
+        "-artist-": "chosen_artist",
+        "-artmovement-": "chosen_artmovement",
+        "-colorscheme-": "chosen_colorscheme"
+    }
     remove_weights = False
     less_verbose = False
     add_vomit = True
@@ -1117,15 +1127,18 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     thetokinatormode = False
     dynamictemplatesmode = False
     artifymode = False
+    generationmode = ""
 
     # determine wether we should go for a template or not. Not hooked up to insanitylevel
     if(imagetype == "only templates mode"):
         specialmode = True
         templatemode = True
+        generationmode = "only templates"
         print("Running with a randomized template instead of a randomized prompt")
 
     if(imagetype == "art blaster mode"):
         specialmode = True
+        generationmode = "art blaster"
         if(uncommon_dist(insanitylevel)):
             artblastermode = True
         elif(bool(artistlist)):
@@ -1138,42 +1151,50 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     if(imagetype == "unique art mode"):
         specialmode = True
         uniqueartmode = True
+        generationmode = "unique art"
         print("Running in unique art mode")
 
     if(imagetype == "quality vomit mode"):
         specialmode = True
         qualityvomitmode = True
+        generationmode = "quality vomit"
         print("Running in quality vomit mode")
 
     if(imagetype == "color cannon mode"):
         specialmode = True
         colorcannonmode = True
+        generationmode = "color cannon"
         print("Running in color cannon mode")
 
     if(imagetype == "photo fantasy mode"):
         specialmode = True
         photofantasymode = True
+        generationmode = "photo fantasy"
         print("Running in photo fantasy mode")
 
     if(imagetype == "massive madness mode"):
         specialmode = True
         massivemadnessmode = True
+        generationmode = "massive madness"
         print("Running in massive madness mode")
         print("Are you ready for this?")
 
     if(imagetype == "subject only mode"):
         specialmode = True
         onlysubjectmode = True
+        generationmode = "subject only"
         print("Running in only subject mode")
 
     if(imagetype == "fixed styles mode"):
         specialmode = True
         stylesmode = True
+        generationmode = "fixed styles"
         print("Running with a randomized style instead of a randomized prompt")
 
     if(imagetype == "the tokinator"):
         specialmode = True
         thetokinatormode = True
+        generationmode = "tokinator"
         # for performance, load the list here
         tokenlist = csv_to_list(csvfilename="tokens",antilist=antilist,skipheader=True)
         print("Running with a completely random set of words")
@@ -1611,6 +1632,15 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             'imagetype': imagetype,
             'specialmode': specialmode,
             'insanitylevel': insanitylevel,
+            'generationmode': generationmode,      # art blaster, quality vomit, etc.
+            'chosen_artist': '',
+            'chosen_lighting': [],
+            'chosen_camera': [],
+            'chosen_quality': [],
+            'chosen_lens': [],
+            'chosen_artmovement': [],
+            'chosen_colorscheme': [],
+            'artist_category': '',
         }
 
         # After we chose the subject, lets set all things ready for He/She/It etc
@@ -3643,13 +3673,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         #  keywordsinstring = any(word.lower() in givensubject.lower() for word in keywordslist)
         for wildcard in allwildcardslistnohybrid:
             attachedlist = allwildcardslistnohybridlists[allwildcardslistnohybrid.index(wildcard)]
-            completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist,False, advancedprompting, artiststyleselector)
+            completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, False, advancedprompting, artiststyleselector, _metadata, wildcard_to_metadata.get(wildcard))
 
-
-        
         for wildcard in allwildcardslistwithhybrid:
             attachedlist = allwildcardslistwithhybridlists[allwildcardslistwithhybrid.index(wildcard)]
-            completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist,True, advancedprompting, artiststyleselector)
+            completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, True, advancedprompting, artiststyleselector, _metadata, wildcard_to_metadata.get(wildcard))
 
 
     completeprompt = replace_user_wildcards(completeprompt)  
@@ -4486,13 +4514,13 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
             #  keywordsinstring = any(word.lower() in givensubject.lower() for word in keywordslist)
             for wildcard in allwildcardslistnohybrid:
                 attachedlist = allwildcardslistnohybridlists[allwildcardslistnohybrid.index(wildcard)]
-                completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist,False, advancedprompting)
+                completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, False, advancedprompting, "", _metadata, wildcard_to_metadata.get(wildcard))
 
 
             
             for wildcard in allwildcardslistwithhybrid:
                 attachedlist = allwildcardslistwithhybridlists[allwildcardslistwithhybrid.index(wildcard)]
-                completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist,True, advancedprompting)
+                completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, True, advancedprompting, "", _metadata, wildcard_to_metadata.get(wildcard))
 
 
         
@@ -4506,7 +4534,7 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
     return completeprompt
 
     # function
-def replacewildcard(completeprompt, insanitylevel, wildcard,listname, activatehybridorswap, advancedprompting, artiststyleselector = ""):
+def replacewildcard(completeprompt, insanitylevel, wildcard,listname, activatehybridorswap, advancedprompting, artiststyleselector = "", _metadata=None, metadata_key=None):
 
     if(len(listname) == 0):
         # handling empty lists
@@ -4518,15 +4546,35 @@ def replacewildcard(completeprompt, insanitylevel, wildcard,listname, activatehy
                 hybridorswaplist = ["hybrid", "swap"]
                 hybridorswap = random.choice(hybridorswaplist)
                 replacementvalue = random.choice(listname)
+                
+                # Metadata logging for hybrid/swap
+                if _metadata is not None and metadata_key is not None:
+                    if isinstance(_metadata.get(metadata_key), list):
+                        _metadata[metadata_key].append(replacementvalue)
+                    else:
+                        _metadata[metadata_key] = replacementvalue
+                
                 listname.remove(replacementvalue)
                 hybridorswapreplacementvalue = "[" + replacementvalue
                 
                 if(hybridorswap == "hybrid"):
                         replacementvalue = random.choice(listname)
+                        
+                        # Metadata logging for second hybrid value
+                        if _metadata is not None and metadata_key is not None:
+                            if isinstance(_metadata[metadata_key], list):
+                                _metadata[metadata_key].append(replacementvalue)
+
                         listname.remove(replacementvalue)
                         hybridorswapreplacementvalue += "|" + replacementvalue + "] "
                 if(hybridorswap == "swap"):
                         replacementvalue = random.choice(listname)
+                        
+                        # Metadata logging for swapped value
+                        if _metadata is not None and metadata_key is not None:
+                            if isinstance(_metadata[metadata_key], list):
+                                _metadata[metadata_key].append(replacementvalue)
+
                         listname.remove(replacementvalue)
                         hybridorswapreplacementvalue += ":" + replacementvalue + ":" + str(random.randint(1,20)) +  "] "
                 
@@ -4535,6 +4583,14 @@ def replacewildcard(completeprompt, insanitylevel, wildcard,listname, activatehy
             #if list is not empty
             if(bool(listname)):
                 replacementvalue = random.choice(listname)
+                
+                # Metadata logging for standard replacement
+                if _metadata is not None and metadata_key is not None:
+                    if isinstance(_metadata.get(metadata_key), list):
+                        _metadata[metadata_key].append(replacementvalue)
+                    else:
+                        _metadata[metadata_key] = replacementvalue
+                
                 if(wildcard not in ["-heshe-", "-himher-","-hisher-"]):
                     listname.remove(replacementvalue)
 

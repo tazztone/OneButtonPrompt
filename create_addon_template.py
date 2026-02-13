@@ -6,7 +6,60 @@ Helps create addon CSV files based on analysis recommendations
 
 import json
 import sys
+import csv
+import argparse
 from pathlib import Path
+from collections import Counter, defaultdict
+
+
+class CategoryMapper:
+    """Maps artists to tags based on artists_and_category.csv"""
+    def __init__(self):
+        self.tag_to_artists = defaultdict(set)
+        self.artist_tags = defaultdict(set)
+        self.tags_list = []
+        self._load()
+
+    def _load(self):
+        csv_path = Path("csvfiles/artists_and_category.csv")
+        if not csv_path.exists():
+            return
+
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            header = next(reader)
+            
+            # Boolean tag columns start after 'Description' (index 3)
+            # 0: Artist, 1: Tags, 2: Medium, 3: Description, 4: popular, 5: greg mode, 6: 3D...
+            self.tags_list = header[4:] 
+            
+            for row in reader:
+                if not row: continue
+                artist = row[0]
+                
+                # 1. Parse comma-separated tags from column 1
+                if len(row) > 1 and row[1]:
+                    tags = [t.strip().lower() for t in row[1].split(',')]
+                    for t in tags:
+                        if t:
+                            self.tag_to_artists[t].add(artist)
+                            self.artist_tags[artist].add(t)
+                
+                # 2. Parse boolean columns
+                for i, val in enumerate(row[4:], start=4):
+                    if val == '1':
+                        tag = header[i].lower()
+                        self.tag_to_artists[tag].add(artist)
+                        self.artist_tags[artist].add(tag)
+
+    def get_artists_for_tag(self, tag):
+        return self.tag_to_artists.get(tag.lower(), set())
+
+    def get_tags_for_artist(self, artist):
+        return self.artist_tags.get(artist, set())
+
+    def get_all_tags(self):
+        return sorted(list(self.tag_to_artists.keys()))
 
 
 def load_analysis_results():
@@ -32,11 +85,11 @@ def get_core_file_stats():
     return stats
 
 
-def create_artists_addon(results, num_suggestions=50):
-    """Create template for artists_addon.csv"""
+def create_artists_addon(results, mapper, top_gaps=10):
+    """Create template for artists_addon.csv using data-driven gap detection"""
     
     print(f"\n{'='*60}")
-    print("ARTISTS ADDON TEMPLATE")
+    print("ARTISTS ADDON TEMPLATE (Data-Driven)")
     print(f"{'='*60}\n")
     
     if 'artists' not in results or not results['artists']:
@@ -45,91 +98,69 @@ def create_artists_addon(results, num_suggestions=50):
         
     total_prompts = results['total_prompts']
     overuse_threshold = total_prompts * 0.02
+    appeared_artists = set(results['artists'].keys())
     
-    # Find overused artists
+    # Step A: Detect overused artists
     overused = [(artist, count) for artist, count in results['artists'].items() 
                 if count > overuse_threshold]
     
-    if not overused:
-        print("✓ No overused artists detected!")
-        return
+    if overused:
+        print(f"Detected {len(overused)} overused artists (appearing in >2% of prompts):")
+        for artist, count in sorted(overused, key=lambda x: x[1], reverse=True)[:5]:
+            percentage = (count / total_prompts) * 100
+            print(f"  {percentage:5.1f}% - {artist}")
+    else:
+        print("✓ No overused artists detected.")
+
+    # Step B: Compute tag coverage gaps
+    tag_stats = []
+    for tag in mapper.get_all_tags():
+        all_artists_with_tag = mapper.get_artists_for_tag(tag)
+        if not all_artists_with_tag: continue
         
-    print(f"Found {len(overused)} overused artists (appearing in >2% of prompts)\n")
-    print("Top overused artists:")
-    for artist, count in sorted(overused, key=lambda x: x[1], reverse=True)[:10]:
-        percentage = (count / total_prompts) * 100
-        print(f"  {percentage:5.1f}% - {artist}")
+        appeared_with_tag = all_artists_with_tag.intersection(appeared_artists)
+        appeared_count = len(appeared_with_tag)
+        total_in_tag = len(all_artists_with_tag)
         
-    print(f"\nRecommendation: Add {num_suggestions} alternative artists")
-    print("\nTemplate for userfiles/artists_addon.csv:")
-    print("-" * 60)
-    
-    template = """# Artists Addon - Add alternatives to reduce repetition
-# Format: Artist Name (one per line)
-# These will be added to the main artists list
+        # Gap score: 1.0 = nothing appeared, 0.0 = everything appeared
+        gap_score = (total_in_tag - appeared_count) / total_in_tag
+        
+        tag_stats.append({
+            'tag': tag,
+            'appeared': appeared_count,
+            'total': total_in_tag,
+            'gap_score': gap_score,
+            'unseen': list(all_artists_with_tag - appeared_artists)
+        })
 
-# Fantasy/Digital Art alternatives
-Karla Ortiz
-Bastien Lecouffe-Deharme
-Ruan Jia
-Wlop
-Guweiz
-Sakimichan
-Ilya Kuvshinov
-Loish
-Ross Draws
-Zeronis
+    # Rank tags by gap score (prioritize tags that have at least N artists so we don't get tiny niche noise)
+    # Also prioritize tags that actually have artists we haven't seen yet
+    top_tags = sorted([t for t in tag_stats if t['total'] >= 5 and t['unseen']], 
+                      key=lambda x: (x['gap_score'], x['total']), reverse=True)[:top_gaps]
 
-# Concept Art alternatives
-Feng Zhu
-Ryan Church
-Syd Mead
-John Park
-Maciej Kuciara
-Sparth
-Craig Mullins
-Jaime Jones
-Eytan Zana
-Jama Jurabaev
+    print(f"\nDetected top {len(top_tags)} style blind spots (Underrepresented tags):")
+    for t in top_tags[:5]:
+        print(f"  Gap {t['gap_score']:.2f} | {t['tag']:<15} ({t['appeared']}/{t['total']} appeared)")
 
-# Portrait alternatives
-Ilya Repin
-John Singer Sargent
-Anders Zorn
-Joaquín Sorolla
-Diego Velázquez
-Rembrandt van Rijn
-Johannes Vermeer
-Thomas Eakins
-Mary Cassatt
-Cecilia Beaux
+    # Step C: Generate targeted suggestions
+    template_lines = [
+        "# Artists Addon - Data-Driven Suggestions",
+        "# Based on detected blind spots and style gaps",
+        "# Format: Artist Name (one per line)",
+        ""
+    ]
 
-# Landscape alternatives
-Albert Bierstadt
-Thomas Moran
-Frederic Edwin Church
-Ivan Aivazovsky
-J.M.W. Turner
-Claude Monet
-Caspar David Friedrich
-Thomas Cole
-Asher Brown Durand
-Sanford Robinson Gifford
+    for t in top_tags:
+        template_lines.append(f"# ── UNDERREPRESENTED: {t['tag']} ({t['appeared']} of {t['total']} artists appeared) ──")
+        template_lines.append(f"# Gap Score: {t['gap_score']:.2f} | Priority: {'HIGH' if t['gap_score'] > 0.8 else 'MEDIUM'}")
+        
+        # Suggest up to 10 artists from this tag that didn't appear
+        suggestions = sorted(t['unseen'])[:10]
+        for s in suggestions:
+            template_lines.append(s)
+        template_lines.append("")
 
-# Modern/Contemporary alternatives
-Banksy
-Takashi Murakami
-Yayoi Kusama
-Jeff Koons
-Damien Hirst
-Anselm Kiefer
-Gerhard Richter
-David Hockney
-Kehinde Wiley
-Jenny Saville
-
-# Add your own artists below:
-"""
+    template = "\n".join(template_lines)
     
     print(template)
     
@@ -308,10 +339,31 @@ cultural evolution,genderless
         
     print(f"\n✓ Template saved to: {save_path}")
 
-def create_weighted_report(results):
-    """Generate a report on 'Effective Weights' and dilution"""
+def create_tag_coverage_matrix(results, mapper):
+    """Calculate appearance rates for each tag"""
+    appeared_artists = set(results.get('artists', {}).keys())
+    matrix = []
+    
+    for tag in mapper.get_all_tags():
+        all_artists = mapper.get_artists_for_tag(tag)
+        if not all_artists: continue
+        
+        appeared = all_artists.intersection(appeared_artists)
+        rate = len(appeared) / len(all_artists)
+        
+        matrix.append({
+            'tag': tag,
+            'appeared': len(appeared),
+            'total': len(all_artists),
+            'rate': rate
+        })
+    
+    return sorted(matrix, key=lambda x: x['rate'])
+
+def create_weighted_report(results, mapper):
+    """Generate a report on 'Effective Weights' and tag coverage"""
     print(f"\n{'='*60}")
-    print("EFFECTIVE WEIGHT & DILUTION REPORT")
+    print("EFFECTIVE WEIGHT & TAG COVERAGE REPORT")
     print(f"{'='*60}\n")
     
     core_stats = get_core_file_stats()
@@ -319,7 +371,6 @@ def create_weighted_report(results):
     print(f"{'CATEGORY':<20} | {'CORE SIZE':<10} | {'SENSITIVITY'}")
     print("-" * 60)
     
-    # Categories to check
     categories = [
         ('artists', 'artists'),
         ('imagetypes', 'imagetypes'),
@@ -329,38 +380,57 @@ def create_weighted_report(results):
     
     for label, core_key in categories:
         core_size = core_stats.get(core_key, 100)
-        
-        # Sensitivity: how much "weight" a single new entry would have
-        # If core is 1000, 1 new entry is 0.1% of the list.
         sensitivity = 1.0 / (core_size + 1.0)
-        
         print(f"{label:<20} | {core_size:<10} | {sensitivity:>8.4f}")
+
+    # Tag Coverage Matrix
+    matrix = create_tag_coverage_matrix(results, mapper)
+    
+    print(f"\n{'TAG COVERAGE (STYLE GAPS)':<30} | {'APPEARED/TOTAL':<15} | {'RATE'}")
+    print("-" * 60)
+    
+    # Show bottom 10 (blind spots)
+    print("Top Blind Spots (Least Covered):")
+    for item in [m for m in matrix if m['total'] >= 5][:10]:
+        print(f"  {item['tag']:<28} | {item['appeared']:>7}/{item['total']:<7} | {item['rate']:>6.1%}")
+        
+    # Show top 5 (best covered)
+    print("\nBest Covered Styles:")
+    for item in sorted(matrix, key=lambda x: x['rate'], reverse=True)[:5]:
+        print(f"  {item['tag']:<28} | {item['appeared']:>7}/{item['total']:<7} | {item['rate']:>6.1%}")
 
     print("\n[!] Expansion Strategy:")
     print("  • High Sensitivity categories require fewer additions to see impact.")
-    print("  • Adding to small lists (high sensitivity) has more immediate visual impact.")
+    print("  • Focus on Blind Spots with low coverage rates to improve diversity.")
 
 def main():
     """Main execution"""
+    parser = argparse.ArgumentParser(description="OneButtonPrompt Addon Template Creator")
+    parser.add_argument("--top-gaps", type=int, default=10, help="Number of style gaps to include (default: 10)")
+    parser.add_argument("--results", type=str, default="analysis_results/obp_analysis_results.json", help="Path to analysis results JSON")
+    args = parser.parse_args()
     
     print("OneButtonPrompt Addon Template Creator")
     print("=" * 60)
     
     # Load analysis results
     results = load_analysis_results()
-    
     if not results:
         return
-        
+
+    # Initialize Category Mapper
+    print("Loading artist categories from csvfiles/artists_and_category.csv...")
+    mapper = CategoryMapper()
+    
     print(f"\nLoaded analysis results:")
     print(f"  Total prompts analyzed: {results['total_prompts']}")
     print(f"  Unique artists found: {len(results.get('artists', {}))}")
     
     # Create templates
-    create_artists_addon(results)
+    create_artists_addon(results, mapper, top_gaps=args.top_gaps)
     create_descriptors_addon(results)
     create_concepts_addon(results)
-    create_weighted_report(results)
+    create_weighted_report(results, mapper)
     
     # Final instructions
     print(f"\n{'='*60}")
