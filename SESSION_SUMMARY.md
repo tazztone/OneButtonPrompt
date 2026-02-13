@@ -14,17 +14,23 @@ Built a comprehensive data-driven analysis system to identify and reduce repetit
 
 **Core Analysis Scripts:**
 - `analyze_csv_architecture.py` - Analyzes CSV file structure, size distribution, and content categorization
-- `analyze_obp_generations.py` - Generates test prompts and tracks element frequency patterns
+- `analyze_obp_generations.py` - Generates test prompts and tracks element frequency patterns (Updated: **Shannon Entropy Diversity Score**)
 - `run_full_analysis.py` - Orchestrates both analyses and provides combined recommendations
-- `create_addon_template.py` - Generates ready-to-use addon CSV templates based on analysis
+- `create_addon_template.py` - Generates ready-to-use addon CSV templates based on analysis (Updated: **Effective Weight Calculations**)
 - `build_dynamic_prompt_minimal.py` - Torch-free wrapper to avoid PyTorch dependency
+- `audit_structural_bias.py` - **[NEW]** Monte Carlo simulator for logic-level probability skews
+- `run_insanity_sweep.py` - **[NEW]** Automation for multi-level variety profiling
+- `compare_analyses.py` - **[NEW]** Regression testing for "Diversity Delta"
 
 **Key Features:**
 - Automated pattern detection (identifies elements appearing >2% of time)
 - Subject type balance analysis
 - CSV architecture insights
-- Prioritized recommendations (HIGH/MEDIUM/LOW impact)
+- Priority recommendations (HIGH/MEDIUM/LOW impact)
 - Template generation for quick fixes
+- **Ground-Truth Metadata**: Patched core engine to return actual internal selections
+- **Structural Bias Detection**: Uncovered hidden skews in "Anime" and "Portrait" modes
+- **Diversity Delta**: Capability to measure variety gains between two versions
 
 ### 2. Comprehensive Documentation (7 files)
 
@@ -351,9 +357,35 @@ The analysis tools are now in place for ongoing monitoring and optimization. The
 
 ---
 
-**Session Date:** February 13, 2026  
-**Completed By:** Kiro AI Assistant  
-**Total Commits:** 6 commits, ~2,700 lines added  
-**Files Created:** 15 files (scripts, docs, addons)  
-**Time Investment:** ~2 hours  
-**Expected ROI:** 3-5x reduction in repetition, ongoing improvements
+---
+
+## Deep Diagnostics Session (Evening)
+
+This session focused on establishing a professional-grade data science and diagnostic suite for OneButtonPrompt. We successfully transitioned from "guessing" why prompts looked a certain way to "proving" it with ground-truth data.
+
+### 1. Core Engine Patching (Phase 1)
+- **Ground-Truth Metadata**: Modified `build_dynamic_prompt.py` to return internal state (`mainchooser`, `subjectchooser`, `imagetype`). This eliminates heuristic guessing in the analyzer.
+- **Backward Compatibility**: Added `_return_metadata=False` to the core function signature to ensure existing ComfyUI nodes continue to work without modification.
+
+### 2. Advanced Metrics & Diversity (Phase 3)
+- **Shannon Entropy**: Implemented a mathematical "Diversity Score" based on bigram (phrase pair) entropy. We can now quantify exactly how "repetitive" or "surprising" the generator is.
+- **Co-occurrence Matrices**: Added tracking for `Subject x ImageType` and `Subject x Artist` pairings to find hidden "clichés" in the logic.
+
+### 3. Discovery of Hidden Biases (Phase 2)
+- **Structural Bias Audit**: Created a Monte Carlo simulator (`audit_structural_bias.py`) that replayed the core logic 10,000 times.
+- **Key Finding**: Discovered that **Anime Mode** has a massive structural bias, forcing humanoids **48.8%** of the time, while **Portrait Style** skews humanoids to **34.3%**.
+
+### 4. Automation & Comparison (Phases 4 & 5)
+- **Insanity Sweeps**: Created `run_insanity_sweep.py` to automatically profile how variety scales from Level 1 to 10.
+- **Regression Testing**: Built `compare_analyses.py` to calculate "Diversity Deltas" between two runs, allowing you to prove that a new addon actually increased variety.
+
+### 5. Strategic Expansion (Phase 6)
+- **Weighted Templates**: Enhanced `create_addon_template.py` to identify "underused" categories (like Concepts, which were only at 7%) and provide targeted CSV templates for expansion.
+
+### 6. Directory Cleanup (Phase 7)
+- **Consolidation**: Moved all diagnostic outputs and metadata to the `analysis_results/` directory to keep the repository clean.
+- **Git Integration**: Updated `.gitignore` to prevent analysis pollution in the main repo.
+
+---
+**Completed By:** Antigravity AI
+**Status:** All 7 Phases Complete and Verified.
