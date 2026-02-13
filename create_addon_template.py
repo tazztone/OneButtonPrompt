@@ -62,6 +62,35 @@ class CategoryMapper:
         return sorted(list(self.tag_to_artists.keys()))
 
 
+class TechnicalTermMapper:
+    """Loads terms from various technical CSV files"""
+    def __init__(self):
+        self.categories = {
+            'lighting': 'csvfiles/lighting.csv',
+            'lenses': 'csvfiles/lenses.csv',
+            'cameras': 'csvfiles/cameras.csv',
+            'moods': 'csvfiles/moods.csv'
+        }
+        self.category_terms = {}
+        self._load()
+
+    def _load(self):
+        for cat, path in self.categories.items():
+            full_path = Path(path)
+            if full_path.exists():
+                with open(full_path, 'r', encoding='utf-8') as f:
+                    # Simple line-by-line loader for list CSVs
+                    self.category_terms[cat] = set(
+                        line.strip() for line in f 
+                        if line.strip() and not line.startswith('#')
+                    )
+            else:
+                self.category_terms[cat] = set()
+
+    def get_terms(self, category):
+        return self.category_terms.get(category, set())
+
+
 def load_analysis_results():
     """Load the analysis results JSON"""
     results_file = Path("analysis_results/obp_analysis_results.json")
@@ -339,6 +368,82 @@ cultural evolution,genderless
         
     print(f"\n✓ Template saved to: {save_path}")
 
+
+def create_technical_addon(results, tech_mapper):
+    """Create template for technical_addon_template.csv using gap detection"""
+    
+    print(f"\n{'='*60}")
+    print("TECHNICAL ADDON TEMPLATE (Data-Driven)")
+    print(f"{'='*60}\n")
+    
+    # Map analysis keys to technical categories
+    key_map = {
+        'lighting': 'lighting',
+        'lenses': 'lens',
+        'cameras': 'camera',
+        'moods': 'lighting'  # Fallback: moods often appear in lighting or generic descriptors
+    }
+    
+    ground_truth = results.get('ground_truth', {})
+    template_lines = [
+        "# Technical Addon - Data-Driven Suggestions",
+        "# Based on detected blind spots in technical categories",
+        "# Format: One entry per line",
+        ""
+    ]
+    
+    found_any = False
+    
+    for cat_name, csv_path in tech_mapper.categories.items():
+        all_terms = tech_mapper.get_terms(cat_name)
+        if not all_terms: continue
+        
+        # Get appeared terms from analysis
+        analysis_key = key_map.get(cat_name)
+        appeared = set()
+        
+        # Priority 1: Ground Truth
+        if analysis_key in ground_truth:
+            appeared = set(ground_truth[analysis_key].keys())
+        # Priority 2: Regex analysis
+        elif cat_name in results:
+            appeared = set(results[cat_name].keys())
+        # Priority 3: Special case for cameras
+        elif cat_name == 'cameras' and 'camera_terms' in results:
+            appeared = set(results['camera_terms'].keys())
+            
+        unseen = all_terms - appeared
+        total = len(all_terms)
+        appeared_count = len(appeared)
+        
+        if unseen:
+            found_any = True
+            gap_score = (total - appeared_count) / total
+            template_lines.append(f"# ── UNUSED {cat_name.upper()} ({appeared_count} of {total} appeared) ──")
+            template_lines.append(f"# Gap Score: {gap_score:.2f} | Priority: {'HIGH' if total < 50 else 'MEDIUM'}")
+            
+            # Suggest up to 15 items
+            suggestions = sorted(list(unseen))[:15]
+            for s in suggestions:
+                template_lines.append(s)
+            template_lines.append("")
+
+    if not found_any:
+        print("✓ All technical categories are well-represented!")
+        return
+
+    template = "\n".join(template_lines)
+    print(template)
+    
+    save_path = Path("userfiles/technical_addon_template.csv")
+    save_path.parent.mkdir(exist_ok=True)
+    
+    with open(save_path, 'w', encoding='utf-8') as f:
+        f.write(template)
+        
+    print(f"\n✓ Template saved to: {save_path}")
+
+
 def create_tag_coverage_matrix(results, mapper):
     """Calculate appearance rates for each tag"""
     appeared_artists = set(results.get('artists', {}).keys())
@@ -430,6 +535,12 @@ def main():
     create_artists_addon(results, mapper, top_gaps=args.top_gaps)
     create_descriptors_addon(results)
     create_concepts_addon(results)
+    
+    # Initialize Technical Mapper
+    print("Loading technical categories...")
+    tech_mapper = TechnicalTermMapper()
+    create_technical_addon(results, tech_mapper)
+    
     create_weighted_report(results, mapper)
     
     # Final instructions
@@ -443,6 +554,7 @@ def main():
     print("   • artists_addon_template.csv → artists_addon.csv")
     print("   • descriptors_addon_template.csv → descriptors_addon.csv")
     print("   • concepts_addon_template.csv → concepts_addon.csv")
+    print("   • technical_addon_template.csv → technical_addon.csv")
     print("4. Test with sample generations")
     print("5. Re-run analysis to verify improvements")
     print()
