@@ -23,18 +23,31 @@ def run_csv_architecture_analysis():
     print("Analyzing CSV file structure and content distribution...\n")
     
     try:
+        print("[DEBUG] Importing CSVArchitectureAnalyzer...")
         from analyze_csv_architecture import CSVArchitectureAnalyzer
         
+        print("[DEBUG] Creating analyzer instance...")
         analyzer = CSVArchitectureAnalyzer()
+        
+        print("[DEBUG] Running analyze_all_csvs()...")
         analyzer.analyze_all_csvs()
+        
+        print("[DEBUG] Generating architecture report...")
         analyzer.generate_architecture_report()
+        
+        print("[DEBUG] Identifying expansion opportunities...")
         analyzer.identify_expansion_opportunities()
+        
+        print("[DEBUG] Saving analysis...")
         analyzer.save_analysis()
         
+        print("[DEBUG] CSV analysis complete!")
         return analyzer.analysis
         
     except Exception as e:
         print(f"✗ Error running CSV architecture analysis: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -44,16 +57,25 @@ def run_generation_analysis(num_iterations=1000, insanity_level=5):
     print(f"Generating and analyzing {num_iterations} prompts...\n")
     
     try:
+        print("[DEBUG] Importing OBPAnalyzer...")
         from analyze_obp_generations import OBPAnalyzer
         
+        print("[DEBUG] Creating analyzer instance...")
         analyzer = OBPAnalyzer()
+        
+        print("[DEBUG] Running analysis (this may take a few minutes)...")
         analyzer.run_analysis(
             num_iterations=num_iterations,
             insanitylevel=insanity_level
         )
+        
+        print("[DEBUG] Generating report...")
         analyzer.generate_report()
+        
+        print("[DEBUG] Saving results...")
         analyzer.save_results()
         
+        print("[DEBUG] Generation analysis complete!")
         return analyzer.results
         
     except Exception as e:
@@ -217,7 +239,7 @@ def main():
     print(f"{'#'*70}")
     
     # Configuration
-    NUM_ITERATIONS = 1000  # Number of prompts to generate
+    NUM_ITERATIONS = 100  # Reduced for faster testing
     INSANITY_LEVEL = 5     # Default insanity level for testing
     
     print(f"\nConfiguration:")
@@ -225,18 +247,23 @@ def main():
     print(f"  • Insanity level: {INSANITY_LEVEL}")
     print(f"  • This will take approximately {NUM_ITERATIONS * 0.1:.0f} seconds")
     
-    input("\nPress Enter to start analysis...")
+    print("\n[DEBUG] Starting analysis in 2 seconds...")
+    import time
+    time.sleep(2)
     
     # Step 1: CSV Architecture
+    print("\n[DEBUG] Step 1: CSV Architecture Analysis")
     csv_analysis = run_csv_architecture_analysis()
     
     # Step 2: Generation Patterns
+    print("\n[DEBUG] Step 2: Generation Pattern Analysis")
     gen_results = run_generation_analysis(
         num_iterations=NUM_ITERATIONS,
         insanity_level=INSANITY_LEVEL
     )
     
     # Step 3: Combined Recommendations
+    print("\n[DEBUG] Step 3: Combined Recommendations")
     generate_combined_recommendations(csv_analysis, gen_results)
     
     # Final message

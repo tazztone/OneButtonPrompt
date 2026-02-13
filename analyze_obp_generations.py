@@ -15,7 +15,15 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from build_dynamic_prompt import build_dynamic_prompt
+    # Try minimal version first (avoids torch dependency)
+    try:
+        from build_dynamic_prompt_minimal import build_dynamic_prompt
+        print("✓ Using minimal build_dynamic_prompt (superprompter disabled)")
+    except:
+        # Fall back to full version
+        from build_dynamic_prompt import build_dynamic_prompt
+        print("✓ Using full build_dynamic_prompt")
+    
     from csv_reader import csv_to_list
     print("✓ Successfully imported OBP modules")
 except ImportError as e:
