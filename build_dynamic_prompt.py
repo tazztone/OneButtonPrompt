@@ -25,7 +25,7 @@ OBPresets = OneButtonPresets()
 # insanity level controls randomness of propmt 0-10
 # forcesubject van be used to force a certain type of subject
 # Set artistmode to none, to exclude artists 
-def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = ""):
+def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", _return_metadata = False):
 
     remove_weights = False
     less_verbose = False
@@ -1604,6 +1604,15 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 else:
                     subjectchooser = subtypeconcept
 
+        # Data Science Metadata Collection
+        _metadata = {
+            'mainchooser': mainchooser,
+            'subjectchooser': subjectchooser,
+            'imagetype': imagetype,
+            'specialmode': specialmode,
+            'insanitylevel': insanitylevel,
+        }
+
         # After we chose the subject, lets set all things ready for He/She/It etc
         
         if(not less_verbose and subjectchooser in ["manwomanmultiple"] and givensubject != "" and subtypehumanoid != "multiple humans"):
@@ -1954,6 +1963,8 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 completeprompt = cleanup(completeprompt, advancedprompting, insanitylevel)
 
                 print("only generated these artists:" + completeprompt)
+                if(_return_metadata):
+                    return completeprompt, _metadata
                 return completeprompt
 
 
@@ -3729,8 +3740,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     print(completeprompt) # keep this! :D 
 
     if(prompt_g_and_l == False):
+        if(_return_metadata):
+            return completeprompt, _metadata
         return completeprompt
     else:
+        if(_return_metadata):
+            return completeprompt, prompt_g, prompt_l, _metadata
         return completeprompt, prompt_g, prompt_l
 
 

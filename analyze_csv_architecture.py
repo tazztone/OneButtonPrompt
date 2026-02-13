@@ -307,7 +307,7 @@ class CSVArchitectureAnalyzer:
             print(f"  Action: {opp['action']}")
             print()
             
-    def save_analysis(self, filename="csv_architecture_analysis.json"):
+    def save_analysis(self, filename="analysis_results/csv_architecture_analysis.json"):
         """Save analysis to JSON file"""
         
         with open(filename, 'w', encoding='utf-8') as f:

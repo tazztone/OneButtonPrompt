@@ -270,7 +270,7 @@ def main():
     print_header("ANALYSIS COMPLETE")
     print("Results saved to:")
     print("  • csv_architecture_analysis.json")
-    print("  • obp_analysis_results.json")
+    print("  • analysis_results/obp_analysis_results.json")
     print("\nYou can now use these insights to strategically expand your CSV files.")
     print()
 

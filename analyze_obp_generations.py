@@ -9,6 +9,7 @@ import os
 import re
 import json
 import collections
+import argparse
 from pathlib import Path
 
 # Add current directory to path to import OBP modules
@@ -45,6 +46,14 @@ class OBPAnalyzer:
             'camera_terms': collections.Counter(),
             'quality_terms': collections.Counter(),
             'main_subject_types': collections.Counter(),
+            'subject_choosers': collections.Counter(),
+            'effective_imagetypes': collections.Counter(),
+            'bigrams': collections.Counter(),
+            'co_occurrence': {
+                'subject_imagetype': collections.Counter(),
+                'subject_artist': collections.Counter(),
+            },
+            'phrase_sequences': collections.Counter(),
             'prompt_lengths': [],
             'all_prompts': []
         }
@@ -91,24 +100,52 @@ class OBPAnalyzer:
             self.ref_lighting = set()
             print("  ✗ Could not load lighting.csv")
             
-    def analyze_prompt(self, prompt):
+    def analyze_prompt(self, prompt, metadata=None):
         """Parse a prompt and extract identifiable elements"""
         
         # Store full prompt
         self.results['all_prompts'].append(prompt)
         self.results['prompt_lengths'].append(len(prompt))
         
+        # Track metadata if available
+        if metadata:
+            main_subj = metadata.get('mainchooser', 'unknown')
+            eff_img = metadata.get('imagetype', 'unknown')
+            self.results['main_subject_types'][main_subj] += 1
+            self.results['subject_choosers'][metadata.get('subjectchooser', 'unknown')] += 1
+            self.results['effective_imagetypes'][eff_img] += 1
+            
+            # Subject-ImageType Co-occurrence
+            self.results['co_occurrence']['subject_imagetype'][f"{main_subj} x {eff_img}"] += 1
+        
         # Convert to lowercase for matching
         prompt_lower = prompt.lower()
         
-        # Split into words/phrases (handle commas and special chars)
-        words = re.split(r'[,\(\)\[\]:]', prompt_lower)
-        words = [w.strip() for w in words if w.strip()]
+        # Repetitive Phrase Sequence Detector (3+ words)
+        # Clean the prompt of punctuation for better matching
+        clean_prompt = re.sub(r'[,\(\)\[\]:"]', ' ', prompt_lower)
+        words_only = [w for w in clean_prompt.split() if len(w) > 2]
+        for j in range(len(words_only) - 2):
+            sequence = " ".join(words_only[j:j+3])
+            self.results['phrase_sequences'][sequence] += 1
+
+        # Track Bigrams for Diversity Scoring
+        phrases = [p.strip() for p in prompt_lower.split(',') if p.strip()]
+        for j in range(len(phrases) - 1):
+            bigram = f"{phrases[j]} | {phrases[j+1]}"
+            self.results['bigrams'][bigram] += 1
+            
+        # Split into words/phrases (handle commas and special chars for keyword matching)
+        words_keyword = re.split(r'[,\(\)\[\]:]', prompt_lower)
+        words_keyword = [w.strip() for w in words_keyword if w.strip()]
         
         # Match artists (case-insensitive)
         for artist in self.ref_artists:
             if artist.lower() in prompt_lower:
                 self.results['artists'][artist] += 1
+                if metadata:
+                    main_subj = metadata.get('mainchooser', 'unknown')
+                    self.results['co_occurrence']['subject_artist'][f"{main_subj} x {artist}"] += 1
                 
         # Match image types
         for imagetype in self.ref_imagetypes:
@@ -148,17 +185,18 @@ class OBPAnalyzer:
             if pattern in prompt_lower:
                 self.results['quality_terms'][pattern] += 1
                 
-        # Try to detect main subject type (heuristic)
-        if any(word in prompt_lower for word in ['man', 'woman', 'person', 'character', 'portrait']):
-            self.results['main_subject_types']['humanoid'] += 1
-        elif any(word in prompt_lower for word in ['landscape', 'scenery', 'vista', 'view']):
-            self.results['main_subject_types']['landscape'] += 1
-        elif any(word in prompt_lower for word in ['animal', 'creature', 'beast', 'cat', 'dog', 'bird']):
-            self.results['main_subject_types']['animal'] += 1
-        elif any(word in prompt_lower for word in ['concept', 'abstract', 'idea']):
-            self.results['main_subject_types']['concept'] += 1
-        else:
-            self.results['main_subject_types']['object'] += 1
+        # Fallback for subject type if metadata is missing (legacy support)
+        if not metadata:
+            if any(word in prompt_lower for word in ['man', 'woman', 'person', 'character', 'portrait']):
+                self.results['main_subject_types']['humanoid'] += 1
+            elif any(word in prompt_lower for word in ['landscape', 'scenery', 'vista', 'view']):
+                self.results['main_subject_types']['landscape'] += 1
+            elif any(word in prompt_lower for word in ['animal', 'creature', 'beast', 'cat', 'dog', 'bird']):
+                self.results['main_subject_types']['animal'] += 1
+            elif any(word in prompt_lower for word in ['concept', 'abstract', 'idea']):
+                self.results['main_subject_types']['concept'] += 1
+            else:
+                self.results['main_subject_types']['object'] += 1
             
     def run_analysis(self, num_iterations=1000, insanitylevel=5, **kwargs):
         """Run OBP multiple times and collect statistics"""
@@ -172,17 +210,19 @@ class OBPAnalyzer:
                 print(f"Progress: {i + 1}/{num_iterations} generations...")
                 
             try:
-                # Generate prompt
-                result = build_dynamic_prompt(insanitylevel=insanitylevel, **kwargs)
+                # Generate prompt with ground-truth metadata
+                result = build_dynamic_prompt(insanitylevel=insanitylevel, _return_metadata=True, **kwargs)
                 
+                metadata = None
                 # Handle different return formats
                 if isinstance(result, tuple):
                     prompt = result[0]  # Main prompt
+                    metadata = result[-1] if isinstance(result[-1], dict) else None
                 else:
                     prompt = result
                     
                 # Analyze the prompt
-                self.analyze_prompt(prompt)
+                self.analyze_prompt(prompt, metadata)
                 
             except Exception as e:
                 print(f"Error on iteration {i + 1}: {e}")
@@ -207,6 +247,21 @@ class OBPAnalyzer:
         avg_length = sum(self.results['prompt_lengths']) / len(self.results['prompt_lengths'])
         print(f"Average prompt length: {avg_length:.1f} characters")
         print(f"Shortest: {min(self.results['prompt_lengths'])} | Longest: {max(self.results['prompt_lengths'])}\n")
+        
+        diversity_score = 0
+        total_bigrams = sum(self.results['bigrams'].values())
+        if total_bigrams > 0:
+            import math
+            for count in self.results['bigrams'].values():
+                p = count / total_bigrams
+                diversity_score -= p * math.log2(p)
+        
+        self.results['diversity_score'] = diversity_score
+        
+        print(f"{'='*60}")
+        print(f"DIVERSITY SCORE: {diversity_score:.4f}")
+        print(f"(Shannon Entropy of bigrams - higher is better)")
+        print(f"{'='*60}\n")
         
         # Main subject type distribution
         print(f"{'='*60}")
@@ -388,6 +443,15 @@ class OBPAnalyzer:
             'camera_terms': dict(self.results['camera_terms']),
             'quality_terms': dict(self.results['quality_terms']),
             'main_subject_types': dict(self.results['main_subject_types']),
+            'subject_choosers': dict(self.results['subject_choosers']),
+            'effective_imagetypes': dict(self.results['effective_imagetypes']),
+            'diversity_score': self.results.get('diversity_score', 0),
+            'top_bigrams': dict(self.results['bigrams'].most_common(20)),
+            'co_occurrence': {
+                'subject_imagetype': dict(self.results['co_occurrence']['subject_imagetype'].most_common(20)),
+                'subject_artist': dict(self.results['co_occurrence']['subject_artist'].most_common(20)),
+            },
+            'top_phrase_sequences': dict(self.results['phrase_sequences'].most_common(20)),
             'sample_prompts': self.results['all_prompts'][:20]
         }
         
@@ -400,31 +464,30 @@ class OBPAnalyzer:
 def main():
     """Main execution function"""
     
+    parser = argparse.ArgumentParser(description="OneButtonPrompt Generation Analyzer")
+    parser.add_argument("--iterations", type=int, default=1000, help="Number of generations to run")
+    parser.add_argument("--insanity", type=int, default=5, help="Insanity level (1-10)")
+    parser.add_argument("--output", type=str, default="analysis_results/obp_analysis_results.json", help="Output JSON file")
+    
+    args = parser.parse_args()
+    
     print("OneButtonPrompt Generation Analyzer")
     print("=" * 60)
-    
-    # Configuration
-    NUM_ITERATIONS = 1000
-    INSANITY_LEVEL = 5
     
     # Create analyzer
     analyzer = OBPAnalyzer()
     
     # Run analysis
     analyzer.run_analysis(
-        num_iterations=NUM_ITERATIONS,
-        insanitylevel=INSANITY_LEVEL,
-        # Add any other parameters you want to test
-        # artists="all",
-        # imagetype="all",
-        # base_model="SD1.5"
+        num_iterations=args.iterations,
+        insanitylevel=args.insanity
     )
     
     # Generate report
     analyzer.generate_report()
     
     # Save results
-    analyzer.save_results()
+    analyzer.save_results(filename=args.output)
     
     print(f"\n{'='*60}")
     print("Analysis complete!")

@@ -11,15 +11,25 @@ from pathlib import Path
 
 def load_analysis_results():
     """Load the analysis results JSON"""
-    results_file = Path("obp_analysis_results.json")
+    results_file = Path("analysis_results/obp_analysis_results.json")
     
     if not results_file.exists():
         print("✗ Analysis results not found!")
-        print("  Run 'python3 run_full_analysis.py' first")
+        print("  Run 'python3 analyze_obp_generations.py' first")
         return None
         
     with open(results_file, 'r', encoding='utf-8') as f:
         return json.load(f)
+
+def get_core_file_stats():
+    """Estimate core file entries based on size"""
+    csv_dir = Path("csvfiles")
+    stats = {}
+    if csv_dir.exists():
+        for f in csv_dir.glob("*.csv"):
+            # Estimate: ~50 bytes per line for typical OBP CSVs
+            stats[f.stem] = max(1, f.stat().st_size // 50)
+    return stats
 
 
 def create_artists_addon(results, num_suggestions=50):
@@ -298,6 +308,37 @@ cultural evolution,genderless
         
     print(f"\n✓ Template saved to: {save_path}")
 
+def create_weighted_report(results):
+    """Generate a report on 'Effective Weights' and dilution"""
+    print(f"\n{'='*60}")
+    print("EFFECTIVE WEIGHT & DILUTION REPORT")
+    print(f"{'='*60}\n")
+    
+    core_stats = get_core_file_stats()
+    
+    print(f"{'CATEGORY':<20} | {'CORE SIZE':<10} | {'SENSITIVITY'}")
+    print("-" * 60)
+    
+    # Categories to check
+    categories = [
+        ('artists', 'artists'),
+        ('imagetypes', 'imagetypes'),
+        ('colors', 'colors'),
+        ('lighting', 'lighting')
+    ]
+    
+    for label, core_key in categories:
+        core_size = core_stats.get(core_key, 100)
+        
+        # Sensitivity: how much "weight" a single new entry would have
+        # If core is 1000, 1 new entry is 0.1% of the list.
+        sensitivity = 1.0 / (core_size + 1.0)
+        
+        print(f"{label:<20} | {core_size:<10} | {sensitivity:>8.4f}")
+
+    print("\n[!] Expansion Strategy:")
+    print("  • High Sensitivity categories require fewer additions to see impact.")
+    print("  • Adding to small lists (high sensitivity) has more immediate visual impact.")
 
 def main():
     """Main execution"""
@@ -319,6 +360,7 @@ def main():
     create_artists_addon(results)
     create_descriptors_addon(results)
     create_concepts_addon(results)
+    create_weighted_report(results)
     
     # Final instructions
     print(f"\n{'='*60}")
