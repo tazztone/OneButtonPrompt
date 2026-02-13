@@ -1,5 +1,33 @@
 # OneButtonPrompt Architecture Guide
 
+## Quick Technical Overview
+
+OneButtonPrompt builds prompts by randomly selecting keywords from 130+ CSV files (3,500+ artists, subjects, styles, descriptors) and combining them with comma separators. The "insanity level" (1-10) controls selection probability for each element.
+
+**Core Mechanism:**
+- **CSV Data Layer**: Text files containing all possible prompt elements
+- **Probability Engine**: Each element has a chance of being included (e.g., 50% at level 5 for "normal" elements)
+- **Pipeline**: Subject selection → Element rolling → Keyword concatenation → Model formatting
+- **Model Adaptation**: 
+  - SD1.5/Anime: Keywords only (`portrait, woman, red hair`)
+  - SDXL: Adds filler words (`portrait, the woman is red haired`)
+  - Stable Cascade: Strips weight syntax `(keyword:1.2)` → `keyword`
+
+**Example at insanity 5:**
+```
+Subject: "Warrior" (always) ✓
+Artist: "Frank Frazetta" (27% chance) ✓
+Art movement: "Fantasy Art" (16% chance) ✓
+Lighting: "dramatic lighting" (50% chance) ✓
+Camera: "wide shot" (16% chance) ✗
+
+Result: "by Frank Frazetta, fantasy art, fierce Warrior, dramatic lighting, detailed"
+```
+
+For detailed technical documentation, see sections below.
+
+---
+
 ## Overview
 
 OneButtonPrompt is a sophisticated AI prompt generation system designed for Stable Diffusion image generation. It provides automated, controlled randomness to create diverse and interesting prompts for beginners and advanced users alike. The system supports multiple platforms including Automatic1111 WebUI, ComfyUI, and RuinedFooocus.
