@@ -11,7 +11,9 @@ from .OneButtonPromptNodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPING
 # API Route for preset syncing
 from server import PromptServer
 from aiohttp import web
-from .one_button_presets import OBPresets
+from .one_button_presets import OneButtonPresets
+
+OBPresets = OneButtonPresets()
 
 @PromptServer.instance.routes.get("/one_button_prompt/get_preset")
 async def get_preset(request):
