@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 import folder_paths
 from datetime import datetime
 import uuid
@@ -10,7 +11,7 @@ onebuttonprompt_path = os.path.join(custom_nodes_path, "OneButtonPrompt")
 
 sys.path.append(onebuttonprompt_path)
 
-from .build_dynamic_prompt import *
+from .build_dynamic_prompt import build_dynamic_prompt, SUPPORTED_WILDCARDS
 from .csv_reader import *
 
 from .one_button_presets import OneButtonPresets
@@ -21,9 +22,20 @@ artists = ["all", "all (wild)", "none", "popular", "greg mode", "3D",	"abstract"
 artifyartists = ["all", "all (wild)", "popular", "greg mode", "3D",	"abstract",	"angular", "anime"	,"architecture",	"art nouveau",	"art deco",	"baroque",	"bauhaus", 	"cartoon",	"character",	"children's illustration", 	"cityscape", "cinema", 	"clean",	"cloudscape",	"collage",	"colorful",	"comics",	"cubism",	"dark",	"detailed", 	"digital",	"expressionism",	"fantasy",	"fashion",	"fauvism",	"figurativism",	"gore",	"graffiti",	"graphic design",	"high contrast",	"horror",	"impressionism",	"installation",	"landscape",	"light",	"line drawing",	"low contrast",	"luminism",	"magical realism",	"manga",	"melanin",	"messy",	"monochromatic",	"nature",	"nudity",	"photography",	"pop art",	"portrait",	"primitivism",	"psychedelic",	"realism",	"renaissance",	"romanticism",	"scene",	"sci-fi",	"sculpture",	"seascape",	"space",	"stained glass",	"still life",	"storybook realism",	"street art",	"streetscape",	"surrealism",	"symbolism",	"textile",	"ukiyo-e",	"vibrant",	"watercolor",	"whimsical"]
 # Load imagetypes dynamically
 imagetypes = ["all", "all - force multiple", "all - anime", "none"]
-imagetypes += csv_to_list("imagetypes")
+# imagetypes += csv_to_list("imagetypes")  # REMOVED legacy simple addon system
 imagetypes += ["only other types"]
 imagetypes += csv_to_list("imagetypemodes", directory="./csvfiles/special_lists/")
+# Load custom modes from JSON
+try:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(script_dir, "userfiles", "custom_modes.json")
+    if os.path.exists(json_path):
+        with open(json_path, 'r', encoding='utf-8') as f:
+            custom_modes = json.load(f)
+            imagetypes += list(custom_modes.keys())
+except Exception as e:
+    print(f"OneButtonPrompt: Error loading custom modes for UI: {e}")
+
 imagetypes += ["the tokinator"]
 subjects =["all", "object", "animal", "humanoid", "landscape", "concept"]
 genders = ["all", "male", "female"]
@@ -738,6 +750,16 @@ class OneButtonPreset:
                 "art_movement_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding historical or modern art movements."}),
                 "quality_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding quality-enhancing tokens (masterpiece, 8k, etc.)."}),
                 "save_preset_name": ("STRING", {"default": "", "tooltip": "Enter a name to save current sliders as a new preset. NOTE: You must restart ComfyUI for the new preset to appear in the dropdown list."}),
+                "prompt_prefix_mode": ("STRING", {"default": "", "tooltip": "Custom Mode Prefix (added after standard prefix)"}),
+                "prompt_suffix_mode": ("STRING", {"default": "", "tooltip": "Custom Mode Suffix (added before standard suffix)"}),
+                "custom_wildcard_1": (SUPPORTED_WILDCARDS, {"default": "", "tooltip": "First custom wildcard to add to the loop"}),
+                "custom_wildcard_1_chance": ("INT", {"default": 0, "min": 0, "max": 9, "step": 1, "display": "slider", "tooltip": "Chance (0-9) to include Wildcard 1"}),
+                "custom_wildcard_2": (SUPPORTED_WILDCARDS, {"default": "", "tooltip": "Second custom wildcard"}),
+                "custom_wildcard_2_chance": ("INT", {"default": 0, "min": 0, "max": 9, "step": 1, "display": "slider", "tooltip": "Chance (0-9) to include Wildcard 2"}),
+                "custom_wildcard_3": (SUPPORTED_WILDCARDS, {"default": "", "tooltip": "Third custom wildcard"}),
+                "custom_wildcard_3_chance": ("INT", {"default": 0, "min": 0, "max": 9, "step": 1, "display": "slider", "tooltip": "Chance (0-9) to include Wildcard 3"}),
+                "custom_wildcard_4": (SUPPORTED_WILDCARDS, {"default": "", "tooltip": "Fourth custom wildcard"}),
+                "custom_wildcard_4_chance": ("INT", {"default": 0, "min": 0, "max": 9, "step": 1, "display": "slider", "tooltip": "Chance (0-9) to include Wildcard 4"}),
             },
         }
 
@@ -751,7 +773,7 @@ class OneButtonPreset:
 
     CATEGORY = "OneButtonPrompt"
     
-    def Comfy_OBP_OneButtonPreset(self, OneButtonPreset, insanitylevel, base_model, prompt_enhancer, subject, custom_subject, custom_outfit, artist, imagetype, imagemodechance, humanoids_gender, emojis, prompt_prefix, prompt_suffix, seed, descriptor_density, body_type_chance, outfit_chance, hair_chance, accessory_chance, face_detail_chance, expression_chance, pose_chance, background_chance, mood_chance, lighting_chance, color_scheme_chance, lens_chance, shot_size_chance, art_movement_chance, quality_chance, save_preset_name):
+    def Comfy_OBP_OneButtonPreset(self, OneButtonPreset, insanitylevel, base_model, prompt_enhancer, subject, custom_subject, custom_outfit, artist, imagetype, imagemodechance, humanoids_gender, emojis, prompt_prefix, prompt_suffix, seed, descriptor_density, body_type_chance, outfit_chance, hair_chance, accessory_chance, face_detail_chance, expression_chance, pose_chance, background_chance, mood_chance, lighting_chance, color_scheme_chance, lens_chance, shot_size_chance, art_movement_chance, quality_chance, save_preset_name, prompt_prefix_mode, prompt_suffix_mode, custom_wildcard_1, custom_wildcard_1_chance, custom_wildcard_2, custom_wildcard_2_chance, custom_wildcard_3, custom_wildcard_3_chance, custom_wildcard_4, custom_wildcard_4_chance):
         # Build chance overrides
         mapping = {
             "descriptor_density": ["subjectdescriptor1chance", "subjectdescriptor2chance"],
@@ -803,12 +825,36 @@ class OneButtonPreset:
         selected_opb_preset["prompt_enhancer"] = prompt_enhancer
         # emojis is inverted in the engine calls usually or handled separately
         
+        # Build prompt_parts from UI inputs
+        ui_prompt_parts = []
+        for i in range(1, 5):
+            wc = locals().get(f"custom_wildcard_{i}", "")
+            ch = locals().get(f"custom_wildcard_{i}_chance", 0)
+            if wc.strip() != "" and ch > 0:
+                ui_prompt_parts.append({
+                    "wildcard": wc.strip(), 
+                    "chance": PROBABILITY_TIERS[ch]
+                })
+
+        # Logic Merge: Use UI custom mode settings if they exist, otherwise keep preset values
+        has_ui_custom_mode = (prompt_prefix_mode.strip() != "" or prompt_suffix_mode.strip() != "" or len(ui_prompt_parts) > 0)
+        
+        current_prompt_parts = ui_prompt_parts if has_ui_custom_mode else selected_opb_preset.get("prompt_parts", [])
+        current_prefix_mode = prompt_prefix_mode if has_ui_custom_mode else selected_opb_preset.get("prompt_prefix_mode", "")
+        current_suffix_mode = prompt_suffix_mode if has_ui_custom_mode else selected_opb_preset.get("prompt_suffix_mode", "")
+
         # If saving, construct the dict and save
         if save_preset_name.strip() != "":
             save_dict = selected_opb_preset.copy()
             # update with our slider overrides
             for k, v in chance_overrides.items():
                 save_dict[k] = v
+            
+            # Save the custom mode configuration
+            save_dict["prompt_parts"] = current_prompt_parts
+            save_dict["prompt_prefix_mode"] = current_prefix_mode
+            save_dict["prompt_suffix_mode"] = current_suffix_mode
+            
             OBPresets.add_custom_preset(save_preset_name.strip(), save_dict)
             print(f"Saved custom preset: {save_preset_name}")
 
@@ -830,6 +876,15 @@ class OneButtonPreset:
         giventypeofimage = selected_opb_preset.get("giventypeofimage", "")
         antistring = selected_opb_preset.get("antistring", "")
         
+        # Extract inline custom mode config
+        preset_custom_mode_config = None
+        if current_prompt_parts:
+            preset_custom_mode_config = {
+                "prompt_parts": current_prompt_parts,
+                "prompt_prefix": current_prefix_mode,
+                "prompt_suffix": current_suffix_mode,
+            }
+
         generatedpromptlist = build_dynamic_prompt(insanitylevel=insanitylevel,
                                                forcesubject=subject,
                                                artists=artist,
@@ -853,6 +908,7 @@ class OneButtonPreset:
                                                OBP_preset=OneButtonPreset,
                                                prompt_enhancer=prompt_enhancer,
                                                chance_overrides=chance_overrides,
+                                               custom_mode_config=preset_custom_mode_config,
                                                )
         
         generatedprompt = generatedpromptlist[0]

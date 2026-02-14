@@ -1,3 +1,4 @@
+import json
 import random
 import re
 
@@ -18,6 +19,36 @@ else:
 
 OBPresets = OneButtonPresets()
 
+# Master list of all supported wildcards for UI dropdowns
+SUPPORTED_WILDCARDS = [""] + sorted([
+    "-color-","-object-", "-animal-", "-fictional-","-nonfictional-","-building-","-vehicle-","-location-","-conceptprefix-","-food-","-haircolor-","-hairstyle-","-job-", "-accessory-", "-humanoid-", "-manwoman-", "-human-", "-colorscheme-", "-mood-", "-genderdescription-", "-artmovement-", "-malefemale-", "-bodytype-", "-minilocation-", "-minilocationaddition-", "-pose-", "-season-", "-minioutfit-", "-elaborateoutfit-", "-minivomit-", "-vomit-", "-rpgclass-", "-subjectfromfile-", "-outfitfromfile-", "-brand-", "-space-", "-artist-", "-imagetype-", "-othertype-", "-quality-", "-lighting-", "-camera-", "-lens-","-imagetypequality-", "-poemline-", "-songline-", "-greatwork-", "-fantasyartist-", "-popularartist-", "-romanticismartist-", "-photographyartist-", "-emoji-", "-timeperiod-", "-shotsize-", "-musicgenre-", "-animaladdition-", "-objectaddition-", "-humanaddition-", "-overalladdition-", "-focus-", "-direction-", "-styletilora-", "-manwomanrelation-", "-waterlocation-", "-container-", "-firstname-", "-flora-", "-print-", "-miniactivity-", "-pattern-", "-chair-", "-cardname-", "-covering-", "-outfitdescriptor-", "-hairdescriptor-", "-hairvomit-", "-humandescriptor-", "-manwomanmultiple-", "-facepart-", "-locationdescriptor-", "-basicbitchdescriptor-", "-animaldescriptor-", "-humanexpression-", "-humanvomit-", "-eyecolor-", "-fashiondesigner-", "-colorcombination-", "-materialcombination-", "-photoaddition-", "-age-", "-agecalculator-", "-gregmode-"
+    ,"-portraitartist-", "-characterartist-" , "-landscapeartist-", "-scifiartist-", "-graphicdesignartist-", "-digitalartist-", "-architectartist-", "-cinemaartist-", "-setting-", "-charactertype-", "-objectstohold-", "-episodetitle-", "-allstylessuffix-", "-fluff-", "-event-", "-background-"
+    , "-occult-", "-locationfantasy-", "-locationscifi-", "-locationvideogame-", "-locationbiome-", "-locationcity-", "-bird-", "-cat-", "-dog-", "-insect-", "-pokemon-", "-pokemontype-", "-marinelife-",
+    "-material-", "-descriptor-", "-outfit-", "-conceptsuffix-","-culture-", "-objecttotal-", "-outfitprinttotal-", "-element-"
+])
+
+# Module-level cache for custom modes
+_CUSTOM_MODES_CACHE = None
+
+def load_custom_modes():
+    global _CUSTOM_MODES_CACHE
+    if _CUSTOM_MODES_CACHE is not None:
+        return _CUSTOM_MODES_CACHE
+    
+    _CUSTOM_MODES_CACHE = {}
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(script_dir, "userfiles", "custom_modes.json")
+    
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                _CUSTOM_MODES_CACHE = json.load(f)
+                print(f"OneButtonPrompt: Loaded {len(_CUSTOM_MODES_CACHE)} custom modes from custom_modes.json")
+        except Exception as e:
+            print(f"OneButtonPrompt: Error loading custom_modes.json: {e}")
+    
+    return _CUSTOM_MODES_CACHE
+
 
 
 
@@ -25,7 +56,7 @@ OBPresets = OneButtonPresets()
 # insanity level controls randomness of propmt 0-10
 # forcesubject van be used to force a certain type of subject
 # Set artistmode to none, to exclude artists 
-def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", chance_overrides = None, _return_metadata = False):
+def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", chance_overrides = None, _return_metadata = False, custom_mode_config = None):
 
     _metadata = None
     wildcard_to_metadata = {
@@ -106,6 +137,14 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         giventypeofimage = selected_opb_preset["giventypeofimage"]
         antistring = selected_opb_preset["antistring"]
 
+        # Extract inline custom mode config if present in the random preset
+        if "prompt_parts" in selected_opb_preset:
+            custom_mode_config = {
+                "prompt_parts": selected_opb_preset.get("prompt_parts", []),
+                "prompt_prefix": selected_opb_preset.get("prompt_prefix_mode", ""),
+                "prompt_suffix": selected_opb_preset.get("prompt_suffix_mode", ""),
+            }
+
         # api support tricks for OBP presets
         OBP_preset = ""
 
@@ -127,6 +166,14 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         suffixprompt = selected_opb_preset["suffixprompt"]
         giventypeofimage = selected_opb_preset["giventypeofimage"]
         antistring = selected_opb_preset["antistring"]
+
+        # Extract inline custom mode config if present in the named preset
+        if "prompt_parts" in selected_opb_preset:
+            custom_mode_config = {
+                "prompt_parts": selected_opb_preset.get("prompt_parts", []),
+                "prompt_prefix": selected_opb_preset.get("prompt_prefix_mode", ""),
+                "prompt_suffix": selected_opb_preset.get("prompt_suffix_mode", ""),
+            }
 
     prefixprompt = preset_prefix + ", " + prefixprompt
     suffixprompt = suffixprompt + ", " + preset_suffix
@@ -1273,6 +1320,22 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         artifymode = True
         print("Running with artify mode")
 
+    # Priority 1: Config passed explicitly (from Preset or direct call)
+    custom_modes = load_custom_modes()
+    if custom_mode_config is not None:
+        specialmode = True
+        custommodeactive = True
+        generationmode = "custom mode: preset-inline"
+        print(f"Running with inline custom mode config")
+
+    # Priority 2: Named custom mode from JSON file
+    elif imagetype in custom_modes:
+        custom_mode_config = custom_modes[imagetype]
+        specialmode = True
+        custommodeactive = True
+        generationmode = f"custom mode: {imagetype}"
+        print(f"Running in custom mode: {imagetype}")
+
     # main stuff
     generatetype = not specialmode
     generatesubject = not templatemode
@@ -1881,6 +1944,27 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     completeprompt += "-imagetype-, "
                 step = step + 1 
             
+
+
+        # start custom modes here
+        if(custommodeactive == True and custom_mode_config is not None):
+            step = 0
+            end = random.randint(1, insanitylevel) + 1
+            
+            if "prompt_prefix" in custom_mode_config:
+                completeprompt += custom_mode_config["prompt_prefix"] + " "
+                
+            prompt_parts = custom_mode_config.get("prompt_parts", [])
+            while step < end:
+                for part in prompt_parts:
+                    wildcard = part.get("wildcard", "")
+                    chance = part.get("chance", "normal")
+                    if chance_roll(insanitylevel, chance):
+                         completeprompt += wildcard + ", "
+                step += 1
+            
+            if "prompt_suffix" in custom_mode_config:
+                 completeprompt += " " + custom_mode_config["prompt_suffix"]
 
 
         # start styles mode here

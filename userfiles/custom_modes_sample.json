@@ -1,0 +1,46 @@
+{
+    "Vaporwave Art Mode": {
+        "prompt_prefix": "digital art of",
+        "prompt_suffix": "in the style of vaporwave, retro futurism, neon colors",
+        "prompt_parts": [
+            {
+                "wildcard": "-colorscheme-",
+                "chance": "normal"
+            },
+            {
+                "wildcard": "-lighting-",
+                "chance": "uncommon"
+            },
+            {
+                "wildcard": "-artist-",
+                "chance": "uncommon"
+            },
+            {
+                "wildcard": "-vomit-",
+                "chance": "rare"
+            }
+        ]
+    },
+    "Cinematic Portrait Mode": {
+        "prompt_prefix": "close up cinematic portrait of",
+        "prompt_suffix": "highly detailed, 8k, bokeh background",
+        "prompt_parts": [
+            {
+                "wildcard": "-lighting-",
+                "chance": "common"
+            },
+            {
+                "wildcard": "-camera-",
+                "chance": "uncommon"
+            },
+            {
+                "wildcard": "-lens-",
+                "chance": "rare"
+            },
+            {
+                "wildcard": "-portraitartist-",
+                "chance": "normal"
+            }
+        ]
+    }
+}

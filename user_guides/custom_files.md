@@ -66,16 +66,39 @@ Add anything in these files, and they will show up in the front of the prompt, i
 
 These are added for flexibility.
 
-## Adding Custom Image Types to the Dropdown
-Filename: __imagetypes_addon.csv__
+## Adding Custom Modes (JSON)
+Filename: __custom_modes.json__
 
-You can now add your own custom image types that will appear directly in the **Image Type** dropdown menu!
+For advanced users, you can create entirely new **modes** that appear in the **Image Type** dropdown. A custom mode behaves like "Art Blaster" or "Quality Vomit" — it disables standard generation and instead runs a custom loop that appends wildcards you define.
 
-1.  Create `imagetypes_addon.csv` in the `/userfiles/` directory.
-2.  Add your types (e.g., `Watercolor`).
+1.  Create `custom_modes.json` in the `/userfiles/` directory.
+2.  Follow the structure in `custom_modes_sample.json`.
 3.  Restart ComfyUI.
 
-These types will be available for selection and will be appended to your prompt just like standard types.
+Example structure:
+```json
+{
+  "My Custom Mode": {
+    "prompt_prefix": "digital art of",
+    "prompt_suffix": "in the style of vaporwave",
+    "prompt_parts": [
+      {"wildcard": "-colorscheme-", "chance": "uncommon"},
+      {"wildcard": "-lighting-", "chance": "rare"},
+      {"wildcard": "-artist-", "chance": "uncommon"}
+    ]
+  }
+}
+```
+
+The `chance` values use the standard probability tiers: `never`, `novel`, `extraordinary`, `unique`, `legendary`, `rare`, `uncommon`, `normal`, `common`, `always`.
+
+### Configuring via UI (Recommended)
+As of Feb 2026, you can configure these modes directly in ComfyUI using the **OneButtonPreset** node.
+- Use the **custom_wildcard_1-4** dropdowns and sliders to build your loop.
+- Use **prompt_prefix_mode** and **prompt_suffix_mode** for specific styles.
+- Type a name in **save_preset_name** and run the node to save these settings as a Preset in `obp_presets.json`.
+- These presets will then appear in the **OneButtonPreset** selection dropdown after a restart.
+
 
 ## filling an antilist, that removes values during prompt generation
 Filename: __antilist.csv__

@@ -141,14 +141,16 @@ As of Feb 2026, the `imagetypes` list is no longer hardcoded in the node definit
 *   **Loading Mechanism**:
     1.  Base types (`Photograph`, `Digital art`, etc.) load from `csvfiles/imagetypes.csv`.
     2.  Special modes load from `csvfiles/special_lists/imagetypemodes.csv`.
-    3.  Custom additions load from `userfiles/imagetypes_addon.csv`.
-*   **Expansion**: Users can add simple style suffixes by adding them to the addon CSV.
+    3.  Custom additions load from `userfiles/custom_modes.json` (as keys).
+*   **Expansion**: Users can add complex custom modes via JSON configuration.
 
-### Custom Modes Architecture (Planned)
-The system is moving towards a JSON-driven custom logic engine (`custom_modes.json`). This will allow users to define:
-*   **Forced Slots**: Forcing specific wildcards in the prompt construction phase.
-*   **Looping Logic**: Setting explicit tag counts for multiple random keywords.
-*   **Component Control**: Explicitly enabling or disabling engine features (like `Smart Subject`) per mode.
+### Custom Modes Architecture
+The system now uses a JSON-driven custom logic engine (`custom_modes.json`). This allows users to define:
+*   **Prefix/Suffix**: Injecting specific style or subject matter.
+*   **Looping Logic**: Setting explicit probabilities for multiple random keywords (Art Blaster style).
+*   **Wildcard Control**: Using standard OBP wildcards like `-artist-`, `-lighting-`, etc.
+*   **UI Integration**: The `OneButtonPreset` node features 10 dedicated inputs (wildcard dropdowns and sliders) to build these modes visually.
+*   **Merged Presets**: Custom logic can now be stored directly inside standard Presets in `obp_presets.json`, merging parameter control with structural prompt logic.
 
 ---
 
