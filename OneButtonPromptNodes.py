@@ -736,6 +736,13 @@ class OneButtonPreset:
                     "max": 0xFFFFFFFFFFFFFFFF,
                     "tooltip": "Random seed for the preset generation."
                 }),
+                "show_advanced": ("BOOLEAN", {
+                    "default": False,
+                    "label_on": "Show Advanced",
+                    "label_off": "Hide Advanced",
+                    "tooltip": "Toggle to show/hide advanced settings like probability overrides and custom wildcards."
+                }),
+                # -- ADVANCED SETTINGS (Hidden by default via JS) --
                 "descriptor_density": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Controls the density of descriptive adjectives for the subject."}),
                 "body_type_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding body type/build modifiers."}),
                 "outfit_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of generating specific clothing/outfits."}),
@@ -752,7 +759,9 @@ class OneButtonPreset:
                 "shot_size_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding framing descriptors (close-up, wide-shot)."}),
                 "art_movement_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding historical or modern art movements."}),
                 "quality_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding quality-enhancing tokens (masterpiece, 8k, etc.)."}),
+                
                 "save_preset_name": ("STRING", {"default": "", "tooltip": "Enter a name to save current sliders as a new preset. NOTE: You must restart ComfyUI for the new preset to appear in the dropdown list."}),
+                
                 "prompt_prefix_mode": ("STRING", {"default": "", "tooltip": "Custom Mode Prefix (added after standard prefix)"}),
                 "prompt_suffix_mode": ("STRING", {"default": "", "tooltip": "Custom Mode Suffix (added before standard suffix)"}),
                 "custom_wildcard_1": (SUPPORTED_WILDCARDS, {"default": "", "tooltip": "First custom wildcard to add to the loop"}),
@@ -776,7 +785,7 @@ class OneButtonPreset:
 
     CATEGORY = "OneButtonPrompt"
     
-    def Comfy_OBP_OneButtonPreset(self, OneButtonPreset, insanitylevel, base_model, prompt_enhancer, subject, custom_subject, custom_outfit, artist, imagetype, imagemodechance, humanoids_gender, emojis, prompt_prefix, prompt_suffix, seed, descriptor_density, body_type_chance, outfit_chance, hair_chance, accessory_chance, face_detail_chance, expression_chance, pose_chance, background_chance, mood_chance, lighting_chance, color_scheme_chance, lens_chance, shot_size_chance, art_movement_chance, quality_chance, save_preset_name, prompt_prefix_mode, prompt_suffix_mode, custom_wildcard_1, custom_wildcard_1_chance, custom_wildcard_2, custom_wildcard_2_chance, custom_wildcard_3, custom_wildcard_3_chance, custom_wildcard_4, custom_wildcard_4_chance):
+    def Comfy_OBP_OneButtonPreset(self, OneButtonPreset, insanitylevel, base_model, prompt_enhancer, subject, custom_subject, custom_outfit, artist, imagetype, imagemodechance, humanoids_gender, emojis, prompt_prefix, prompt_suffix, seed, descriptor_density, body_type_chance, outfit_chance, hair_chance, accessory_chance, face_detail_chance, expression_chance, pose_chance, background_chance, mood_chance, lighting_chance, color_scheme_chance, lens_chance, shot_size_chance, art_movement_chance, quality_chance, save_preset_name, prompt_prefix_mode, prompt_suffix_mode, custom_wildcard_1, custom_wildcard_1_chance, custom_wildcard_2, custom_wildcard_2_chance, custom_wildcard_3, custom_wildcard_3_chance, custom_wildcard_4, custom_wildcard_4_chance, show_advanced=False):
         # Build chance overrides
         mapping = {
             "descriptor_density": ["subjectdescriptor1chance", "subjectdescriptor2chance"],
@@ -1152,9 +1161,14 @@ class OneButtonPrompt_Simple:
             "required": {
                 "mode": (all_modes, {"default": "Standard"}),
                 "insanitylevel": ("INT", {"default": 5, "min": 0, "max": 10, "step": 1}),
+                "base_model": (models, {"default": "SD1.5"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
             },
             "optional": {
+                "prompt_enhancer": (prompt_enhancers, {"default": "none"}),
+                "subject": (subjects, {"default": "all"}),
+                "artist": (artists, {"default": "all"}),
+                "imagetype": (imagetypes, {"default": "all"}),
                 "custom_subject": ("STRING", {"default": ""}),
                 "prompt_prefix": ("STRING", {"default": ""}),
                 "prompt_suffix": ("STRING", {"default": ""}),
@@ -1162,35 +1176,42 @@ class OneButtonPrompt_Simple:
         }
 
     RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("prompt",)
     FUNCTION = "generate"
     CATEGORY = "OneButtonPrompt"
 
-    def generate(self, mode, insanitylevel, seed, custom_subject="", prompt_prefix="", prompt_suffix=""):
+    def generate(self, mode, insanitylevel, base_model, seed, prompt_enhancer="none", subject="all", artist="all", imagetype="all", custom_subject="", prompt_prefix="", prompt_suffix=""):
         # Determine if it's a preset or a custom mode
         custom_mode_config = None
         preset_name = ""
-        imagetype = "all"
+        effective_imagetype = "all"
         
         if mode in custom_modes:
             custom_mode_config = custom_modes[mode]
-            imagetype = mode
+            effective_imagetype = mode
         elif mode in OBPresets.opb_presets:
             preset_name = mode
         elif mode == OBPresets.RANDOM_PRESET_OBP:
             preset_name = mode
 
+        # Logic Override: If user explicitly selects a type via dropdown, it overrides the mode-derived type
+        if imagetype != "all":
+            effective_imagetype = imagetype
+
         # Call engine
-        # We pass OBP_preset directly here because this node doesn't have 
-        # its own slider extraction logic like OneButtonPreset does.
         generatedpromptlist = build_dynamic_prompt(
             insanitylevel=insanitylevel,
             seed=seed,
+            base_model=base_model,
+            prompt_enhancer=prompt_enhancer,
+            forcesubject=subject,
+            artists=artist,
+            imagetype=effective_imagetype,
             OBP_preset=preset_name,
             custom_mode_config=custom_mode_config,
             givensubject=custom_subject,
             prefixprompt=prompt_prefix,
-            suffixprompt=prompt_suffix,
-            imagetype=imagetype
+            suffixprompt=prompt_suffix
         )
         
         return (generatedpromptlist[0],)

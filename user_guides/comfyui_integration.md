@@ -52,6 +52,11 @@ All settings work similar to the settings in the Automatic1111 documentation.
 
 ## One Button Preset
 
+**New in v1.2**: The node now features a **"Show Advanced"** toggle. By default, complex sliders and custom mode builders are hidden to keep the interface clean. Enable this toggle to reveal:
+- Probability Override Sliders (e.g., `outfit_chance`, `lighting_chance`)
+- Custom Wildcard Builders
+- Custom Mode Prefix/Suffix overrides
+
 Preset settings of One Button Prompt. Refer to [One Button Presets](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/one_butten_presets.md) for more information regarding the presets.
 
 Has a simple prompt output and a preset selector. You can add new presets by manual adjusting the /userfiles/obp_presets.json JSON file.

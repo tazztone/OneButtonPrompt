@@ -159,6 +159,7 @@ The system now uses a JSON-driven custom logic engine (`custom_modes.json`). Thi
 ### ComfyUI (`OneButtonPromptNodes.py`)
 *   **Nodes**: `OneButtonPrompt`, `OneButtonPrompt Lite` (Simple version), `OneButtonPreset`, `CreatePromptVariant`, `OneButtonArtify`, `AutoNegativePrompt`.
 *   **Integration**: Exposes core parameters as input widgets. Returns `prompt` as a list of strings (and `prompt_g`, `prompt_l` for SDXL compatibility).
+*   **Frontend**: `js/obp_node_layout.js` handles dynamic widget visibility (Advanced Toggle) for `OneButtonPreset`.
 
 ### Automatic1111 (`scripts/`)
 *   **Integration**: Script-based UI in txt2img/img2img tabs. Supports batch generation and API usage.
