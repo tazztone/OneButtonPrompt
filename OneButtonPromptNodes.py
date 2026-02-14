@@ -1166,7 +1166,7 @@ class OneButtonPrompt_Simple:
             },
             "optional": {
                 "prompt_enhancer": (prompt_enhancers, {"default": "none"}),
-                "subject": (subjects, {"default": "all"}),
+                "subject": (subjects, {"default": "------ all"}),
                 "artist": (artists, {"default": "all"}),
                 "imagetype": (imagetypes, {"default": "all"}),
                 "custom_subject": ("STRING", {"default": ""}),
