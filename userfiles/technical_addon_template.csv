@@ -1,0 +1,75 @@
+# Technical Addon - Data-Driven Suggestions
+# Based on detected blind spots in technical categories
+# Format: One entry per line
+
+# ── UNUSED LIGHTING (20 of 71 appeared) ──
+# Gap Score: 0.72 | Priority: MEDIUM
+-color- lighting
+Black lighting
+Bloom light
+Cold Lighting
+Direct light
+Gel lighting
+Indirect light
+Lens Flare
+Luminescence
+Moonlit
+Motion blur
+Neon Light
+Nostalgic lighting
+Rembrandt lighting
+Sunlight
+
+# ── UNUSED LENSES (0 of 25 appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+35mm
+50mm
+800mm lens
+80mm
+Circular polarizer
+Depth of field 100mm
+Depth of field 270mm
+F/1.8
+F/14
+F/2.8
+F/5
+F/8
+Fish-eye Lens
+L USM
+Low shutter
+
+# ── UNUSED CAMERAS (9 of 41 appeared) ──
+# Gap Score: 0.78 | Priority: HIGH
+Canon 5d mark 4
+Canon EF
+Canon R5
+Canon RF
+Canon eos 5d mark 4
+Cinestill 50
+Fomapan 400
+Fuji superia 400
+Fujichrome Provia 100F
+Fujicolor C200
+Fujicolor Fujichrome Velvia 100
+Fujicolor Pro 400H
+Fujicolor Superia X-TRA 400
+Fujifilm Neopan 100
+Fujifilm XT3
+
+# ── UNUSED MOODS (0 of 64 appeared) ──
+# Gap Score: 1.00 | Priority: MEDIUM
+Amusing
+Angry
+Awe
+Blissful
+Confused
+Cosy
+Cozy
+Dark
+Dark and Gritty
+Delighted
+Depressing
+Disgusting
+Eerie
+Embarrassing
+Energetic

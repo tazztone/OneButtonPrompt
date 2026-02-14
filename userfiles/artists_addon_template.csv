@@ -1,0 +1,133 @@
+# Artists Addon - Data-Driven Suggestions
+# Based on detected blind spots and style gaps
+# Format: Artist Name (one per line)
+
+# ── UNDERREPRESENTED: installation (0 of 111 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Alexander McQueen
+Alfredo Jaar
+Andy Goldsworthy
+Berndnaut Smilde
+Bill Viola
+Bruce Munro
+Bruce Nauman
+Cai Guo-Qiang
+Carlos Cruz-Diez
+Carsten Holler
+
+# ── UNDERREPRESENTED: sculpture (0 of 103 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Adam Martinakis
+Alain Laboile
+Alberto Burri
+Alberto Giacometti
+Alexander Archipenko
+Alexander Milne Calder
+Antonio Canova
+Antony Gormley
+Arnoldo Pomodoro
+Aron Demetz
+
+# ── UNDERREPRESENTED: architecture (0 of 88 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Adrian Donoghue
+Alvar Aalto
+Antoni Gaudí
+Bernardo Bellotto
+Bjarke Ingels
+Buckminster Fuller
+Carlo Scarpa
+Charles Gwathmey
+Charles Sheeler
+Chie Yoshii
+
+# ── UNDERREPRESENTED: angular (0 of 69 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Albert Gleizes
+Alberto Biasi
+Alexis Gritchenko
+Alma Woodsey Thomas
+Antoni Gaudí
+Auguste Mambour
+Barbara Takenaga
+Barclay Shaw
+Benoit B. Mandelbrot
+Bjarke Ingels
+
+# ── UNDERREPRESENTED: nature (0 of 55 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Agnes Martin
+Amy Judd
+Andy Goldsworthy
+Annie Soudain
+Archibald Thorburn
+August Friedrich Schenck
+Brian Mashburn
+Carl Rungius
+Charles Victor Thirion
+Chiara Bautista
+
+# ── UNDERREPRESENTED: children's illustration (0 of 52 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Abigail Larson
+Ai Yazawa
+Angela Barrett
+Aron Wiesenfeld
+Beatrix Potter
+Ben Hatke
+Brothers Grimm
+Bruce Coville
+Chris Riddell
+Chris Van Allsburg
+
+# ── UNDERREPRESENTED: still life (0 of 52 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Abbott Fuller Graves
+Adriaen van Utrecht
+Alex Howitt
+Ambrosius Bosschaert
+Anatoly Metlan
+Antti Lovag
+Brett Weston
+Clara Peeters
+David Ligare
+Emil Carlsen
+
+# ── UNDERREPRESENTED: pop art (0 of 51 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Aaron Jasinski
+Alex Katz
+Bill Carman
+Butcher Billy
+Carrie Ann Baade
+Chiho Aoshima
+Chris Ware
+Claes Oldenburg
+Clive Barker
+David LaChapelle
+
+# ── UNDERREPRESENTED: light (0 of 48 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Alfred Heber Hutty
+Alfred Sisley
+Alfredo Jaar
+Bruce Munro
+Cerith Wyn Evans
+Chie Yoshii
+Christian Griepenkerl
+Claude Lefèbvre
+Dan Flavin
+Eduard Cortes
+
+# ── UNDERREPRESENTED: fashion (0 of 43 artists appeared) ──
+# Gap Score: 1.00 | Priority: HIGH
+Andre de Dienes
+Bella Kotak
+Bob Ringwood
+Cecil Beaton
+Clifford Coffin
+Constantin Joffe
+David Sims
+Davide Sorrenti
+Ellen von Unwerth
+Gareth Pugh

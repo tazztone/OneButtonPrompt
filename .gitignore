@@ -12,3 +12,4 @@ superprompter/model_files/*.*
 analysis_results/
 csv_architecture_analysis.json
 
+.vscode/settings.json
