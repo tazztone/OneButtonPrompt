@@ -157,8 +157,8 @@ The system now uses a JSON-driven custom logic engine (`custom_modes.json`). Thi
 ## 5. Platform Integration
 
 ### ComfyUI (`OneButtonPromptNodes.py`)
-*   **Nodes**: `OneButtonPrompt`, `OneButtonPreset`, `CreatePromptVariant`, `OneButtonArtify`, `AutoNegativePrompt`.
-*   **Integration**: Exposes core parameters as input widgets. Returns `prompt`, `prompt_g`, `prompt_l` for SDXL compatibility.
+*   **Nodes**: `OneButtonPrompt`, `OneButtonPrompt Lite` (Simple version), `OneButtonPreset`, `CreatePromptVariant`, `OneButtonArtify`, `AutoNegativePrompt`.
+*   **Integration**: Exposes core parameters as input widgets. Returns `prompt` as a list of strings (and `prompt_g`, `prompt_l` for SDXL compatibility).
 
 ### Automatic1111 (`scripts/`)
 *   **Integration**: Script-based UI in txt2img/img2img tabs. Supports batch generation and API usage.
@@ -184,5 +184,7 @@ To run standalone scripts, tests, or analysis tools, use the established virtual
 
 **Example Execution:**
 ```bash
-../../venv/bin/python3 verify_overrides.py
+../../venv/bin/python3 tests/smoke_test.py      # Import check
+../../venv/bin/python3 tests/execution_test.py  # Runtime generation check
+../../venv/bin/python3 tests/robustness_test.py # Exhaustive edge-case check
 ```

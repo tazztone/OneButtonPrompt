@@ -42,15 +42,13 @@ In this project, there are some example workflows included.
 
 ## Custom nodes
 
+## One Button Prompt Lite
+A streamlined version of the main node, exposing only the most essential settings (Insanity Level, Subject, Artist, Imagetype). Perfect for minimalist workflows where you want the OBP magic without the widget clutter.
+
+![image](https://github.com/AIrjen/OneButtonPrompt/assets/130234949/bca84637-a667-48e4-888d-9b0318eb4f43) # Placeholder for Lite UI
+
 ### One Button Prompt
-
 All settings work similar to the settings in the Automatic1111 documentation.
-
-It will generate a prompt from scratch, or based on several of your inputs and settings.
-
-![image](https://github.com/AIrjen/OneButtonPrompt/assets/130234949/bca84637-a667-48e4-888d-9b0318eb4f43)
-
-Please refer to the other documentation to see what each setting does.
 
 ## One Button Preset
 

@@ -27,7 +27,7 @@ Any other AI tool you are using? Midjourney? Dalle? No problem, I got it working
 - __Full prompt generation__ with the click of a button.                  ==> [guide to my first generation](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/my_first_generation.md) 
 - Supports __TXT2IMG, IMG2IMG, ControlNET, inpainting and latent couple__.  ==> [guide to IMG2IMG and ControlNET](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/the_next_generation_img2img_and_controlnet.md)
 - Save your favorite generation settings with __presets__. ==>  [One Button Presets](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/one_butten_presets.md)
-- __Workflow assist__, generate multiple prompts with One Button. Create __prompt variants__ with ease. ==> [guide to workflow assist and prompt variant mode](workflow_assist_and_prompt_variant_mode.md)
+- __Workflow assist__, generate multiple prompts with One Button. Create __prompt variants__ with ease. ==> [guide to workflow assist and prompt variant mode](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/workflow_assist_and_prompt_variant_mode.md)
 - Create __infinite variations__ of a __chosen subject__.                     ==> [guide to override subject](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/override_subject_and_infinite_variations.md)
 - Fully __automated generation, classification and upscaling__.           ==> [guide to one_button_run_and_upscale](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/one_button_run_and_upscale.md)
 - Add __LoRA's__, customize lists and personal artists choices.           ==> [guide to custom files](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/custom_files.md)
@@ -40,6 +40,7 @@ Any other AI tool you are using? Midjourney? Dalle? No problem, I got it working
 - Stay in control, and fine-tune One Button Prompt with a __config__ file ==> [config file](https://github.com/AIrjen/OneButtonPrompt/blob/main/user_guides/config_file.md)
 - __Flufferize__ your prompt to enhance your results with Prompt Magic
 - __Deep Analysis & Expansion__, run a data-driven audit of your variety and generate expansion templates. ==> [Analysis Guide](docs/ANALYSIS.md)
+- __Comprehensive Testing__, automated suite to ensure stability across core logic. ==> [Development Guide](AGENTS.md#7-development-environment)
 
 ## Important Notice
 
