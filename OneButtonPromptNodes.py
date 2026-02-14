@@ -19,7 +19,12 @@ allpresets = [OBPresets.RANDOM_PRESET_OBP] + list(OBPresets.opb_presets.keys())
 
 artists = ["all", "all (wild)", "none", "popular", "greg mode", "3D",	"abstract",	"angular", "anime"	,"architecture",	"art nouveau",	"art deco",	"baroque",	"bauhaus", 	"cartoon",	"character",	"children's illustration", 	"cityscape", "cinema", 	"clean",	"cloudscape",	"collage",	"colorful",	"comics",	"cubism",	"dark",	"detailed", 	"digital",	"expressionism",	"fantasy",	"fashion",	"fauvism",	"figurativism",	"gore",	"graffiti",	"graphic design",	"high contrast",	"horror",	"impressionism",	"installation",	"landscape",	"light",	"line drawing",	"low contrast",	"luminism",	"magical realism",	"manga",	"melanin",	"messy",	"monochromatic",	"nature",	"nudity",	"photography",	"pop art",	"portrait",	"primitivism",	"psychedelic",	"realism",	"renaissance",	"romanticism",	"scene",	"sci-fi",	"sculpture",	"seascape",	"space",	"stained glass",	"still life",	"storybook realism",	"street art",	"streetscape",	"surrealism",	"symbolism",	"textile",	"ukiyo-e",	"vibrant",	"watercolor",	"whimsical"]
 artifyartists = ["all", "all (wild)", "popular", "greg mode", "3D",	"abstract",	"angular", "anime"	,"architecture",	"art nouveau",	"art deco",	"baroque",	"bauhaus", 	"cartoon",	"character",	"children's illustration", 	"cityscape", "cinema", 	"clean",	"cloudscape",	"collage",	"colorful",	"comics",	"cubism",	"dark",	"detailed", 	"digital",	"expressionism",	"fantasy",	"fashion",	"fauvism",	"figurativism",	"gore",	"graffiti",	"graphic design",	"high contrast",	"horror",	"impressionism",	"installation",	"landscape",	"light",	"line drawing",	"low contrast",	"luminism",	"magical realism",	"manga",	"melanin",	"messy",	"monochromatic",	"nature",	"nudity",	"photography",	"pop art",	"portrait",	"primitivism",	"psychedelic",	"realism",	"renaissance",	"romanticism",	"scene",	"sci-fi",	"sculpture",	"seascape",	"space",	"stained glass",	"still life",	"storybook realism",	"street art",	"streetscape",	"surrealism",	"symbolism",	"textile",	"ukiyo-e",	"vibrant",	"watercolor",	"whimsical"]
-imagetypes = ["all", "all - force multiple", "all - anime", "none", "photograph", "octane render","digital art","concept art", "painting", "portrait", "anime", "only other types", "only templates mode", "dynamic templates mode", "art blaster mode", "quality vomit mode", "color cannon mode", "unique art mode", "massive madness mode", "photo fantasy mode", "subject only mode", "fixed styles mode", "the tokinator"]
+# Load imagetypes dynamically
+imagetypes = ["all", "all - force multiple", "all - anime", "none"]
+imagetypes += csv_to_list("imagetypes")
+imagetypes += ["only other types"]
+imagetypes += csv_to_list("imagetypemodes", directory="./csvfiles/special_lists/")
+imagetypes += ["the tokinator"]
 subjects =["all", "object", "animal", "humanoid", "landscape", "concept"]
 genders = ["all", "male", "female"]
 emojis = [False, True]
@@ -339,22 +344,22 @@ class OneButtonPrompt:
             "optional": {
                 "artist": (artists, {
                     "default": "all",
-                    "tooltip": "Filter artists by category (fantasy, sci-fi, portrait, etc.) or 'all' for random selection"
+                    "tooltip": "Filter artists by category (e.g., 'fantasy', 'realism') or use 'all' for random selection from everything."
                 }),
                 "imagetype": (imagetypes, {
                     "default": "all",
-                    "tooltip": "Forces a specific style (photograph, digital art) or triggers special generation modes"
+                    "tooltip": "Choose a specific format (e.g., 'photograph', 'anime') or select a 'Mode' (e.g., 'Quality Vomit') for specialized prompt internal logic."
                 }),
                 "imagemodechance": ("INT", {
                     "default": 20,
                     "min": 1,
                     "max": 100,
                     "step": 1,
-                    "tooltip": "The 1-in-X chance of triggering a special generation mode (e.g., 20 = 5% chance). Lower number = higher frequency."
+                    "tooltip": "The random 1-in-X chance to trigger a special 'Mode' (like Color Cannon or Massive Madness) when Image Type is set to 'all'. Lower values = higher chance."
                 }),
                 "subject": (subjects, {
                     "default": "------ all",
-                    "tooltip": "Filters the primary subject category (Human, Animal, etc.)"
+                    "tooltip": "Filter the primary subject category. Selecting a specific category (e.g., 'Animal - Bird') limits generation to that group."
                 }),
                 "custom_subject": ("STRING", {
                     "multiline": False,
@@ -382,15 +387,15 @@ class OneButtonPrompt:
                 }),
                 "emojis":(emojis, {
                     "default": False,
-                    "tooltip": "Inject relevant emojis into the prompt."
+                    "tooltip": "If enabled, injects relevant emojis into the generated prompt (best for some SDXL models and social media styles)."
                 }),
                 "base_model":(models, {
                     "default": "SDXL",
-                    "tooltip": "Optimizes prompt structure: SD1.5 (tags), SDXL (natural language), Cascade (no weights)"
+                    "tooltip": "Optimizes prompt structure: SD1.5 (heavy weighting), SDXL (natural language & blocks), Cascade (unweighted descriptive strings)."
                 }),
                 "prompt_enhancer":(prompt_enhancers, {
                     "default": "none",
-                    "tooltip": "Uses AI (SuperPrompt) to expand your prompt with more descriptive detail."
+                    "tooltip": "Uses a local AI (SuperPrompt) to intelligently expand your prompt with highly descriptive details while preserving the original theme."
                 }),
                 
                 "seed": ("INT", {
@@ -657,25 +662,25 @@ class OneButtonPreset:
             "optional": {
                 "base_model":(models, {
                     "default": "SDXL",
-                    "tooltip": "Optimizes prompt structure for target model architecture."
+                    "tooltip": "Optimizes prompt structure: SD1.5 (heavy weighting), SDXL (natural language & blocks), Cascade (unweighted descriptive strings)."
                 }),
                 "prompt_enhancer":(prompt_enhancers, {
                     "default": "none",
-                    "tooltip": "Expand the preset output with AI details."
+                    "tooltip": "Uses a local AI (SuperPrompt) to intelligently expand your prompt with highly descriptive details while preserving the original theme."
                 }),
                 "subject": (subjects, {
                     "default": "------ all",
-                    "tooltip": "Filters the primary subject category (Human, Animal, etc.)"
+                    "tooltip": "Filter the primary subject category. Selecting a specific category (e.g., 'Animal - Bird') limits generation to that group."
                 }),
                 "custom_subject": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "Forces a specific subject."
+                    "tooltip": "Forces a specific subject. OBP will use its 'Smart Subject' logic to build descriptors and environments around it."
                 }),
                 "custom_outfit": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "Forces a specific outfit."
+                    "tooltip": "Forces a specific outfit. Overrides the random clothing selection for humanoids."
                 }),
                 "artist": (artists, {
                     "default": "all",
@@ -683,22 +688,22 @@ class OneButtonPreset:
                 }),
                 "imagetype": (imagetypes, {
                     "default": "all",
-                    "tooltip": "Forces a specific style."
+                    "tooltip": "Forces a specific style or internal generation mode."
                 }),
                 "imagemodechance": ("INT", {
                     "default": 20,
                     "min": 1,
                     "max": 100,
                     "step": 1,
-                    "tooltip": "The 1-in-X chance of triggering a special generation mode."
+                    "tooltip": "The random 1-in-X chance to trigger a special 'Mode' when Image Type is set to 'all'."
                 }),
                 "humanoids_gender": (genders, {
                     "default": "all",
-                    "tooltip": "Filters names, jobs, and outfits based on gender."
+                    "tooltip": "Filter humanoids by gender or select 'all' for complete randomization."
                 }),
                 "emojis":(emojis, {
                     "default": False,
-                    "tooltip": "Inject relevant emojis into the prompt."
+                    "tooltip": "If enabled, injects relevant emojis into the generated prompt (best for some SDXL models and social media styles)."
                 }),
                 "prompt_prefix": ("STRING", {
                     "multiline": False,
@@ -716,22 +721,22 @@ class OneButtonPreset:
                     "max": 0xFFFFFFFFFFFFFFFF,
                     "tooltip": "Random seed for the preset generation."
                 }),
-                "descriptor_density": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Controls how many descriptive adjectives are stacked for the subject. High values lead to more detailed descriptions (e.g., 'young, muscular, mysterious')."}),
-                "body_type_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds body type modifiers (e.g., 'athletic', 'slender')."}),
-                "outfit_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds outfit descriptions (e.g., 'steampunk armor', 'silk dress')."}),
-                "hair_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds hair styles and colors (e.g., 'neon blue bob', 'braided')."}),
-                "accessory_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds items like 'glasses', 'jewelry', 'backpacks'."}),
-                "face_detail_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds facial traits (e.g., 'freckles', 'scars', 'sharp jawline')."}),
-                "expression_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds emotions (e.g., 'smirking', 'furious', 'serene')."}),
-                "pose_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds physical stances (e.g., 'dynamic action pose', 'kneeling')."}),
-                "background_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds setting details (e.g., 'cyberpunk city background', 'lush forest')."}),
-                "mood_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds atmospheric lighting/mood (e.g., 'melancholic', 'ethereal')."}),
-                "lighting_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds lighting types (e.g., 'god rays', 'rim lighting', 'neon glow')."}),
-                "color_scheme_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds palette modifiers (e.g., 'monochromatic', 'vibrant pastels')."}),
-                "lens_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds camera/lens effects (e.g., 'fisheye', 'macro lens', 'bokeh')."}),
-                "shot_size_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds framing (e.g., 'close up', 'wide shot', 'low angle')."}),
-                "art_movement_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds art styles (e.g., 'Art Nouveau', 'Cyberpunk', 'Surrealism')."}),
-                "quality_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds quality descriptors (e.g., 'masterpiece', 'hyper-realistic', '8k')."}),
+                "descriptor_density": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Controls the density of descriptive adjectives for the subject."}),
+                "body_type_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding body type/build modifiers."}),
+                "outfit_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of generating specific clothing/outfits."}),
+                "hair_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of generating hair styles and colors."}),
+                "accessory_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding items like glasses, jewelry, or tech."}),
+                "face_detail_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding facial features like freckles, makeup, or scars."}),
+                "expression_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding distinct emotions or expressions."}),
+                "pose_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of choosing a specific physical stance or action pose."}),
+                "background_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding setting details (interior, exterior, etc.)."}),
+                "mood_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding atmospheric mood modifiers."}),
+                "lighting_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding specific lighting setups (neon, god rays, etc.)."}),
+                "color_scheme_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of enforcing a specific color palette."}),
+                "lens_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding camera lens effects like bokeh or macro."}),
+                "shot_size_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding framing descriptors (close-up, wide-shot)."}),
+                "art_movement_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding historical or modern art movements."}),
+                "quality_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Inherit from Global Config), 0 (Never) to 9 (Always). Odds of adding quality-enhancing tokens (masterpiece, 8k, etc.)."}),
                 "save_preset_name": ("STRING", {"default": "", "tooltip": "Enter a name to save current sliders as a new preset. NOTE: You must restart ComfyUI for the new preset to appear in the dropdown list."}),
             },
         }
@@ -881,14 +886,14 @@ class AutoNegativePrompt:
                     "min": 0, 
                     "max": 1, 
                     "step": 1,
-                    "tooltip": "Adds extra negative weight to common artifacts (1 = on, 0 = off)."
+                    "tooltip": "Adds a standard suite of negative terms for common artifacts (e.g., 'low quality', 'text'). 1 = on, 0 = off."
                 }),
                 "insanitylevel": ("INT", {
                     "default": 0,
                     "min": 0,
                     "max": 10,
                     "step": 1,
-                    "tooltip": "Adds random negative terms based on the positive prompt's content."
+                    "tooltip": "Randomly chooses negative terms suited to the content of your positive prompt (e.g., adds 'water' to negative if prompt is about land)."
                 }),
                 "base_model":(models, {
                     "default": "SDXL",
@@ -945,7 +950,7 @@ class OneButtonArtify:
                 }),
                 "artify_mode": (artifymodeslist, {
                     "default": "standard",
-                    "tooltip": "How the artists are integrated: Standard (added), Remix (switched/hybrid), Super Remix (chaos)."
+                    "tooltip": "Selection logic: Standard (appends artists), Remix (interweaves artists with [A|B] syntax), Super Remix (uses advanced switching)."
                 })
             },
             "optional": {                
@@ -996,7 +1001,7 @@ class OneButtonFlufferize:
                 }),
                 "reverse_polarity": (fluff_reverse_polarity, {
                     "default": False,
-                    "tooltip": "If True, adds 'negative' or gritty descriptors instead of high-quality ones."
+                    "tooltip": "If enabled, uses 'negative' aesthetic fluff (e.g., 'gritty', 'noir', 'decaying') instead of high-quality/pristine descriptors."
                 }),
             },
             "optional": {                

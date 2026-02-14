@@ -66,6 +66,17 @@ Add anything in these files, and they will show up in the front of the prompt, i
 
 These are added for flexibility.
 
+## Adding Custom Image Types to the Dropdown
+Filename: __imagetypes_addon.csv__
+
+You can now add your own custom image types that will appear directly in the **Image Type** dropdown menu!
+
+1.  Create `imagetypes_addon.csv` in the `/userfiles/` directory.
+2.  Add your types (e.g., `Watercolor`).
+3.  Restart ComfyUI.
+
+These types will be available for selection and will be appended to your prompt just like standard types.
+
 ## filling an antilist, that removes values during prompt generation
 Filename: __antilist.csv__
 

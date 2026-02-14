@@ -136,6 +136,20 @@ The preset system allows users to define reusable generation configurations.
     *   `imagetype`: Filter style (e.g., "photograph", "digital art")
     *   `antistring`: Terms to exclude.
 
+### Image Type Loading (Dynamic)
+As of Feb 2026, the `imagetypes` list is no longer hardcoded in the node definitions.
+*   **Loading Mechanism**:
+    1.  Base types (`Photograph`, `Digital art`, etc.) load from `csvfiles/imagetypes.csv`.
+    2.  Special modes load from `csvfiles/special_lists/imagetypemodes.csv`.
+    3.  Custom additions load from `userfiles/imagetypes_addon.csv`.
+*   **Expansion**: Users can add simple style suffixes by adding them to the addon CSV.
+
+### Custom Modes Architecture (Planned)
+The system is moving towards a JSON-driven custom logic engine (`custom_modes.json`). This will allow users to define:
+*   **Forced Slots**: Forcing specific wildcards in the prompt construction phase.
+*   **Looping Logic**: Setting explicit tag counts for multiple random keywords.
+*   **Component Control**: Explicitly enabling or disabling engine features (like `Smart Subject`) per mode.
+
 ---
 
 ## 5. Platform Integration

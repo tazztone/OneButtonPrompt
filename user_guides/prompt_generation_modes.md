@@ -1,6 +1,6 @@
 # Special prompt generation modes
 
-Currently in One Button Prompt there are 9 different prompt generation modes. There is the stanard mode, but additional modes have been added in.
+Currently in One Button Prompt there are **11** different prompt generation modes. There is the standard mode, but many additional modes have been added in.
 
 Hopefully, they can be used to inspire you even more. Maybe you will even use a favorite one.
 
@@ -172,7 +172,20 @@ Example prompts:
 
 > Evocative [Cyclops|kristy swanson], Chestnut hair styled as Blunt bangs
 
-> Chibi Holy Aunt, Traditional hair
+
+## fixed styles mode
+Uses curated style definitions from `styles.csv` for consistent artistic direction.
+
+## dynamic templates mode
+An adaptive system that combines `prefix` and `suffix` templates based on artist and subject.
+
+## the tokinator
+Completely random words from `tokens.csv` (5000+ words). No grammar or logic—just pure chaos.
+
+## Custom Image Types
+You can now add your own image types that will appear in the dropdown! By creating a `userfiles/imagetypes_addon.csv` file, you can add simple styles (like `Isometric 3D`) that will be appended to your prompt.
+
+For "proper" custom modes with complex logic, see the `custom_modes.json` architecture in the [Custom Files guide](./custom_files.md).
 
 ### Thank you
 
