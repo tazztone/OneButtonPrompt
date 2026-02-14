@@ -644,7 +644,14 @@ class OneButtonPreset:
             "required": {
                 "OneButtonPreset": (allpresets, {
                     "default": "Standard",
-                    "tooltip": "Select a pre-defined generation profile."
+                    "tooltip": "Select a pre-defined generation profile. This will sync the values below."
+                }),
+                "insanitylevel": ("INT", {
+                    "default": 5,
+                    "min": 1,
+                    "max": 10,
+                    "step": 1,
+                    "tooltip": "Controls randomness: 1-3 conservative, 4-6 balanced (recommended), 7-9 creative, 10 maximum chaos"
                 }),
             },
             "optional": {
@@ -656,15 +663,52 @@ class OneButtonPreset:
                     "default": "none",
                     "tooltip": "Expand the preset output with AI details."
                 }),
-                "preset_prefix": ("STRING", {
-                    "multiline": False,
-                    "default": "",
-                    "tooltip": "Add fixed text before the preset-generated prompt."
+                "subject": (subjects, {
+                    "default": "------ all",
+                    "tooltip": "Filters the primary subject category (Human, Animal, etc.)"
                 }),
-                "preset_suffix": ("STRING", {
+                "custom_subject": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "Add fixed text after the preset-generated prompt."
+                    "tooltip": "Forces a specific subject."
+                }),
+                "custom_outfit": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Forces a specific outfit."
+                }),
+                "artist": (artists, {
+                    "default": "all",
+                    "tooltip": "Filter artists by category."
+                }),
+                "imagetype": (imagetypes, {
+                    "default": "all",
+                    "tooltip": "Forces a specific style."
+                }),
+                "imagemodechance": ("INT", {
+                    "default": 20,
+                    "min": 1,
+                    "max": 100,
+                    "step": 1,
+                    "tooltip": "The 1-in-X chance of triggering a special generation mode."
+                }),
+                "humanoids_gender": (genders, {
+                    "default": "all",
+                    "tooltip": "Filters names, jobs, and outfits based on gender."
+                }),
+                "emojis":(emojis, {
+                    "default": False,
+                    "tooltip": "Inject relevant emojis into the prompt."
+                }),
+                "prompt_prefix": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Hardcoded text added to the very beginning of the prompt."
+                }),
+                "prompt_suffix": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Hardcoded text added to the very end of the prompt."
                 }),   
                 "seed": ("INT", {
                     "default": 0, 
@@ -702,7 +746,7 @@ class OneButtonPreset:
 
     CATEGORY = "OneButtonPrompt"
     
-    def Comfy_OBP_OneButtonPreset(self, OneButtonPreset, seed, base_model, prompt_enhancer, preset_prefix, preset_suffix, descriptor_density, body_type_chance, outfit_chance, hair_chance, accessory_chance, face_detail_chance, expression_chance, pose_chance, background_chance, mood_chance, lighting_chance, color_scheme_chance, lens_chance, shot_size_chance, art_movement_chance, quality_chance, save_preset_name):
+    def Comfy_OBP_OneButtonPreset(self, OneButtonPreset, insanitylevel, base_model, prompt_enhancer, subject, custom_subject, custom_outfit, artist, imagetype, imagemodechance, humanoids_gender, emojis, prompt_prefix, prompt_suffix, seed, descriptor_density, body_type_chance, outfit_chance, hair_chance, accessory_chance, face_detail_chance, expression_chance, pose_chance, background_chance, mood_chance, lighting_chance, color_scheme_chance, lens_chance, shot_size_chance, art_movement_chance, quality_chance, save_preset_name):
         # Build chance overrides
         mapping = {
             "descriptor_density": ["subjectdescriptor1chance", "subjectdescriptor2chance"],
@@ -732,40 +776,56 @@ class OneButtonPreset:
                 for target in targets:
                     chance_overrides[target] = tier
 
-        # load the stuff
+        # load the base preset
         if(OneButtonPreset == OBPresets.RANDOM_PRESET_OBP):
             selected_opb_preset = OBPresets.get_obp_preset("Standard")
         else:
             selected_opb_preset = OBPresets.get_obp_preset(OneButtonPreset)
         
+        # Override preset dict with UI values
+        # Since we are "syncing" the UI, these values ARE what the user wants.
+        selected_opb_preset["insanitylevel"] = insanitylevel
+        selected_opb_preset["subject"] = subject
+        selected_opb_preset["artist"] = artist
+        selected_opb_preset["imagetype"] = imagetype
+        selected_opb_preset["imagemodechance"] = imagemodechance
+        selected_opb_preset["chosengender"] = humanoids_gender
+        selected_opb_preset["givensubject"] = custom_subject
+        selected_opb_preset["givenoutfit"] = custom_outfit
+        selected_opb_preset["prefixprompt"] = prompt_prefix
+        selected_opb_preset["suffixprompt"] = prompt_suffix
+        selected_opb_preset["base_model"] = base_model
+        selected_opb_preset["prompt_enhancer"] = prompt_enhancer
+        # emojis is inverted in the engine calls usually or handled separately
+        
         # If saving, construct the dict and save
         if save_preset_name.strip() != "":
             save_dict = selected_opb_preset.copy()
-            # update with our overrides
+            # update with our slider overrides
             for k, v in chance_overrides.items():
                 save_dict[k] = v
-            # also update standard fields if we wanted to (but here we only override chances)
             OBPresets.add_custom_preset(save_preset_name.strip(), save_dict)
             print(f"Saved custom preset: {save_preset_name}")
 
-        insanitylevel=selected_opb_preset["insanitylevel"]
-        subject=selected_opb_preset["subject"]
-        artist=selected_opb_preset["artist"]
-        chosensubjectsubtypeobject=selected_opb_preset["chosensubjectsubtypeobject"]
-        chosensubjectsubtypehumanoid=selected_opb_preset["chosensubjectsubtypehumanoid"]
-        chosensubjectsubtypeconcept=selected_opb_preset["chosensubjectsubtypeconcept"]
-        chosengender=selected_opb_preset["chosengender"]
-        imagetype=selected_opb_preset["imagetype"]
-        imagemodechance=selected_opb_preset["imagemodechance"]
-        givensubject=selected_opb_preset["givensubject"]
-        smartsubject=selected_opb_preset["smartsubject"]
-        givenoutfit=selected_opb_preset["givenoutfit"]
-        prefixprompt=selected_opb_preset["prefixprompt"]
-        suffixprompt=selected_opb_preset["suffixprompt"]
-        giventypeofimage=selected_opb_preset["giventypeofimage"]
-        antistring=selected_opb_preset["antistring"]
+        # Extract values for the engine call
+        insanitylevel = selected_opb_preset["insanitylevel"]
+        subject = selected_opb_preset["subject"]
+        artist = selected_opb_preset["artist"]
+        chosensubjectsubtypeobject = selected_opb_preset["chosensubjectsubtypeobject"]
+        chosensubjectsubtypehumanoid = selected_opb_preset["chosensubjectsubtypehumanoid"]
+        chosensubjectsubtypeconcept = selected_opb_preset["chosensubjectsubtypeconcept"]
+        chosengender = selected_opb_preset["chosengender"]
+        imagetype = selected_opb_preset["imagetype"]
+        imagemodechance = selected_opb_preset["imagemodechance"]
+        givensubject = selected_opb_preset["givensubject"]
+        smartsubject = selected_opb_preset["smartsubject"]
+        givenoutfit = selected_opb_preset["givenoutfit"]
+        prefixprompt = selected_opb_preset["prefixprompt"]
+        suffixprompt = selected_opb_preset["suffixprompt"]
+        giventypeofimage = selected_opb_preset.get("giventypeofimage", "")
+        antistring = selected_opb_preset.get("antistring", "")
         
-        generatedprompt = build_dynamic_prompt(insanitylevel=insanitylevel,
+        generatedpromptlist = build_dynamic_prompt(insanitylevel=insanitylevel,
                                                forcesubject=subject,
                                                artists=artist,
                                                subtypeobject=chosensubjectsubtypeobject,
@@ -782,17 +842,15 @@ class OneButtonPreset:
                                                giventypeofimage=giventypeofimage,
                                                antivalues=antistring,
                                                advancedprompting=False,
-                                               hardturnoffemojis=True,
+                                               hardturnoffemojis=not emojis,
                                                seed=seed,
                                                base_model=base_model,
                                                OBP_preset=OneButtonPreset,
                                                prompt_enhancer=prompt_enhancer,
-                                               preset_prefix=preset_prefix,
-                                               preset_suffix=preset_suffix,
                                                chance_overrides=chance_overrides,
                                                )
         
-        
+        generatedprompt = generatedpromptlist[0]
         return (generatedprompt,)
 
 class AutoNegativePrompt:
