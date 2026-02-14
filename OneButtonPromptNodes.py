@@ -24,6 +24,8 @@ subjects =["all", "object", "animal", "humanoid", "landscape", "concept"]
 genders = ["all", "male", "female"]
 emojis = [False, True]
 
+PROBABILITY_TIERS = ["never", "novel", "extraordinary", "unique", "legendary", "rare", "uncommon", "normal", "common", "always"]
+
 models = ["SD1.5", "SDXL", "Stable Cascade", "Anime Model"]
 prompt_enhancers = ["none", "superprompt-v1"]
 subjects =["------ all"]
@@ -670,6 +672,23 @@ class OneButtonPreset:
                     "max": 0xFFFFFFFFFFFFFFFF,
                     "tooltip": "Random seed for the preset generation."
                 }),
+                "descriptor_density": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Controls how many descriptive adjectives are stacked for the subject. High values lead to more detailed descriptions (e.g., 'young, muscular, mysterious')."}),
+                "body_type_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds body type modifiers (e.g., 'athletic', 'slender')."}),
+                "outfit_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds outfit descriptions (e.g., 'steampunk armor', 'silk dress')."}),
+                "hair_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds hair styles and colors (e.g., 'neon blue bob', 'braided')."}),
+                "accessory_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds items like 'glasses', 'jewelry', 'backpacks'."}),
+                "face_detail_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds facial traits (e.g., 'freckles', 'scars', 'sharp jawline')."}),
+                "expression_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds emotions (e.g., 'smirking', 'furious', 'serene')."}),
+                "pose_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds physical stances (e.g., 'dynamic action pose', 'kneeling')."}),
+                "background_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds setting details (e.g., 'cyberpunk city background', 'lush forest')."}),
+                "mood_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds atmospheric lighting/mood (e.g., 'melancholic', 'ethereal')."}),
+                "lighting_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds lighting types (e.g., 'god rays', 'rim lighting', 'neon glow')."}),
+                "color_scheme_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds palette modifiers (e.g., 'monochromatic', 'vibrant pastels')."}),
+                "lens_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds camera/lens effects (e.g., 'fisheye', 'macro lens', 'bokeh')."}),
+                "shot_size_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds framing (e.g., 'close up', 'wide shot', 'low angle')."}),
+                "art_movement_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds art styles (e.g., 'Art Nouveau', 'Cyberpunk', 'Surrealism')."}),
+                "quality_chance": ("INT", {"default": -1, "min": -1, "max": 9, "step": 1, "display": "slider", "tooltip": "Scale: -1 (Default), 0 (Never) to 9 (Always). Adds quality descriptors (e.g., 'masterpiece', 'hyper-realistic', '8k')."}),
+                "save_preset_name": ("STRING", {"default": "", "tooltip": "Enter a name to save current sliders as a new preset. NOTE: You must restart ComfyUI for the new preset to appear in the dropdown list."}),
             },
         }
 
@@ -683,13 +702,52 @@ class OneButtonPreset:
 
     CATEGORY = "OneButtonPrompt"
     
-    def Comfy_OBP_OneButtonPreset(self, OneButtonPreset, seed, base_model, prompt_enhancer, preset_prefix, preset_suffix):
+    def Comfy_OBP_OneButtonPreset(self, OneButtonPreset, seed, base_model, prompt_enhancer, preset_prefix, preset_suffix, descriptor_density, body_type_chance, outfit_chance, hair_chance, accessory_chance, face_detail_chance, expression_chance, pose_chance, background_chance, mood_chance, lighting_chance, color_scheme_chance, lens_chance, shot_size_chance, art_movement_chance, quality_chance, save_preset_name):
+        # Build chance overrides
+        mapping = {
+            "descriptor_density": ["subjectdescriptor1chance", "subjectdescriptor2chance"],
+            "body_type_chance": ["subjectbodytypechance"],
+            "outfit_chance": ["outfitchance"],
+            "hair_chance": ["hairchance"],
+            "accessory_chance": ["accessorychance"],
+            "face_detail_chance": ["buildfacechance"],
+            "expression_chance": ["humanexpressionchance"],
+            "pose_chance": ["posechance"],
+            "background_chance": ["humanoidbackgroundchance"],
+            "mood_chance": ["moodchance"],
+            "lighting_chance": ["lightingchance"],
+            "color_scheme_chance": ["colorschemechance"],
+            "lens_chance": ["lenschance"],
+            "shot_size_chance": ["shotsizechance"],
+            "art_movement_chance": ["artmovementchance"],
+            "quality_chance": ["quality1chance", "quality2chance"],
+        }
+        
+        chance_overrides = {}
+        # locals() logic to get slider values
+        for slider, targets in mapping.items():
+            val = locals().get(slider, -1)
+            if val != -1:
+                tier = PROBABILITY_TIERS[val]
+                for target in targets:
+                    chance_overrides[target] = tier
+
         # load the stuff
         if(OneButtonPreset == OBPresets.RANDOM_PRESET_OBP):
             selected_opb_preset = OBPresets.get_obp_preset("Standard")
         else:
             selected_opb_preset = OBPresets.get_obp_preset(OneButtonPreset)
         
+        # If saving, construct the dict and save
+        if save_preset_name.strip() != "":
+            save_dict = selected_opb_preset.copy()
+            # update with our overrides
+            for k, v in chance_overrides.items():
+                save_dict[k] = v
+            # also update standard fields if we wanted to (but here we only override chances)
+            OBPresets.add_custom_preset(save_preset_name.strip(), save_dict)
+            print(f"Saved custom preset: {save_preset_name}")
+
         insanitylevel=selected_opb_preset["insanitylevel"]
         subject=selected_opb_preset["subject"]
         artist=selected_opb_preset["artist"]
@@ -731,6 +789,7 @@ class OneButtonPreset:
                                                prompt_enhancer=prompt_enhancer,
                                                preset_prefix=preset_prefix,
                                                preset_suffix=preset_suffix,
+                                               chance_overrides=chance_overrides,
                                                )
         
         

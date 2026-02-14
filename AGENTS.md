@@ -156,3 +156,17 @@ A suite of tools was added to analyze generation diversity and reduce repetition
 *   `analyze_obp_generations.py`: Generates balanced test batches to measure subject/artist frequency.
 *   `analyze_csv_architecture.py`: Audits CSV structure for balance and format issues.
 *   `create_addon_template.py`: Generates `userfiles/*_addon.csv` templates based on analysis data.
+
+---
+
+## 7. Development Environment
+
+To run standalone scripts, tests, or analysis tools, use the established virtual environment for this ComfyUI installation. This ensures all heavyweight dependencies (torch, transformers, etc.) are correctly resolved.
+
+**Python Path:**
+`../../venv/bin/python3`
+
+**Example Execution:**
+```bash
+../../venv/bin/python3 verify_overrides.py
+```

@@ -40,3 +40,9 @@ class OneButtonPresets:
 
     def get_obp_preset(self, name):
         return self.opb_presets[name]
+
+    def add_custom_preset(self, name, preset_dict):
+        data = self._load_data(self.OBP_FILE)
+        data[name] = preset_dict
+        self._save_data(self.OBP_FILE, data)
+        self.opb_presets = self.load_obp_presets()

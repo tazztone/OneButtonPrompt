@@ -25,7 +25,7 @@ OBPresets = OneButtonPresets()
 # insanity level controls randomness of propmt 0-10
 # forcesubject van be used to force a certain type of subject
 # Set artistmode to none, to exclude artists 
-def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", _return_metadata = False):
+def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", chance_overrides = None, _return_metadata = False):
 
     _metadata = None
     wildcard_to_metadata = {
@@ -59,16 +59,17 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
 
     # ugly but it works :D Keeps both methods working while the UI changes.
-    if(subtypeobject != "all" or subtypeobject != ""):
-        subtypeobject = subjectlist[1]
-    if(subtypeanimal != "all" or subtypeanimal != ""):
-        subtypeanimal = subjectlist[1]
-    if(subtypelocation != "all" or subtypelocation != ""):
-        subtypelocation = subjectlist[1]
-    if(subtypehumanoid != "all" or subtypehumanoid != ""):
-        subtypehumanoid = subjectlist[1]
-    if(subtypeconcept != "all" or subtypeconcept != ""):
-        subtypeconcept = subjectlist[1]
+    if(subjectlist[1] != "all"):
+        if(subjectlist[0] == "object"):
+            subtypeobject = subjectlist[1]
+        if(subjectlist[0] == "animal"):
+            subtypeanimal = subjectlist[1]
+        if(subjectlist[0] == "landscape"):
+            subtypelocation = subjectlist[1]
+        if(subjectlist[0] == "humanoid"):
+            subtypehumanoid = subjectlist[1]
+        if(subjectlist[0] == "concept"):
+            subtypeconcept = subjectlist[1]
 
     # set seed
     # For use in ComfyUI (might bring to Automatic1111 as well)
@@ -138,16 +139,17 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
 
         # ugly but it works :D Keeps both methods working while the UI changes.
-        if(subtypeobject != "all" or subtypeobject != ""):
-            subtypeobject = subjectlist[1]
-        if(subtypeanimal != "all" or subtypeanimal != ""):
-            subtypeanimal = subjectlist[1]
-        if(subtypelocation != "all" or subtypelocation != ""):
-            subtypelocation = subjectlist[1]
-        if(subtypehumanoid != "all" or subtypehumanoid != ""):
-            subtypehumanoid = subjectlist[1]
-        if(subtypeconcept != "all" or subtypeconcept != ""):
-            subtypeconcept = subjectlist[1]
+        if(subjectlist[1] != "all"):
+            if(subjectlist[0] == "object"):
+                subtypeobject = subjectlist[1]
+            if(subjectlist[0] == "animal"):
+                subtypeanimal = subjectlist[1]
+            if(subjectlist[0] == "landscape"):
+                subtypelocation = subjectlist[1]
+            if(subjectlist[0] == "humanoid"):
+                subtypehumanoid = subjectlist[1]
+            if(subjectlist[0] == "concept"):
+                subtypeconcept = subjectlist[1]
 
         
     originalartistchoice = artists
@@ -874,6 +876,65 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
         if item[0] == 'artistsatbackchance':
             artistsatbackchance = item[1]
+
+    # Apply chance overrides if provided
+    if chance_overrides:
+        if 'custominputprefixchance' in chance_overrides: custominputprefixchance = chance_overrides['custominputprefixchance']
+        if 'imagetypechance' in chance_overrides: imagetypechance = chance_overrides['imagetypechance']
+        if 'imagetypequalitychance' in chance_overrides: imagetypequalitychance = chance_overrides['imagetypequalitychance']
+        if 'minilocationadditionchance' in chance_overrides: minilocationadditionchance = chance_overrides['minilocationadditionchance']
+        if 'artmovementprefixchance' in chance_overrides: artmovementprefixchance = chance_overrides['artmovementprefixchance']
+        if 'minivomitprefix1chance' in chance_overrides: minivomitprefix1chance = chance_overrides['minivomitprefix1chance']
+        if 'minivomitprefix2chance' in chance_overrides: minivomitprefix2chance = chance_overrides['minivomitprefix2chance']
+        if 'shotsizechance' in chance_overrides: shotsizechance = chance_overrides['shotsizechance']
+        if 'subjectdescriptor1chance' in chance_overrides: subjectdescriptor1chance = chance_overrides['subjectdescriptor1chance']
+        if 'subjectdescriptor2chance' in chance_overrides: subjectdescriptor2chance = chance_overrides['subjectdescriptor2chance']
+        if 'subjectbodytypechance' in chance_overrides: subjectbodytypechance = chance_overrides['subjectbodytypechance']
+        if 'subjectculturechance' in chance_overrides: subjectculturechance = chance_overrides['subjectculturechance']
+        if 'subjectconceptsuffixchance' in chance_overrides: subjectconceptsuffixchance = chance_overrides['subjectconceptsuffixchance']
+        if 'subjectlandscapeinsideshotchance' in chance_overrides: subjectlandscapeinsideshotchance = chance_overrides['subjectlandscapeinsideshotchance']
+        if 'subjectlandscapeaddonlocationchance' in chance_overrides: subjectlandscapeaddonlocationchance = chance_overrides['subjectlandscapeaddonlocationchance']
+        if 'subjectlandscapeaddonlocationdescriptorchance' in chance_overrides: subjectlandscapeaddonlocationdescriptorchance = chance_overrides['subjectlandscapeaddonlocationdescriptorchance']
+        if 'subjectlandscapeaddonlocationculturechance' in chance_overrides: subjectlandscapeaddonlocationculturechance = chance_overrides['subjectlandscapeaddonlocationculturechance']
+        if 'objectadditionschance' in chance_overrides: objectadditionschance = chance_overrides['objectadditionschance']
+        if 'humanadditionchance' in chance_overrides: humanadditionchance = chance_overrides['humanadditionchance']
+        if 'overalladditionchance' in chance_overrides: overalladditionchance = chance_overrides['overalladditionchance']
+        if 'emojichance' in chance_overrides: emojichance = chance_overrides['emojichance']
+        if 'buildfacechance' in chance_overrides: buildfacechance = chance_overrides['buildfacechance']
+        if 'humanexpressionchance' in chance_overrides: humanexpressionchance = chance_overrides['humanexpressionchance']
+        if 'humanvomitchance' in chance_overrides: humanvomitchance = chance_overrides['humanvomitchance']
+        if 'joboractivitychance' in chance_overrides: joboractivitychance = chance_overrides['joboractivitychance']
+        if 'custominputmidchance' in chance_overrides: custominputmidchance = chance_overrides['custominputmidchance']
+        if 'minivomitmidchance' in chance_overrides: minivomitmidchance = chance_overrides['minivomitmidchance']
+        if 'outfitchance' in chance_overrides: outfitchance = chance_overrides['outfitchance']
+        if 'posechance' in chance_overrides: posechance = chance_overrides['posechance']
+        if 'hairchance' in chance_overrides: hairchance = chance_overrides['hairchance']
+        if 'accessorychance' in chance_overrides: accessorychance = chance_overrides['accessorychance']
+        if 'humanoidinsideshotchance' in chance_overrides: humanoidinsideshotchance = chance_overrides['humanoidinsideshotchance']
+        if 'humanoidbackgroundchance' in chance_overrides: humanoidbackgroundchance = chance_overrides['humanoidbackgroundchance']
+        if 'landscapeminilocationchance' in chance_overrides: landscapeminilocationchance = chance_overrides['landscapeminilocationchance']
+        if 'generalminilocationchance' in chance_overrides: generalminilocationchance = chance_overrides['generalminilocationchance']
+        if 'timperiodchance' in chance_overrides: timperiodchance = chance_overrides['timperiodchance']
+        if 'focuschance' in chance_overrides: focuschance = chance_overrides['focuschance']
+        if 'directionchance' in chance_overrides: directionchance = chance_overrides['directionchance']
+        if 'moodchance' in chance_overrides: moodchance = chance_overrides['moodchance']
+        if 'minivomitsuffixchance' in chance_overrides: minivomitsuffixchance = chance_overrides['minivomitsuffixchance']
+        if 'artmovementchance' in chance_overrides: artmovementchance = chance_overrides['artmovementchance']
+        if 'lightingchance' in chance_overrides: lightingchance = chance_overrides['lightingchance']
+        if 'photoadditionchance' in chance_overrides: photoadditionchance = chance_overrides['photoadditionchance']
+        if 'lenschance' in chance_overrides: lenschance = chance_overrides['lenschance']
+        if 'colorschemechance' in chance_overrides: colorschemechance = chance_overrides['colorschemechance']
+        if 'vomit1chance' in chance_overrides: vomit1chance = chance_overrides['vomit1chance']
+        if 'vomit2chance' in chance_overrides: vomit2chance = chance_overrides['vomit2chance']
+        if 'greatworkchance' in chance_overrides: greatworkchance = chance_overrides['greatworkchance']
+        if 'poemlinechance' in chance_overrides: poemlinechance = chance_overrides['poemlinechance']
+        if 'songlinechance' in chance_overrides: songlinechance = chance_overrides['songlinechance']
+        if 'quality1chance' in chance_overrides: quality1chance = chance_overrides['quality1chance']
+        if 'quality2chance' in chance_overrides: quality2chance = chance_overrides['quality2chance']
+        if 'customstyle1chance' in chance_overrides: customstyle1chance = chance_overrides['customstyle1chance']
+        if 'customstyle2chance' in chance_overrides: customstyle2chance = chance_overrides['customstyle2chance']
+        if 'custominputsuffixchance' in chance_overrides: custominputsuffixchance = chance_overrides['custominputsuffixchance']
+        if 'artistsatbackchance' in chance_overrides: artistsatbackchance = chance_overrides['artistsatbackchance']
 
 
     generatevehicle = bool(vehiclelist) and generatevehicle
