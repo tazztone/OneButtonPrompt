@@ -16,10 +16,12 @@ from .csv_reader import *
 
 from .one_button_presets import OneButtonPresets
 OBPresets = OneButtonPresets()
+custom_modes = {}
 allpresets = [OBPresets.RANDOM_PRESET_OBP] + list(OBPresets.opb_presets.keys())
 
-artists = ["all", "all (wild)", "none", "popular", "greg mode", "3D",	"abstract",	"angular", "anime"	,"architecture",	"art nouveau",	"art deco",	"baroque",	"bauhaus", 	"cartoon",	"character",	"children's illustration", 	"cityscape", "cinema", 	"clean",	"cloudscape",	"collage",	"colorful",	"comics",	"cubism",	"dark",	"detailed", 	"digital",	"expressionism",	"fantasy",	"fashion",	"fauvism",	"figurativism",	"gore",	"graffiti",	"graphic design",	"high contrast",	"horror",	"impressionism",	"installation",	"landscape",	"light",	"line drawing",	"low contrast",	"luminism",	"magical realism",	"manga",	"melanin",	"messy",	"monochromatic",	"nature",	"nudity",	"photography",	"pop art",	"portrait",	"primitivism",	"psychedelic",	"realism",	"renaissance",	"romanticism",	"scene",	"sci-fi",	"sculpture",	"seascape",	"space",	"stained glass",	"still life",	"storybook realism",	"street art",	"streetscape",	"surrealism",	"symbolism",	"textile",	"ukiyo-e",	"vibrant",	"watercolor",	"whimsical"]
-artifyartists = ["all", "all (wild)", "popular", "greg mode", "3D",	"abstract",	"angular", "anime"	,"architecture",	"art nouveau",	"art deco",	"baroque",	"bauhaus", 	"cartoon",	"character",	"children's illustration", 	"cityscape", "cinema", 	"clean",	"cloudscape",	"collage",	"colorful",	"comics",	"cubism",	"dark",	"detailed", 	"digital",	"expressionism",	"fantasy",	"fashion",	"fauvism",	"figurativism",	"gore",	"graffiti",	"graphic design",	"high contrast",	"horror",	"impressionism",	"installation",	"landscape",	"light",	"line drawing",	"low contrast",	"luminism",	"magical realism",	"manga",	"melanin",	"messy",	"monochromatic",	"nature",	"nudity",	"photography",	"pop art",	"portrait",	"primitivism",	"psychedelic",	"realism",	"renaissance",	"romanticism",	"scene",	"sci-fi",	"sculpture",	"seascape",	"space",	"stained glass",	"still life",	"storybook realism",	"street art",	"streetscape",	"surrealism",	"symbolism",	"textile",	"ukiyo-e",	"vibrant",	"watercolor",	"whimsical"]
+BASE_ARTIST_CATEGORIES = ["popular", "greg mode", "3D",	"abstract",	"angular", "anime"	,"architecture",	"art nouveau",	"art deco",	"baroque",	"bauhaus", 	"cartoon",	"character",	"children's illustration", 	"cityscape", "cinema", 	"clean",	"cloudscape",	"collage",	"colorful",	"comics",	"cubism",	"dark",	"detailed", 	"digital",	"expressionism",	"fantasy",	"fashion",	"fauvism",	"figurativism",	"gore",	"graffiti",	"graphic design",	"high contrast",	"horror",	"impressionism",	"installation",	"landscape",	"light",	"line drawing",	"low contrast",	"luminism",	"magical realism",	"manga",	"melanin",	"messy",	"monochromatic",	"nature",	"nudity",	"photography",	"pop art",	"portrait",	"primitivism",	"psychedelic",	"realism",	"renaissance",	"romanticism",	"scene",	"sci-fi",	"sculpture",	"seascape",	"space",	"stained glass",	"still life",	"storybook realism",	"street art",	"streetscape",	"surrealism",	"symbolism",	"textile",	"ukiyo-e",	"vibrant",	"watercolor",	"whimsical"]
+artists = ["all", "all (wild)", "none"] + BASE_ARTIST_CATEGORIES
+artifyartists = ["all", "all (wild)"] + BASE_ARTIST_CATEGORIES
 # Load imagetypes dynamically
 imagetypes = ["all", "all - force multiple", "all - anime", "none"]
 # imagetypes += csv_to_list("imagetypes")  # REMOVED legacy simple addon system
@@ -36,6 +38,7 @@ try:
 except Exception as e:
     print(f"OneButtonPrompt: Error loading custom modes for UI: {e}")
 
+all_modes = sorted(list(set(allpresets + list(custom_modes.keys()))))
 imagetypes += ["the tokinator"]
 subjects =["all", "object", "animal", "humanoid", "landscape", "concept"]
 genders = ["all", "male", "female"]
@@ -905,7 +908,7 @@ class OneButtonPreset:
                                                hardturnoffemojis=not emojis,
                                                seed=seed,
                                                base_model=base_model,
-                                               OBP_preset=OneButtonPreset,
+                                               OBP_preset="",
                                                prompt_enhancer=prompt_enhancer,
                                                chance_overrides=chance_overrides,
                                                custom_mode_config=preset_custom_mode_config,
@@ -1142,11 +1145,62 @@ class OneButtonSuperPrompt:
         return (OBPsuperprompt,)
 
 
+class OneButtonPrompt_Simple:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "mode": (all_modes, {"default": "Standard"}),
+                "insanitylevel": ("INT", {"default": 5, "min": 0, "max": 10, "step": 1}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+            },
+            "optional": {
+                "custom_subject": ("STRING", {"default": ""}),
+                "prompt_prefix": ("STRING", {"default": ""}),
+                "prompt_suffix": ("STRING", {"default": ""}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "generate"
+    CATEGORY = "OneButtonPrompt"
+
+    def generate(self, mode, insanitylevel, seed, custom_subject="", prompt_prefix="", prompt_suffix=""):
+        # Determine if it's a preset or a custom mode
+        custom_mode_config = None
+        preset_name = ""
+        imagetype = "all"
+        
+        if mode in custom_modes:
+            custom_mode_config = custom_modes[mode]
+            imagetype = mode
+        elif mode in OBPresets.opb_presets:
+            preset_name = mode
+        elif mode == OBPresets.RANDOM_PRESET_OBP:
+            preset_name = mode
+
+        # Call engine
+        # We pass OBP_preset directly here because this node doesn't have 
+        # its own slider extraction logic like OneButtonPreset does.
+        generatedpromptlist = build_dynamic_prompt(
+            insanitylevel=insanitylevel,
+            seed=seed,
+            OBP_preset=preset_name,
+            custom_mode_config=custom_mode_config,
+            givensubject=custom_subject,
+            prefixprompt=prompt_prefix,
+            suffixprompt=prompt_suffix,
+            imagetype=imagetype
+        )
+        
+        return (generatedpromptlist[0],)
+
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "OneButtonPrompt": OneButtonPrompt,
     "OneButtonPreset": OneButtonPreset,
+    "OneButtonPrompt_Simple": OneButtonPrompt_Simple,
     "OneButtonArtify": OneButtonArtify,
     "CreatePromptVariant": CreatePromptVariant,
     "SavePromptToFile": SavePromptToFile,
@@ -1160,6 +1214,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "OneButtonPrompt": "One Button Prompt",
     "OneButtonPreset": "One Button Preset",
+    "OneButtonPrompt_Simple": "One Button Prompt Lite",
     "OneButtonArtify": "One Button Artify",
     "CreatePromptVariant": "Create Prompt Variant",
     "SavePromptToFile": "Save Prompt To File",

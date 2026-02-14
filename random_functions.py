@@ -63,7 +63,7 @@ def chance_roll(insanitylevel, chance):
             if(message != ""):
                 print(message)
             return True 
-        roll = random.randint(1, set_number) < insanitylevel
+        roll = random.randint(1, set_number) <= insanitylevel
         if(message != "" and roll == True):
                 print(message)
         return roll

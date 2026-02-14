@@ -19,13 +19,59 @@ else:
 
 OBPresets = OneButtonPresets()
 
+def scan_supported_wildcards():
+    """
+    Dynamically scans the csvfiles directory to build the list of supported wildcards.
+    This replaces the static hardcoded list and allows for easier user expansion.
+    """
+    import os
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_dir = os.path.join(script_dir, "csvfiles")
+    wildcards = set()
+    
+    # Known special/legacy wildcards that might not have a direct 1:1 CSV name mapping
+    # or need to be present for backward compatibility.
+    special = [
+        "-color-", "-object-", "-animal-", "-fictional-", "-nonfictional-", "-building-", "-vehicle-", "-location-",
+        "-conceptprefix-", "-food-", "-haircolor-", "-hairstyle-", "-job-", "-accessory-", "-humanoid-", "-manwoman-",
+        "-human-", "-colorscheme-", "-mood-", "-genderdescription-", "-artmovement-", "-malefemale-", "-bodytype-",
+        "-minilocation-", "-minilocationaddition-", "-pose-", "-season-", "-minioutfit-", "-elaborateoutfit-",
+        "-minivomit-", "-vomit-", "-rpgclass-", "-subjectfromfile-", "-outfitfromfile-", "-brand-", "-space-",
+        "-artist-", "-imagetype-", "-othertype-", "-quality-", "-lighting-", "-camera-", "-lens-", "-imagetypequality-",
+        "-poemline-", "-songline-", "-greatwork-", "-fantasyartist-", "-popularartist-", "-romanticismartist-",
+        "-photographyartist-", "-emoji-", "-timeperiod-", "-shotsize-", "-musicgenre-", "-animaladdition-",
+        "-objectaddition-", "-humanaddition-", "-overalladdition-", "-focus-", "-direction-", "-styletilora-",
+        "-manwomanrelation-", "-waterlocation-", "-container-", "-firstname-", "-flora-", "-print-", "-miniactivity-",
+        "-pattern-", "-chair-", "-cardname-", "-covering-", "-outfitdescriptor-", "-hairdescriptor-", "-hairvomit-",
+        "-humandescriptor-", "-manwomanmultiple-", "-facepart-", "-locationdescriptor-", "-basicbitchdescriptor-",
+        "-animaldescriptor-", "-humanexpression-", "-humanvomit-", "-eyecolor-", "-fashiondesigner-",
+        "-colorcombination-", "-materialcombination-", "-photoaddition-", "-age-", "-agecalculator-", "-gregmode-",
+        "-portraitartist-", "-characterartist-", "-landscapeartist-", "-scifiartist-", "-graphicdesignartist-",
+        "-digitalartist-", "-architectartist-", "-cinemaartist-", "-setting-", "-charactertype-", "-objectstohold-",
+        "-episodetitle-", "-allstylessuffix-", "-fluff-", "-event-", "-background-",
+        "-occult-", "-locationfantasy-", "-locationscifi-", "-locationvideogame-", "-locationbiome-", "-locationcity-",
+        "-bird-", "-cat-", "-dog-", "-insect-", "-pokemon-", "-pokemontype-", "-marinelife-",
+        "-material-", "-descriptor-", "-outfit-", "-conceptsuffix-", "-culture-", "-objecttotal-", "-outfitprinttotal-",
+        "-element-"
+    ]
+    for s in special:
+        wildcards.add(s)
+
+    if os.path.exists(csv_dir):
+        for f in os.listdir(csv_dir):
+            if f.endswith(".csv"):
+                # Clean up filenames to get wildcard identifiers
+                name = f[:-4]
+                # Strip known suffixes used by the engine
+                for suffix in ["_light", "_medium", "_replace", "_addon"]:
+                    if name.endswith(suffix):
+                        name = name[:-len(suffix)]
+                wildcards.add(f"-{name}-")
+    
+    return [""] + sorted(list(wildcards))
+
 # Master list of all supported wildcards for UI dropdowns
-SUPPORTED_WILDCARDS = [""] + sorted([
-    "-color-","-object-", "-animal-", "-fictional-","-nonfictional-","-building-","-vehicle-","-location-","-conceptprefix-","-food-","-haircolor-","-hairstyle-","-job-", "-accessory-", "-humanoid-", "-manwoman-", "-human-", "-colorscheme-", "-mood-", "-genderdescription-", "-artmovement-", "-malefemale-", "-bodytype-", "-minilocation-", "-minilocationaddition-", "-pose-", "-season-", "-minioutfit-", "-elaborateoutfit-", "-minivomit-", "-vomit-", "-rpgclass-", "-subjectfromfile-", "-outfitfromfile-", "-brand-", "-space-", "-artist-", "-imagetype-", "-othertype-", "-quality-", "-lighting-", "-camera-", "-lens-","-imagetypequality-", "-poemline-", "-songline-", "-greatwork-", "-fantasyartist-", "-popularartist-", "-romanticismartist-", "-photographyartist-", "-emoji-", "-timeperiod-", "-shotsize-", "-musicgenre-", "-animaladdition-", "-objectaddition-", "-humanaddition-", "-overalladdition-", "-focus-", "-direction-", "-styletilora-", "-manwomanrelation-", "-waterlocation-", "-container-", "-firstname-", "-flora-", "-print-", "-miniactivity-", "-pattern-", "-chair-", "-cardname-", "-covering-", "-outfitdescriptor-", "-hairdescriptor-", "-hairvomit-", "-humandescriptor-", "-manwomanmultiple-", "-facepart-", "-locationdescriptor-", "-basicbitchdescriptor-", "-animaldescriptor-", "-humanexpression-", "-humanvomit-", "-eyecolor-", "-fashiondesigner-", "-colorcombination-", "-materialcombination-", "-photoaddition-", "-age-", "-agecalculator-", "-gregmode-"
-    ,"-portraitartist-", "-characterartist-" , "-landscapeartist-", "-scifiartist-", "-graphicdesignartist-", "-digitalartist-", "-architectartist-", "-cinemaartist-", "-setting-", "-charactertype-", "-objectstohold-", "-episodetitle-", "-allstylessuffix-", "-fluff-", "-event-", "-background-"
-    , "-occult-", "-locationfantasy-", "-locationscifi-", "-locationvideogame-", "-locationbiome-", "-locationcity-", "-bird-", "-cat-", "-dog-", "-insect-", "-pokemon-", "-pokemontype-", "-marinelife-",
-    "-material-", "-descriptor-", "-outfit-", "-conceptsuffix-","-culture-", "-objecttotal-", "-outfitprinttotal-", "-element-"
-])
+SUPPORTED_WILDCARDS = scan_supported_wildcards()
 
 # Module-level cache for custom modes
 _CUSTOM_MODES_CACHE = None
@@ -984,6 +1030,56 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         if 'artistsatbackchance' in chance_overrides: artistsatbackchance = chance_overrides['artistsatbackchance']
 
 
+    # Deep Component Control: Apply overrides from custom_mode_config
+    if custom_mode_config:
+        if "smartsubject" in custom_mode_config:
+            smartsubject = bool(custom_mode_config["smartsubject"])
+        if "insanitylevel" in custom_mode_config:
+            insanitylevel = int(custom_mode_config["insanitylevel"])
+        if "imagemodechance" in custom_mode_config:
+            imagemodechance = int(custom_mode_config["imagemodechance"])
+        if "gender" in custom_mode_config:
+            gender = custom_mode_config["gender"]
+        if "forcesubject" in custom_mode_config:
+             forcesubject = custom_mode_config["forcesubject"]
+        if "imagetype" in custom_mode_config:
+             imagetype = custom_mode_config["imagetype"]
+        if "artists" in custom_mode_config:
+             artists = custom_mode_config["artists"]
+        if "overrideoutfit" in custom_mode_config:
+             overrideoutfit = custom_mode_config["overrideoutfit"]
+        if "givensubject" in custom_mode_config:
+             givensubject = custom_mode_config["givensubject"]
+        if "prefixprompt" in custom_mode_config:
+             prefixprompt = custom_mode_config["prefixprompt"]
+        if "suffixprompt" in custom_mode_config:
+             suffixprompt = custom_mode_config["suffixprompt"]
+        
+        # Merge chance overrides from config if present
+        if "chance_overrides" in custom_mode_config:
+            if chance_overrides is None:
+                chance_overrides = {}
+            chance_overrides.update(custom_mode_config["chance_overrides"])
+        
+        # Wholesale toggles for generation categories
+        if "generate_humanoids" in custom_mode_config:
+            val = bool(custom_mode_config["generate_humanoids"])
+            generatehumanoids = generatemanwoman = generatemanwomanrelation = generatemanwomanmultiple = generatefictionalcharacter = generatenonfictionalcharacter = generatejob = generatefirstnames = val
+        if "generate_animals" in custom_mode_config:
+             val = bool(custom_mode_config["generate_animals"])
+             generateanimal = generatebird = generatecat = generatedog = generateinsect = generatepokemon = generatemarinelife = val
+        if "generate_landscapes" in custom_mode_config:
+             val = bool(custom_mode_config["generate_landscapes"])
+             generatelandscape = generatelocation = generatelocationfantasy = generatelocationscifi = generatelocationvideogame = generatelocationbiome = generatelocationcity = val
+        if "generate_objects" in custom_mode_config:
+             val = bool(custom_mode_config["generate_objects"])
+             generatevehicle = generateobject = generatefood = generatebuilding = generatespace = generateflora = generateoccult = val
+        if "generate_concepts" in custom_mode_config:
+             val = bool(custom_mode_config["generate_concepts"])
+             generateevent = generateconcepts = generatepoemline = generatesongline = generatecardname = generateepisodetitle = val
+
+
+
     generatevehicle = bool(vehiclelist) and generatevehicle
     generateobject = bool(objectlist) and generateobject
     generatefood = bool(foodlist) and generatefood
@@ -1235,6 +1331,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     thetokinatormode = False
     dynamictemplatesmode = False
     artifymode = False
+    custommodeactive = False
     generationmode = ""
 
     # determine wether we should go for a template or not. Not hooked up to insanitylevel
@@ -1959,8 +2056,13 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 for part in prompt_parts:
                     wildcard = part.get("wildcard", "")
                     chance = part.get("chance", "normal")
+                    weight = part.get("weight", None)
                     if chance_roll(insanitylevel, chance):
-                         completeprompt += wildcard + ", "
+                         # Apply weighting if specified
+                         if weight is not None:
+                             completeprompt += f"({wildcard}:{weight}), "
+                         else:
+                             completeprompt += wildcard + ", "
                 step += 1
             
             if "prompt_suffix" in custom_mode_config:
@@ -3914,12 +4016,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
     if(prompt_g_and_l == False):
         if(_return_metadata):
-            return completeprompt, _metadata
-        return completeprompt
+            return [completeprompt], _metadata
+        return [completeprompt]
     else:
         if(_return_metadata):
-            return completeprompt, prompt_g, prompt_l, _metadata
-        return completeprompt, prompt_g, prompt_l
+            return [completeprompt, prompt_g, prompt_l], _metadata
+        return [completeprompt, prompt_g, prompt_l]
 
 
 # function that takes an existing prompt and tries to create a variant out of it
