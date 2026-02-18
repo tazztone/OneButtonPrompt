@@ -23,7 +23,7 @@ from OneButtonPrompt import OneButtonPromptNodes
 
 class TestLiteNode(unittest.TestCase):
     
-    @patch('OneButtonPrompt.OneButtonPromptNodes.build_dynamic_prompt')
+    @patch('OneButtonPrompt.OneButtonPromptNodes.PromptEngine.generate')
     def test_generate_arguments(self, mock_engine):
         # Setup return value
         mock_engine.return_value = ["test_prompt"]
@@ -34,12 +34,14 @@ class TestLiteNode(unittest.TestCase):
         node.generate(mode="Standard", insanitylevel=5, base_model="SD1.5", seed=123)
         
         # Verify call args
+        # In the new architecture, generate() receives a PromptConfig object.
         args, kwargs = mock_engine.call_args
-        self.assertEqual(kwargs['insanitylevel'], 5)
-        self.assertEqual(kwargs['base_model'], "SD1.5")
-        self.assertEqual(kwargs['forcesubject'], "all")     # Default from signature
-        self.assertEqual(kwargs['artists'], "all")          # Default from signature
-        self.assertEqual(kwargs['imagetype'], "all")        # Default
+        cfg = args[0]
+        self.assertEqual(cfg.insanitylevel, 5)
+        self.assertEqual(cfg.base_model, "SD1.5")
+        self.assertEqual(cfg.forcesubject, "all")     # Default from signature
+        self.assertEqual(cfg.artists, "all")          # Default from signature
+        self.assertEqual(cfg.imagetype, "all")        # Default
         
         # Test Case 2: Overrides
         node.generate(
@@ -54,14 +56,15 @@ class TestLiteNode(unittest.TestCase):
         )
         
         args, kwargs = mock_engine.call_args
-        self.assertEqual(kwargs['insanitylevel'], 7)
-        self.assertEqual(kwargs['base_model'], "SDXL")
-        self.assertEqual(kwargs['artists'], "Greg Rutkowski")
-        self.assertEqual(kwargs['forcesubject'], "animal")
-        self.assertEqual(kwargs['imagetype'], "Photograph") # Should override default
-        self.assertEqual(kwargs['prompt_enhancer'], "superprompt-v1")
+        cfg = args[0]
+        self.assertEqual(cfg.insanitylevel, 7)
+        self.assertEqual(cfg.base_model, "SDXL")
+        self.assertEqual(cfg.artists, "Greg Rutkowski")
+        self.assertEqual(cfg.forcesubject, "animal")
+        self.assertEqual(cfg.imagetype, "Photograph") # Should override default
+        self.assertEqual(cfg.prompt_enhancer, "superprompt-v1")
 
-    @patch('OneButtonPrompt.OneButtonPromptNodes.build_dynamic_prompt')
+    @patch('OneButtonPrompt.OneButtonPromptNodes.PromptEngine.generate')
     def test_imagetype_override_logic(self, mock_engine):
         mock_engine.return_value = ["test_prompt"]
         node = OneButtonPromptNodes.OneButtonPrompt_Simple()
@@ -83,11 +86,12 @@ class TestLiteNode(unittest.TestCase):
         )
         
         args, kwargs = mock_engine.call_args
+        cfg = args[0]
         # Assertion: The overridden type "Photograph" should be passed, NOT "TestMode"
-        self.assertEqual(kwargs['imagetype'], "Photograph")
+        self.assertEqual(cfg.imagetype, "Photograph")
         
         # Also verify custom_mode_config is still passed
-        self.assertIsNotNone(kwargs['custom_mode_config'])
+        self.assertIsNotNone(cfg.custom_mode_config)
 
 if __name__ == '__main__':
     unittest.main()

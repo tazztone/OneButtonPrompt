@@ -9,6 +9,8 @@ sys.path.append(os.path.abspath(".."))
 from call_txt2img import *
 from call_img2img import *
 from build_dynamic_prompt import *
+from prompt_config import PromptConfig
+from prompt_engine import PromptEngine
 from call_extras import *
 from model_lists import *
 
@@ -129,14 +131,14 @@ def generateimages(amount = 1, size = "all",model = "currently selected model",s
     
         if(onlyupscale==False):  # only do txt2img when onlyupscale is False
             if(silentmode==True and workprompt != ""):
-                randomprompt = createpromptvariant(workprompt, promptvariantinsanitylevel)
+                randomprompt = PromptEngine.create_variant(prompt=workprompt, insanitylevel=promptvariantinsanitylevel)
                 print("Using provided workflow prompt")
                 print(randomprompt)
 
                 
 
             else:    
-                randompromptlist = build_dynamic_prompt(
+                cfg = PromptConfig(
                     insanitylevel=insanitylevel,
                     forcesubject=subject,
                     artists=artist,
@@ -166,13 +168,20 @@ def generateimages(amount = 1, size = "all",model = "currently selected model",s
                     preset_prefix=presetprefix,
                     preset_suffix=presetsuffix,
                 )
+                randompromptlist = PromptEngine.generate(cfg)
                 randomprompt = randompromptlist[0]
                 randomsubject = randompromptlist[1]
 
             if(autonegativeprompt):
-                negativeprompt = build_dynamic_negative(positive_prompt=randomprompt, insanitylevel=autonegativepromptstrength,enhance=autonegativepromptenhance, existing_negative_prompt=originalnegativeprompt, base_model=base_model)
+                negativeprompt = PromptEngine.generate_negative(
+                    positive_prompt=randomprompt, 
+                    insanitylevel=autonegativepromptstrength,
+                    enhance=autonegativepromptenhance, 
+                    existing_negative_prompt=originalnegativeprompt, 
+                    base_model=base_model
+                )
             
-            randomprompt = flufferizer(prompt=randomprompt, amountoffluff=amountoffluff)
+            randomprompt = PromptEngine.flufferize(prompt=randomprompt, amount=amountoffluff)
             
             if(randomsubject == ""):
                 # make the filename, from from a to the first comma

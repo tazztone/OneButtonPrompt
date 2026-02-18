@@ -27,7 +27,7 @@ class TestSuperPromptNode(unittest.TestCase):
         self.assertIn("insanitylevel", inputs["required"])
         self.assertIn("superpromptstyle", inputs["required"])
 
-    @patch('OneButtonPrompt.OneButtonPromptNodes.one_button_superprompt')
+    @patch('OneButtonPrompt.OneButtonPromptNodes.PromptEngine.superprompt')
     def test_execution_calls_engine(self, mock_super):
         """Verify the node calls the engine function correctly."""
         mock_super.return_value = "Super prompt content"
@@ -54,7 +54,7 @@ class TestCreatePromptVariantNode(unittest.TestCase):
         self.assertIn("optional", inputs)
         self.assertIn("insanitylevel", inputs["optional"])
 
-    @patch('OneButtonPrompt.OneButtonPromptNodes.createpromptvariant')
+    @patch('OneButtonPrompt.OneButtonPromptNodes.PromptEngine.create_variant')
     def test_execution_calls_engine(self, mock_variant):
         """Verify the node calls the engine function correctly."""
         mock_variant.return_value = "Varied prompt content"
@@ -65,7 +65,7 @@ class TestCreatePromptVariantNode(unittest.TestCase):
         self.assertEqual(result, ("Varied prompt content",))
         
         # Verify call arguments
-        mock_variant.assert_called_once_with("original", 7)
+        mock_variant.assert_called_once_with(prompt="original", insanitylevel=7)
 
 if __name__ == '__main__':
     unittest.main()

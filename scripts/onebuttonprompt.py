@@ -11,6 +11,8 @@ from modules.shared import opts, cmd_opts, state
 
 
 from build_dynamic_prompt import *
+from prompt_config import PromptConfig
+from prompt_engine import PromptEngine
 from main import *
 from model_lists import *
 from csv_reader import *
@@ -359,7 +361,7 @@ class Script(scripts.Script):
             promptlist = []
 
             for i in range(5):
-                base_prompt = build_dynamic_prompt(
+                cfg = PromptConfig(
                     insanitylevel=insanitylevel,
                     forcesubject=subject,
                     artists=artist,
@@ -389,7 +391,9 @@ class Script(scripts.Script):
                     preset_prefix=presetprefix,
                     preset_suffix=presetsuffix,
                 )
-                fluffed_prompt = flufferizer(prompt=base_prompt, amountoffluff=amountoffluff)
+                generatedlist = PromptEngine.generate(cfg)
+                base_prompt = generatedlist[0]
+                fluffed_prompt = PromptEngine.flufferize(prompt=base_prompt, amount=amountoffluff)
                 promptlist.append(fluffed_prompt)
 
 
@@ -1505,7 +1509,7 @@ class Script(scripts.Script):
                 
                 if(ANDtoggle == "automatic"):
                     if(artist != "none"):
-                        preppedprompt += build_dynamic_prompt(
+                        preppedprompt += PromptEngine.generate(PromptConfig(
                             insanitylevel=insanitylevel,
                             forcesubject=subject,
                             artists=artist,
@@ -1513,7 +1517,7 @@ class Script(scripts.Script):
                             onlyartists=True,
                             antivalues=antistring,
                             base_model=base_model,
-                        ) 
+                        ))[0] 
                     if(subject == "humanoid"):
                         preppedprompt += ", " + promptcompounderlevel + " people"
                     if(subject == "landscape"):
@@ -1540,7 +1544,7 @@ class Script(scripts.Script):
 
 
                 #Here is where we build a "normal" prompt
-                base_prompt = build_dynamic_prompt(
+                cfg = PromptConfig(
                     insanitylevel=insanitylevel,
                     forcesubject=subject,
                     artists=artist,
@@ -1570,7 +1574,9 @@ class Script(scripts.Script):
                     preset_prefix=presetprefix,
                     preset_suffix=presetsuffix,
                 )
-                fluffed_prompt = flufferizer(prompt=base_prompt, amountoffluff=amountoffluff)
+                generatedlist = PromptEngine.generate(cfg)
+                base_prompt = generatedlist[0]
+                fluffed_prompt = PromptEngine.flufferize(prompt=base_prompt, amount=amountoffluff)
                 preppedprompt += fluffed_prompt
 
                 # set the artist mode back when done (for automatic mode)

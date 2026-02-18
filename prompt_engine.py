@@ -22,6 +22,7 @@ if __package__ is None or __package__ == '':
         enhance_positive,
         artify_prompt,
         flufferizer,
+        one_button_superprompt,
     )
 else:
     from .prompt_config import PromptConfig
@@ -142,4 +143,18 @@ class PromptEngine:
             amountoffluff=amount,
             seed=seed,
             reverse_polarity=reverse_polarity,
+        )
+    @staticmethod
+    def superprompt(
+        prompt: str,
+        insanitylevel: int = 5,
+        superpromptstyle: str = "all",
+        seed: int = -1,
+    ) -> str:
+        """Enhance a prompt using the superprompter model."""
+        return one_button_superprompt(
+            insanitylevel=insanitylevel,
+            prompt=prompt,
+            seed=seed,
+            superpromptstyle=superpromptstyle,
         )
