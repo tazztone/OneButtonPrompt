@@ -185,7 +185,7 @@ To run standalone scripts, tests, or analysis tools, use the established virtual
 
 **Example Execution:**
 ```bash
+python -m pytest tests/ -v                      # Run full suite (Recommended)
 ../../venv/bin/python3 tests/smoke_test.py      # Import check
 ../../venv/bin/python3 tests/execution_test.py  # Runtime generation check
-../../venv/bin/python3 tests/robustness_test.py # Exhaustive edge-case check
 ```

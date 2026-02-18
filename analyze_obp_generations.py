@@ -71,28 +71,28 @@ class OBPAnalyzer:
         try:
             self.ref_artists = set(csv_to_list("artists", directory="./csvfiles/"))
             print(f"  ✓ Loaded {len(self.ref_artists)} artists")
-        except:
+        except Exception:
             self.ref_artists = set()
             print("  ✗ Could not load artists.csv")
             
         try:
             self.ref_imagetypes = set(csv_to_list("imagetypes", directory="./csvfiles/"))
             print(f"  ✓ Loaded {len(self.ref_imagetypes)} image types")
-        except:
+        except Exception:
             self.ref_imagetypes = set()
             print("  ✗ Could not load imagetypes.csv")
             
         try:
             self.ref_artmovements = set(csv_to_list("artmovements", directory="./csvfiles/"))
             print(f"  ✓ Loaded {len(self.ref_artmovements)} art movements")
-        except:
+        except Exception:
             self.ref_artmovements = set()
             print("  ✗ Could not load artmovements.csv")
             
         try:
             self.ref_colors = set(csv_to_list("colors", directory="./csvfiles/"))
             print(f"  ✓ Loaded {len(self.ref_colors)} colors")
-        except:
+        except Exception:
             self.ref_colors = set()
             print("  ✗ Could not load colors.csv")
             

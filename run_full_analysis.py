@@ -232,38 +232,38 @@ def generate_combined_recommendations(csv_analysis, gen_results):
 
 def main():
     """Main execution function"""
+    import argparse
+    import time
+    
+    parser = argparse.ArgumentParser(description="OneButtonPrompt Full Analysis Suite")
+    parser.add_argument("--count", type=int, default=100, help="Number of prompts to generate (default: 100)")
+    parser.add_argument("--insanity", type=int, default=5, help="Insanity level (1-10, default: 5)")
+    args = parser.parse_args()
     
     print(f"\n{'#'*70}")
     print(f"#  OneButtonPrompt Full Analysis Suite")
     print(f"#  Comprehensive analysis of generation patterns and CSV architecture")
     print(f"{'#'*70}")
     
-    # Configuration
-    NUM_ITERATIONS = 100  # Reduced for faster testing
-    INSANITY_LEVEL = 5     # Default insanity level for testing
-    
     print(f"\nConfiguration:")
-    print(f"  • Generations to analyze: {NUM_ITERATIONS}")
-    print(f"  • Insanity level: {INSANITY_LEVEL}")
-    print(f"  • This will take approximately {NUM_ITERATIONS * 0.1:.0f} seconds")
+    print(f"  • Generations to analyze: {args.count}")
+    print(f"  • Insanity level: {args.insanity}")
+    print(f"  • Estimated time: {args.count * 0.1:.0f} seconds")
     
     print("\n[DEBUG] Starting analysis in 2 seconds...")
-    import time
     time.sleep(2)
     
     # Step 1: CSV Architecture
-    print("\n[DEBUG] Step 1: CSV Architecture Analysis")
+    # Note: Architecture analysis is fast and always runs
     csv_analysis = run_csv_architecture_analysis()
     
     # Step 2: Generation Patterns
-    print("\n[DEBUG] Step 2: Generation Pattern Analysis")
     gen_results = run_generation_analysis(
-        num_iterations=NUM_ITERATIONS,
-        insanity_level=INSANITY_LEVEL
+        num_iterations=args.count,
+        insanity_level=args.insanity
     )
     
     # Step 3: Combined Recommendations
-    print("\n[DEBUG] Step 3: Combined Recommendations")
     generate_combined_recommendations(csv_analysis, gen_results)
     
     # Final message

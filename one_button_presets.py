@@ -27,7 +27,8 @@ class OneButtonPresets:
     def _load_data(self, file_path):
         if not os.path.isfile(file_path):
             shutil.copy(self.DEFAULT_OBP_FILE, file_path)
-        return json.load(open(file_path))
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
 
     def _save_data(self, file_path, data):
         with open(file_path, "w") as f:

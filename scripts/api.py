@@ -59,5 +59,5 @@ try:
     import modules.script_callbacks as script_callbacks
 
     script_callbacks.on_app_started(one_button_prompt_api)
-except:
+except Exception:
     pass

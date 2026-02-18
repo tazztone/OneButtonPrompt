@@ -88,7 +88,7 @@ def get_samplers_for_img2img():
 def upscalers_on_startup():
     try:
         modelloader.cleanup_models()
-    except:
+    except Exception:
         pass
     modelloader.load_upscalers()
     upscalerlistfromwWebUI = [x.name for x in shared.sd_upscalers]
