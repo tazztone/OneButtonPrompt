@@ -1273,6 +1273,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
     # Missing flags from first pass
     generatevomit = en.generate_vomit
+    generateminivomit = en.generate_mini_vomit
     generatequality = en.generate_quality
     generateemoji = en.generate_emoji
     generatehumanexpression = en.generate_human_expression

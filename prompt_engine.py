@@ -12,6 +12,7 @@ Usage::
 from __future__ import annotations
 
 from dataclasses import asdict
+import inspect
 
 if __package__ is None or __package__ == '':
     from prompt_config import PromptConfig
@@ -34,6 +35,16 @@ else:
         artify_prompt,
         flufferizer,
     )
+
+
+# Cache the set of valid parameter names for build_dynamic_prompt
+_BDP_PARAMS = set(inspect.signature(build_dynamic_prompt).parameters.keys())
+
+# Config fields that map to deep-control overrides via custom_mode_config
+_DEEP_CONTROL_FIELDS = {
+    "generate_humanoids", "generate_animals", "generate_landscapes",
+    "generate_objects", "generate_concepts",
+}
 
 
 class PromptEngine:
@@ -67,8 +78,26 @@ class PromptEngine:
             config = PromptConfig()
 
         # Merge any ad-hoc overrides into a fresh config dict
-        params = asdict(config)
-        params.update(overrides)
+        all_params = asdict(config)
+        all_params.update(overrides)
+
+        # Separate deep-control fields into custom_mode_config
+        deep_control = {}
+        for field in _DEEP_CONTROL_FIELDS:
+            if field in all_params:
+                val = all_params.pop(field)
+                # Only include non-default values (True = default, all enabled)
+                if val is not True:
+                    deep_control[field] = val
+
+        # Merge deep-control into custom_mode_config if any non-defaults
+        if deep_control:
+            existing = all_params.get("custom_mode_config") or {}
+            existing.update(deep_control)
+            all_params["custom_mode_config"] = existing
+
+        # Filter to only params that build_dynamic_prompt accepts
+        params = {k: v for k, v in all_params.items() if k in _BDP_PARAMS}
 
         return build_dynamic_prompt(**params)
 

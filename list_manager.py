@@ -22,18 +22,27 @@ class ListManager:
         # Cache for lazy loading
         self._cache = {}
 
-    def get_list(self, name: str, **kwargs) -> list:
+    # Valid kwargs for csv_to_list (beyond the defaults we always pass)
+    _CSV_KWARGS = {"directory", "lowerandstrip", "delimiter", "listoflistmode", "skipheader"}
+
+    def get_list(self, name: str = None, **kwargs) -> list:
         """Get a list by name, using cache if available."""
+        # Accept 'csvfilename' as an alias for 'name' (legacy compatibility)
+        if name is None:
+            name = kwargs.pop("csvfilename", None)
+        if name is None:
+            raise TypeError("get_list() requires 'name' or 'csvfilename' argument")
         cache_key = (name, tuple(sorted(kwargs.items())))
         if cache_key not in self._cache:
-            # Most lists use standard parameters
+            # Only forward kwargs that csv_to_list actually accepts
+            csv_kwargs = {k: v for k, v in kwargs.items() if k in self._CSV_KWARGS}
             params = {
                 "csvfilename": name,
                 "antilist": self.antilist,
-                "gender": self.gender,
+                "gender": kwargs.get("gender", self.gender),
                 "insanitylevel": self.insanitylevel
             }
-            params.update(kwargs)
+            params.update(csv_kwargs)
             self._cache[cache_key] = csv_to_list(**params)
         return self._cache[cache_key]
 

@@ -55,6 +55,7 @@ class EnhancerSelection:
     
     # New flags from thorough review
     generate_vomit: bool = False
+    generate_mini_vomit: bool = False
     generate_quality: bool = False
     generate_emoji: bool = False
     generate_human_expression: bool = False
@@ -162,6 +163,7 @@ class EnhancerSelector:
 
         # 5. Quality & Others
         res.generate_vomit = has("vomit") and not sm and add_vomit
+        res.generate_mini_vomit = has("minivomit") and not sm and add_vomit
         res.generate_quality = has("quality") and not sm and add_quality
         res.generate_emoji = has("emojis") and not tm
         res.generate_great_work = has("greatworks") and not sm
