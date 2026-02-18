@@ -4,26 +4,14 @@ import unittest
 import json
 from unittest.mock import MagicMock, patch, mock_open
 
-# Mock all heavy dependencies
-mock_modules = [
-    'torch',
-    'transformers',
-    'folder_paths',
-    'server',
-    'aiohttp'
-]
-
-for mod in mock_modules:
-    sys.modules[mod] = MagicMock()
-
-# Stub for folder_paths
-sys.modules['folder_paths'].base_path = os.getcwd()
-
-# Add parent of 'OneButtonPrompt' to sys.path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-obp_root = os.path.dirname(current_dir)
-parent_dir = os.path.dirname(obp_root)
-sys.path.append(parent_dir)
+# conftest.py handles mock setup when run via pytest.
+# For direct execution, ensure path is set up:
+if 'folder_paths' not in sys.modules:
+    for mod in ['torch', 'transformers', 'folder_paths', 'server', 'aiohttp']:
+        sys.modules[mod] = MagicMock()
+    sys.modules['folder_paths'].base_path = os.getcwd()
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.dirname(os.path.dirname(current_dir)))
 
 from OneButtonPrompt.build_dynamic_prompt import build_dynamic_prompt
 

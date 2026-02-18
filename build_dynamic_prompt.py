@@ -4,18 +4,32 @@ import re
 
 if __package__ is None or __package__ == '':
     # A1111 style (standalone script or direct module execution)
-    # Use absolute imports for compatibility with A1111 WebUI environment
     from csv_reader import *
     from random_functions import *
     from one_button_presets import OneButtonPresets
-    from superprompter.superprompter import *
+    try:
+        from superprompter.superprompter import one_button_superprompt, remove_superprompt_bias
+        _HAS_SUPERPROMPTER = True
+    except ImportError:
+        _HAS_SUPERPROMPTER = False
+        def one_button_superprompt(*args, **kwargs):
+            return ""
+        def remove_superprompt_bias(*args, **kwargs):
+            return args[0] if args else ""
 else:
     # ComfyUI style (imported as a package)
-    # Use relative imports for proper integration with ComfyUI
     from .csv_reader import *
     from .random_functions import *
     from .one_button_presets import OneButtonPresets
-    from .superprompter.superprompter import *
+    try:
+        from .superprompter.superprompter import one_button_superprompt, remove_superprompt_bias
+        _HAS_SUPERPROMPTER = True
+    except ImportError:
+        _HAS_SUPERPROMPTER = False
+        def one_button_superprompt(*args, **kwargs):
+            return ""
+        def remove_superprompt_bias(*args, **kwargs):
+            return args[0] if args else ""
 
 OBPresets = OneButtonPresets()
 
@@ -157,7 +171,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
     originalinsanitylevel = insanitylevel
     if(advancedprompting != False and random.randint(0,max(0, insanitylevel - 2)) <= 0):
-        advancedprompting == False
+        advancedprompting = False
 
     original_OBP_preset = OBP_preset
     if(OBP_preset == OBPresets.RANDOM_PRESET_OBP):

@@ -17,15 +17,8 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    # Try minimal version first (avoids torch dependency)
-    try:
-        from build_dynamic_prompt_minimal import build_dynamic_prompt
-        print("✓ Using minimal build_dynamic_prompt (superprompter disabled)")
-    except:
-        # Fall back to full version
-        from build_dynamic_prompt import build_dynamic_prompt
-        print("✓ Using full build_dynamic_prompt")
-    
+    from build_dynamic_prompt import build_dynamic_prompt
+    print("✓ Imported build_dynamic_prompt (superprompter optional)")
     from csv_reader import csv_to_list
     print("✓ Successfully imported OBP modules")
 except ImportError as e:
@@ -248,6 +241,8 @@ class OBPAnalyzer:
                 if isinstance(result, tuple):
                     prompt = result[0]  # Main prompt
                     metadata = result[-1] if isinstance(result[-1], dict) else None
+                elif isinstance(result, list):
+                    prompt = result[0]  # Standardized list format: [prompt, prompt_g, prompt_l]
                 else:
                     prompt = result
                     
@@ -541,6 +536,7 @@ class OBPAnalyzer:
 def main():
     """Main execution function"""
     
+    parser = argparse.ArgumentParser(description="OneButtonPrompt Generation Analyzer")
     parser.add_argument("--iterations", type=int, default=1000, help="Number of generations to run")
     parser.add_argument("--insanity", type=int, default=5, help="Insanity level (1-10)")
     parser.add_argument("--output", type=str, default="obp_analysis_results.json", help="Output JSON filename")

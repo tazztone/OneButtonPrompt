@@ -99,7 +99,16 @@ app.registerExtension({
                     for (const [key, widgetName] of Object.entries(fieldMap)) {
                         const widget = node.widgets.find(w => w.name === widgetName);
                         if (widget && data[key] !== undefined) {
-                            widget.value = data[key];
+                            // Guard: for COMBO widgets, only set value if it's a valid choice
+                            if (widget.options?.values) {
+                                if (widget.options.values.includes(data[key])) {
+                                    widget.value = data[key];
+                                } else {
+                                    console.warn(`[OBP Sync] Preset value "${data[key]}" not found in widget "${widgetName}" options. Skipping to avoid ghost value.`);
+                                }
+                            } else {
+                                widget.value = data[key];
+                            }
                         }
                     }
 
@@ -139,6 +148,14 @@ app.registerExtension({
                         return originalCallback.apply(this, arguments);
                     }
                 };
+
+                // Debounced initial sync: wait for all widgets to be fully initialized
+                // before syncing the current preset value on workflow load.
+                setTimeout(() => {
+                    if (presetWidget.value) {
+                        updateSliders(presetWidget.value);
+                    }
+                }, 250);
             } else {
                 console.warn("[OBP Sync] Could not find preset selection widget on OneButtonPreset node.");
             }
