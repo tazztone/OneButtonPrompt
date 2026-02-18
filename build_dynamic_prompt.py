@@ -8,6 +8,10 @@ if __package__ is None or __package__ == '':
     from random_functions import *
     from one_button_presets import OneButtonPresets
     from prompt_config import PromptConfig
+    from list_manager import ListManager
+    from subject_selector import SubjectSelector, SubjectSelection
+    from mode_selector import ModeSelector, ModeSelection
+    from enhancer_selector import EnhancerSelector, EnhancerSelection
     try:
         from superprompter.superprompter import one_button_superprompt, remove_superprompt_bias
         _HAS_SUPERPROMPTER = True
@@ -2383,7 +2387,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                         hybridorswap = random.choice(hybridorswaplist)
                         completeprompt += "["
                         
-                    if(unique_dist(insanitylevel) and generateanimaladdition == True):
+                    if(unique_dist(insanitylevel) and generateanimaladditions == True):
                         animaladdedsomething = 1
                         completeprompt += "-animaladdition- " + chosenanimalwildcard + " "
                     if(animaladdedsomething != 1):
@@ -2734,19 +2738,19 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         if(thetokinatormode == False):
             # object additions
             for i in range(objectadditionsrepeats):
-                if(mainchooser == "object" and chance_roll(insanitylevel, objectadditionschance) and generateobjectaddition == True):
+                if(mainchooser == "object" and chance_roll(insanitylevel, objectadditionschance) and generateobjectadditions == True):
                     completeprompt += ", -objectaddition- , "
             
             
             # riding an animal, holding an object or driving a vehicle, rare
-            if((animalashuman or subjectchooser in ["human","fictional", "non fictional", "humanoid", "manwomanrelation","manwomanmultiple","firstname"]) and chance_roll(insanitylevel, humanadditionchance) and generatehumanaddition == True):
+            if((animalashuman or subjectchooser in ["human","fictional", "non fictional", "humanoid", "manwomanrelation","manwomanmultiple","firstname"]) and chance_roll(insanitylevel, humanadditionchance) and generatehumanadditions == True):
                 humanspecial = 1
                 completeprompt += "-humanaddition- "
                 
             completeprompt += ", "
 
             # unique additions for all types:
-            if(chance_roll(insanitylevel, overalladditionchance) and generateoveralladdition == True):
+            if(chance_roll(insanitylevel, overalladditionchance) and generateoveralladditions == True):
                 completeprompt += "-overalladdition- "
 
 

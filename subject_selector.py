@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
-from .list_manager import ListManager
-from .prompt_config import PromptConfig
+try:
+    from .list_manager import ListManager
+    from .prompt_config import PromptConfig
+except ImportError:
+    from list_manager import ListManager
+    from prompt_config import PromptConfig
 
 @dataclass
 class SubjectSelection:

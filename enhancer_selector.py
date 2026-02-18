@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
-from .list_manager import ListManager
-from .mode_selector import ModeSelection
+try:
+    from .list_manager import ListManager
+    from .mode_selector import ModeSelection
+except ImportError:
+    from list_manager import ListManager
+    from mode_selector import ModeSelection
 
 @dataclass
 class EnhancerSelection:

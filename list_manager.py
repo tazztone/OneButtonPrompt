@@ -1,5 +1,8 @@
 import os
-from .csv_reader import csv_to_list, load_config_csv, load_negative_list, load_all_artist_and_category
+try:
+    from .csv_reader import csv_to_list, load_config_csv, load_negative_list, load_all_artist_and_category
+except ImportError:
+    from csv_reader import csv_to_list, load_config_csv, load_negative_list, load_all_artist_and_category
 
 class ListManager:
     """Manages loading and caching of all CSV lists used in prompt generation."""

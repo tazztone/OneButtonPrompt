@@ -2,9 +2,14 @@ import os
 import json
 import random
 from dataclasses import dataclass, field
-from .random_functions import uncommon_dist
-from .list_manager import ListManager
-from .prompt_config import PromptConfig
+try:
+    from .random_functions import uncommon_dist
+    from .list_manager import ListManager
+    from .prompt_config import PromptConfig
+except ImportError:
+    from random_functions import uncommon_dist
+    from list_manager import ListManager
+    from prompt_config import PromptConfig
 
 _CUSTOM_MODES_CACHE = None
 

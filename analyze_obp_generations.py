@@ -239,12 +239,18 @@ class OBPAnalyzer:
                 metadata = None
                 # Handle different return formats
                 if isinstance(result, tuple):
-                    prompt = result[0]  # Main prompt
+                    prompt_raw = result[0]  # [str] or str
                     metadata = result[-1] if isinstance(result[-1], dict) else None
                 elif isinstance(result, list):
-                    prompt = result[0]  # Standardized list format: [prompt, prompt_g, prompt_l]
+                    prompt_raw = result[0]  # Standardized list format: [prompt, prompt_g, prompt_l]
                 else:
-                    prompt = result
+                    prompt_raw = result
+
+                # build_dynamic_prompt returns [str], unwrap if needed
+                if isinstance(prompt_raw, list):
+                    prompt = prompt_raw[0] if prompt_raw else ""
+                else:
+                    prompt = prompt_raw
                     
                 # Analyze the prompt
                 self.analyze_prompt(prompt, metadata)
