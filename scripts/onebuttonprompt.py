@@ -359,7 +359,36 @@ class Script(scripts.Script):
             promptlist = []
 
             for i in range(5):
-                base_prompt = build_dynamic_prompt(insanitylevel,subject,artist, imagetype, False, antistring,prefixprompt,suffixprompt,promptcompounderlevel,seperator,givensubject,smartsubject, giventypeofimage, imagemodechance,chosengender, chosensubjectsubtypeobject, chosensubjectsubtypehumanoid, chosensubjectsubtypeconcept,True,False,-1,givenoutfit,False,base_model, OBP_preset, promptenhancer, "", "", presetprefix, presetsuffix)
+                base_prompt = build_dynamic_prompt(
+                    insanitylevel=insanitylevel,
+                    forcesubject=subject,
+                    artists=artist,
+                    imagetype=imagetype,
+                    onlyartists=False,
+                    antivalues=antistring,
+                    prefixprompt=prefixprompt,
+                    suffixprompt=suffixprompt,
+                    promptcompounderlevel=promptcompounderlevel,
+                    seperator=seperator,
+                    givensubject=givensubject,
+                    smartsubject=smartsubject,
+                    giventypeofimage=giventypeofimage,
+                    imagemodechance=imagemodechance,
+                    gender=chosengender,
+                    subtypeobject=chosensubjectsubtypeobject,
+                    subtypehumanoid=chosensubjectsubtypehumanoid,
+                    subtypeconcept=chosensubjectsubtypeconcept,
+                    advancedprompting=True,
+                    hardturnoffemojis=False,
+                    seed=-1,
+                    overrideoutfit=givenoutfit,
+                    prompt_g_and_l=False,
+                    base_model=base_model,
+                    OBP_preset=OBP_preset,
+                    prompt_enhancer=promptenhancer,
+                    preset_prefix=presetprefix,
+                    preset_suffix=presetsuffix,
+                )
                 fluffed_prompt = flufferizer(prompt=base_prompt, amountoffluff=amountoffluff)
                 promptlist.append(fluffed_prompt)
 
@@ -1476,7 +1505,15 @@ class Script(scripts.Script):
                 
                 if(ANDtoggle == "automatic"):
                     if(artist != "none"):
-                        preppedprompt += build_dynamic_prompt(insanitylevel,subject,artist, imagetype, True, antistring, base_model=base_model) 
+                        preppedprompt += build_dynamic_prompt(
+                            insanitylevel=insanitylevel,
+                            forcesubject=subject,
+                            artists=artist,
+                            imagetype=imagetype,
+                            onlyartists=True,
+                            antivalues=antistring,
+                            base_model=base_model,
+                        ) 
                     if(subject == "humanoid"):
                         preppedprompt += ", " + promptcompounderlevel + " people"
                     if(subject == "landscape"):
@@ -1503,7 +1540,36 @@ class Script(scripts.Script):
 
 
                 #Here is where we build a "normal" prompt
-                base_prompt = build_dynamic_prompt(insanitylevel,subject,artist, imagetype, False, antistring, prefixprompt, suffixprompt,promptcompounderlevel, seperator,givensubject,smartsubject,giventypeofimage,imagemodechance,chosengender, chosensubjectsubtypeobject, chosensubjectsubtypehumanoid, chosensubjectsubtypeconcept,True,False,-1,givenoutfit, False, base_model, OBP_preset, promptenhancer, "", "", presetprefix, presetsuffix)
+                base_prompt = build_dynamic_prompt(
+                    insanitylevel=insanitylevel,
+                    forcesubject=subject,
+                    artists=artist,
+                    imagetype=imagetype,
+                    onlyartists=False,
+                    antivalues=antistring,
+                    prefixprompt=prefixprompt,
+                    suffixprompt=suffixprompt,
+                    promptcompounderlevel=promptcompounderlevel,
+                    seperator=seperator,
+                    givensubject=givensubject,
+                    smartsubject=smartsubject,
+                    giventypeofimage=giventypeofimage,
+                    imagemodechance=imagemodechance,
+                    gender=chosengender,
+                    subtypeobject=chosensubjectsubtypeobject,
+                    subtypehumanoid=chosensubjectsubtypehumanoid,
+                    subtypeconcept=chosensubjectsubtypeconcept,
+                    advancedprompting=True,
+                    hardturnoffemojis=False,
+                    seed=-1,
+                    overrideoutfit=givenoutfit,
+                    prompt_g_and_l=False,
+                    base_model=base_model,
+                    OBP_preset=OBP_preset,
+                    prompt_enhancer=promptenhancer,
+                    preset_prefix=presetprefix,
+                    preset_suffix=presetsuffix,
+                )
                 fluffed_prompt = flufferizer(prompt=base_prompt, amountoffluff=amountoffluff)
                 preppedprompt += fluffed_prompt
 

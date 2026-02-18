@@ -432,7 +432,34 @@ class OneButtonPrompt:
     CATEGORY = "OneButtonPrompt"
     
     def Comfy_OBP(self, insanitylevel, custom_subject, seed, artist, imagetype, subject, imagemodechance, humanoids_gender, emojis, custom_outfit, base_model, prompt_enhancer, prompt_prefix, prompt_suffix):
-        generatedpromptlist = build_dynamic_prompt(insanitylevel,subject,artist,imagetype,False,"",prompt_prefix,prompt_suffix,1,"",custom_subject,True,"",imagemodechance, humanoids_gender,"all", "all", "all", False, emojis, seed, custom_outfit, True, base_model, "", prompt_enhancer)
+        generatedpromptlist = build_dynamic_prompt(
+            insanitylevel=insanitylevel,
+            forcesubject=subject,
+            artists=artist,
+            imagetype=imagetype,
+            onlyartists=False,
+            antivalues="",
+            prefixprompt=prompt_prefix,
+            suffixprompt=prompt_suffix,
+            promptcompounderlevel=1,
+            seperator="",
+            givensubject=custom_subject,
+            smartsubject=True,
+            giventypeofimage="",
+            imagemodechance=imagemodechance,
+            gender=humanoids_gender,
+            subtypeobject="all",
+            subtypehumanoid="all",
+            subtypeconcept="all",
+            advancedprompting=False,
+            hardturnoffemojis=emojis,
+            seed=seed,
+            overrideoutfit=custom_outfit,
+            prompt_g_and_l=True,
+            base_model=base_model,
+            OBP_preset="",
+            prompt_enhancer=prompt_enhancer,
+        )
         #print(generatedprompt)
         generatedprompt = generatedpromptlist[0]
         prompt_g = generatedpromptlist[1]

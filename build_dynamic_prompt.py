@@ -7,6 +7,7 @@ if __package__ is None or __package__ == '':
     from csv_reader import *
     from random_functions import *
     from one_button_presets import OneButtonPresets
+    from prompt_config import PromptConfig
     try:
         from superprompter.superprompter import one_button_superprompt, remove_superprompt_bias
         _HAS_SUPERPROMPTER = True
@@ -21,6 +22,7 @@ else:
     from .csv_reader import *
     from .random_functions import *
     from .one_button_presets import OneButtonPresets
+    from .prompt_config import PromptConfig
     try:
         from .superprompter.superprompter import one_button_superprompt, remove_superprompt_bias
         _HAS_SUPERPROMPTER = True
@@ -117,6 +119,9 @@ def load_custom_modes():
 # forcesubject van be used to force a certain type of subject
 # Set artistmode to none, to exclude artists 
 def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", chance_overrides = None, _return_metadata = False, custom_mode_config = None):
+
+    # Build typed config from legacy arguments
+    cfg = PromptConfig.from_kwargs(**{k: v for k, v in locals().items()})
 
     _metadata = None
     wildcard_to_metadata = {
@@ -4045,6 +4050,18 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
 
     # strip the prompt, for EVO in ruinedfooocus:
     prompt = prompt.strip()
+
+    # Initialize metadata tracking (mirrors build_dynamic_prompt)
+    _metadata = None
+    wildcard_to_metadata = {
+        "-lighting-": "chosen_lighting",
+        "-camera-": "chosen_camera",
+        "-quality-": "chosen_quality",
+        "-lens-": "chosen_lens",
+        "-artist-": "chosen_artist",
+        "-artmovement-": "chosen_artmovement",
+        "-colorscheme-": "chosen_colorscheme"
+    }
 
     # first build up a complete anti list. Those values are removing during list building
     # this uses the antivalues string AND the antilist.csv

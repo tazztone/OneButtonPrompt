@@ -12,6 +12,13 @@ from build_dynamic_prompt import *
 
 
 def generateprompts(amount = 1,insanitylevel="5",subject="all", artist="all", imagetype="all",onlyartists=False, workprompt="", antistring="",prefixprompt="", suffixprompt="", negativeprompt="",promptcompounderlevel = "1", seperator="comma",givensubject="",smartsubject=True,giventypeofimage="",imagemodechance=20, gender = "all", subtypeobject = "all", subtypehumanoid = "all", subtypeconcept = "all", advancedprompting = True, hardturnoffemojis=False, seed=0, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer="none", preset_prefix = "", preset_suffix =""):
+    from prompt_config import PromptConfig
+    from prompt_engine import PromptEngine
+
+    # Build config from arguments
+    # Filter out non-config args like 'amount' which is local to this function
+    cfg = PromptConfig.from_kwargs(**{k: v for k, v in locals().items() if k != "amount"})
+
     loops = int(amount)  # amount of images to generate
     steps = 0
    
@@ -19,7 +26,7 @@ def generateprompts(amount = 1,insanitylevel="5",subject="all", artist="all", im
     while steps < loops:
         # build prompt
         if(prompt_g_and_l == True):
-            resultlist = build_dynamic_prompt(insanitylevel,subject,artist,imagetype, onlyartists,antistring,prefixprompt,suffixprompt,promptcompounderlevel, seperator,givensubject,smartsubject,giventypeofimage,imagemodechance, gender, subtypeobject, subtypehumanoid, subtypeconcept, advancedprompting, hardturnoffemojis, seed, overrideoutfit, prompt_g_and_l, base_model, OBP_preset, prompt_enhancer)
+            resultlist = PromptEngine.generate(cfg)
             result = resultlist[0]
             print("prompt_g")
             print(resultlist[1])
@@ -27,7 +34,10 @@ def generateprompts(amount = 1,insanitylevel="5",subject="all", artist="all", im
             print(resultlist[2])
 
         else:
-            result = build_dynamic_prompt(insanitylevel,subject,artist,imagetype, onlyartists,antistring,prefixprompt,suffixprompt,promptcompounderlevel, seperator,givensubject,smartsubject,giventypeofimage,imagemodechance, gender, subtypeobject, subtypehumanoid, subtypeconcept, advancedprompting, hardturnoffemojis, seed, overrideoutfit, prompt_g_and_l, base_model, OBP_preset, prompt_enhancer,"","", preset_prefix, preset_suffix)
+            configs = cfg
+            # If we need to override anything specifically for the loop, we can
+            # but here it seems static per call
+            result = PromptEngine.generate(configs)[0]
 
         #if(superprompter):
         #    load_models()
@@ -109,30 +119,35 @@ def generateprompts(amount = 1,insanitylevel="5",subject="all", artist="all", im
     print("All done!")
 
 if __name__ == "__main__":
-    generateprompts(10,5
-                ,"all" # subject
-                ,"all" # artists
-                ,"all" # image type  "only other types", "only templates mode", "all - anime", "art blaster mode", "quality vomit mode", "color cannon mode", "unique art mode", "massive madness mode", "photo fantasy mode", "subject only mode", "fixed styles mode", "dynamic templates mode", "artify mode"
-                , False # only artists
-                ,"",""
-                ,""  #prefix prompt -- masterpiece, best quality, very aesthetic, absurdres
-                ,"" #suffix prompt
-                ,"",1,""
-                ,"" # subject override
-                ,True, # smart subject
-                "",5
-                , "all" # gender
-                , "all" # object types
-                , "all"  # humanoid types   -- all,generic humans,generic human relations, multiple humans, celebrities e.a.,fictional,humanoids, based on job or title,based on first name
-                , "all" # concept types
-                , False  # prompt switching
-                , True  # Turn off emojis
-                , -1  # seed
-                , "" #outfit override
-                , False #prompt_g_and_l
-                , "SDXL" #base model 
-                , "" #preset  "All (random)..."
-                , "" # superprompter
-                , "hello" # preset prefix
-                , "" # preset suffix
-                )
+    generateprompts(
+        amount=10,
+        insanitylevel=5,
+        subject="all",
+        artist="all",
+        imagetype="all",  # "only other types", "only templates mode", etc.
+        onlyartists=False,
+        antistring="",
+        prefixprompt="",
+        suffixprompt="",
+        negativeprompt="",
+        promptcompounderlevel=1,
+        seperator="",
+        givensubject="",
+        smartsubject=True,
+        giventypeofimage="",
+        imagemodechance=5,
+        gender="all",
+        subtypeobject="all",
+        subtypehumanoid="all",
+        subtypeconcept="all",
+        advancedprompting=False,
+        hardturnoffemojis=True,
+        seed=-1,
+        overrideoutfit="",
+        prompt_g_and_l=False,
+        base_model="SDXL",
+        OBP_preset="",
+        prompt_enhancer="",
+        preset_prefix="hello",
+        preset_suffix="",
+    )

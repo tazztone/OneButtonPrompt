@@ -136,7 +136,36 @@ def generateimages(amount = 1, size = "all",model = "currently selected model",s
                 
 
             else:    
-                randompromptlist = build_dynamic_prompt(insanitylevel,subject,artist,imagetype, False,antistring,prefixprompt,suffixprompt,promptcompounderlevel, seperator,givensubject,smartsubject,giventypeofimage,imagemodechance, gender, chosensubjectsubtypeobject, chosensubjectsubtypehumanoid, chosensubjectsubtypeconcept,True,False,-1,givenoutfit, prompt_g_and_l=True, base_model=base_model, OBP_preset=OBP_preset, prompt_enhancer=promptenhancer, preset_prefix=presetprefix, preset_suffix=presetsuffix)
+                randompromptlist = build_dynamic_prompt(
+                    insanitylevel=insanitylevel,
+                    forcesubject=subject,
+                    artists=artist,
+                    imagetype=imagetype,
+                    onlyartists=False,
+                    antivalues=antistring,
+                    prefixprompt=prefixprompt,
+                    suffixprompt=suffixprompt,
+                    promptcompounderlevel=promptcompounderlevel,
+                    seperator=seperator,
+                    givensubject=givensubject,
+                    smartsubject=smartsubject,
+                    giventypeofimage=giventypeofimage,
+                    imagemodechance=imagemodechance,
+                    gender=gender,
+                    subtypeobject=chosensubjectsubtypeobject,
+                    subtypehumanoid=chosensubjectsubtypehumanoid,
+                    subtypeconcept=chosensubjectsubtypeconcept,
+                    advancedprompting=True,
+                    hardturnoffemojis=False,
+                    seed=-1,
+                    overrideoutfit=givenoutfit,
+                    prompt_g_and_l=True,
+                    base_model=base_model,
+                    OBP_preset=OBP_preset,
+                    prompt_enhancer=promptenhancer,
+                    preset_prefix=presetprefix,
+                    preset_suffix=presetsuffix,
+                )
                 randomprompt = randompromptlist[0]
                 randomsubject = randompromptlist[1]
 
