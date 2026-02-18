@@ -23,6 +23,10 @@ else:
     from .random_functions import *
     from .one_button_presets import OneButtonPresets
     from .prompt_config import PromptConfig
+    from .list_manager import ListManager
+    from .subject_selector import SubjectSelector, SubjectSelection
+    from .mode_selector import ModeSelector, ModeSelection
+    from .enhancer_selector import EnhancerSelector, EnhancerSelection
     try:
         from .superprompter.superprompter import one_button_superprompt, remove_superprompt_bias
         _HAS_SUPERPROMPTER = True
@@ -139,6 +143,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     add_quality = True
     anime_mode = False
     configfilesuffix = ""
+    
+    # Initialize ListManager early to handle all CSV loading
+    lm = ListManager(antivalues=antivalues, gender=gender, insanitylevel=insanitylevel, configfilesuffix=configfilesuffix)
+    config = lm.config
+    antilist = lm.antilist
+
     if(forcesubject ==  "------ all"):
         forcesubject = "all"
 
@@ -332,111 +342,108 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
     # build all lists here
 
-    colorlist = csv_to_list("colors",antilist)
-    animallist = csv_to_list("animals",antilist)    
-    materiallist = csv_to_list("materials",antilist)
-    objectlist = csv_to_list("objects",antilist)
-    fictionallist = csv_to_list(csvfilename="fictional characters",antilist=antilist,skipheader=True,gender=gender)
-    nonfictionallist = csv_to_list(csvfilename="nonfictional characters",antilist=antilist,skipheader=True,gender=gender)
-    oppositefictionallist = csv_to_list(csvfilename="fictional characters",antilist=antilist,skipheader=True,gender=oppositegender)
-    oppositenonfictionallist = csv_to_list(csvfilename="nonfictional characters",antilist=antilist,skipheader=True,gender=oppositegender)
-    conceptsuffixlist = csv_to_list("concept_suffix",antilist)
-    buildinglist = csv_to_list("buildings",antilist)
-    vehiclelist = csv_to_list("vehicles",antilist)
-    outfitlist = csv_to_list("outfits",antilist)
-    locationlist = csv_to_list("locations",antilist)
-    backgroundlist = csv_to_list("backgrounds",antilist)
+    colorlist = lm.get_list("colors")
+    animallist = lm.get_list("animals")    
+    materiallist = lm.get_list("materials")
+    objectlist = lm.get_list("objects")
+    fictionallist = lm.get_list(csvfilename="fictional characters", skipheader=True, gender=gender)
+    nonfictionallist = lm.get_list(csvfilename="nonfictional characters", skipheader=True, gender=gender)
+    oppositefictionallist = lm.get_list(csvfilename="fictional characters", skipheader=True, gender=oppositegender)
+    oppositenonfictionallist = lm.get_list(csvfilename="nonfictional characters", skipheader=True, gender=oppositegender)
+    conceptsuffixlist = lm.get_list("concept_suffix")
+    buildinglist = lm.get_list("buildings")
+    vehiclelist = lm.get_list("vehicles")
+    outfitlist = lm.get_list("outfits")
+    locationlist = lm.get_list("locations")
+    backgroundlist = lm.get_list("backgrounds")
 
-    accessorielist = csv_to_list("accessories",antilist,"./csvfiles/",0,"?",False,False,gender)
-    artmovementlist = csv_to_list("artmovements",antilist)
-    bodytypelist = csv_to_list("body_types",antilist=antilist,skipheader=True,gender=gender)
-    cameralist = csv_to_list("cameras",antilist)
-    colorschemelist = csv_to_list("colorscheme",antilist)
-    conceptprefixlist = csv_to_list("concept_prefix",antilist)
-    culturelist = csv_to_list("cultures",antilist)
-    descriptorlist = csv_to_list("descriptors",antilist)
-    devmessagelist = csv_to_list("devmessages",antilist)
-    directionlist = csv_to_list(csvfilename="directions",antilist=antilist,insanitylevel=insanitylevel)
-    emojilist = csv_to_list("emojis",antilist)
-    eventlist = csv_to_list("events",antilist)
-    focuslist = csv_to_list(csvfilename="focus",antilist=antilist, insanitylevel=insanitylevel)
-    greatworklist = csv_to_list("greatworks",antilist)
-    haircolorlist = csv_to_list("haircolors",antilist)
-    hairstylelist = csv_to_list("hairstyles",antilist)
-    hairvomitlist = csv_to_list("hairvomit",antilist,"./csvfiles/",0,"?",False,False)
+    accessorielist = lm.get_list("accessories", delimiter="?", gender=gender)
+    artmovementlist = lm.get_list("artmovements")
+    bodytypelist = lm.get_list("body_types", skipheader=True, gender=gender)
+    cameralist = lm.get_list("cameras")
+    colorschemelist = lm.get_list("colorscheme")
+    conceptprefixlist = lm.get_list("concept_prefix")
+    culturelist = lm.get_list("cultures")
+    descriptorlist = lm.get_list("descriptors")
+    devmessagelist = lm.get_list("devmessages")
+    directionlist = lm.get_list(csvfilename="directions")
+    emojilist = lm.get_list("emojis")
+    eventlist = lm.get_list("events")
+    focuslist = lm.get_list(csvfilename="focus")
+    greatworklist = lm.get_list("greatworks")
+    haircolorlist = lm.get_list("haircolors")
+    hairstylelist = lm.get_list("hairstyles")
+    hairvomitlist = lm.get_list("hairvomit", delimiter="?")
     
-    humanoidlist = csv_to_list("humanoids",antilist)
+    humanoidlist = lm.get_list("humanoids")
     if(anime_mode or imagetype=="all - anime"):
         if(imagetype == "all"):
             imagetype = "all - anime"
-        imagetypelist = csv_to_list(csvfilename="imagetypes_anime",antilist=antilist, insanitylevel=insanitylevel, delimiter="?")
+        imagetypelist = lm.get_list(csvfilename="imagetypes_anime", delimiter="?")
     else:
-        imagetypelist = csv_to_list(csvfilename="imagetypes",antilist=antilist, insanitylevel=insanitylevel, delimiter="?")
+        imagetypelist = lm.get_list(csvfilename="imagetypes", delimiter="?")
 
-    joblist = csv_to_list(csvfilename="jobs",antilist=antilist,skipheader=True,gender=gender)
-    lenslist = csv_to_list(csvfilename="lenses",antilist=antilist, insanitylevel=insanitylevel)
-    lightinglist = csv_to_list(csvfilename="lighting",antilist=antilist, insanitylevel=insanitylevel)
-    malefemalelist = csv_to_list(csvfilename="malefemale",antilist=antilist,skipheader=True,gender=gender)
-    manwomanlist = csv_to_list(csvfilename="manwoman",antilist=antilist,skipheader=True,gender=gender)
-    moodlist = csv_to_list(csvfilename="moods",antilist=antilist, insanitylevel=insanitylevel)
-    othertypelist = csv_to_list("othertypes",antilist)
-    poselist = csv_to_list("poses",antilist)
-    qualitylist = csv_to_list("quality",antilist)
-    shotsizelist = csv_to_list(csvfilename="shotsizes",antilist=antilist, insanitylevel=insanitylevel)
-    timeperiodlist = csv_to_list("timeperiods",antilist)
-    vomitlist = csv_to_list(csvfilename="vomit",antilist=antilist, insanitylevel=insanitylevel)
+    joblist = lm.get_list(csvfilename="jobs", skipheader=True, gender=gender)
+    lenslist = lm.get_list(csvfilename="lenses")
+    lightinglist = lm.get_list(csvfilename="lighting")
+    malefemalelist = lm.get_list(csvfilename="malefemale", skipheader=True, gender=gender)
+    manwomanlist = lm.get_list(csvfilename="manwoman", skipheader=True, gender=gender)
+    moodlist = lm.get_list(csvfilename="moods")
+    othertypelist = lm.get_list("othertypes")
+    poselist = lm.get_list("poses")
+    qualitylist = lm.get_list("quality")
+    shotsizelist = lm.get_list(csvfilename="shotsizes")
+    timeperiodlist = lm.get_list("timeperiods")
+    vomitlist = lm.get_list(csvfilename="vomit")
+    
+    # ... handle anime vomit replacements if needed ...
     if(anime_mode):
-        replacements = {
-        "-allstylessuffix-": "-buildfacepart-",
-        "-artistdescription-": "-buildfacepart-"
-        }
-
+        replacements = {"-allstylessuffix-": "-buildfacepart-", "-artistdescription-": "-buildfacepart-"}
         for i, item in enumerate(vomitlist):
             for old, new in replacements.items():
                 item = item.replace(old, new)
             vomitlist[i] = item
-        
 
-    foodlist = csv_to_list("foods", antilist)
-    genderdescriptionlist = csv_to_list(csvfilename="genderdescription",antilist=antilist,skipheader=True,gender=gender)
-    minilocationlist = csv_to_list("minilocations", antilist)
-    minioutfitlist = csv_to_list("minioutfits",antilist,"./csvfiles/",0,"?",False,False,gender)
-    seasonlist = csv_to_list("seasons", antilist)
-    elaborateoutfitlist = csv_to_list("elaborateoutfits", antilist)
-    minivomitlist = csv_to_list("minivomit", antilist)
-    imagetypequalitylist = csv_to_list("imagetypequality", antilist)
-    rpgclasslist = csv_to_list("rpgclasses", antilist)
-    brandlist = csv_to_list("brands", antilist)
-    spacelist = csv_to_list("space", antilist)
-    poemlinelist = csv_to_list("poemlines", antilist)
-    songlinelist = csv_to_list("songlines", antilist)
-    musicgenrelist = csv_to_list("musicgenres", antilist)
-    manwomanrelationlist = csv_to_list(csvfilename="manwomanrelations",antilist=antilist,skipheader=True,gender=gender)
-    manwomanmultiplelist = csv_to_list(csvfilename="manwomanmultiples",antilist=antilist,skipheader=True,gender=gender,delimiter="?")
-    waterlocationlist = csv_to_list("waterlocations", antilist)
-    containerlist = csv_to_list("containers", antilist)
-    firstnamelist = csv_to_list(csvfilename="firstnames",antilist=antilist,skipheader=True,gender=gender)
-    floralist = csv_to_list("flora", antilist)
-    printlist = csv_to_list("prints", antilist)
-    patternlist = csv_to_list("patterns", antilist)
-    chairlist = csv_to_list("chairs", antilist)
-    cardnamelist = csv_to_list("card_names", antilist)
-    coveringlist = csv_to_list("coverings", antilist)
-    facepartlist = csv_to_list("faceparts", antilist)
-    outfitvomitlist = csv_to_list(csvfilename="outfitvomit",antilist=antilist,delimiter="?")
-    humanvomitlist = csv_to_list("humanvomit", antilist)
-    eyecolorlist = csv_to_list("eyecolors", antilist)
-    fashiondesignerlist = csv_to_list("fashiondesigners", antilist)
-    colorcombinationlist = csv_to_list("colorcombinations", antilist)
-    materialcombinationlist = csv_to_list("materialcombinations", antilist)
-    agelist = csv_to_list("ages", antilist)
-    agecalculatorlist = csv_to_list("agecalculator", antilist)
-    elementlist = csv_to_list("elements", antilist)
-    settinglist = csv_to_list("settings", antilist)
-    charactertypelist = csv_to_list("charactertypes", antilist)
-    objectstoholdlist = csv_to_list("objectstohold", antilist)
-    episodetitlelist = csv_to_list(csvfilename="episodetitles",antilist=antilist,skipheader=True)
-    flufferlist = csv_to_list("fluff", antilist)
+    foodlist = lm.get_list("foods")
+    genderdescriptionlist = lm.get_list(csvfilename="genderdescription", skipheader=True, gender=gender)
+    minilocationlist = lm.get_list("minilocations")
+    minioutfitlist = lm.get_list("minioutfits", delimiter="?", gender=gender)
+    seasonlist = lm.get_list("seasons")
+    elaborateoutfitlist = lm.get_list("elaborateoutfits")
+    minivomitlist = lm.get_list("minivomit")
+    imagetypequalitylist = lm.get_list("imagetypequality")
+    rpgclasslist = lm.get_list("rpgclasses")
+    brandlist = lm.get_list("brands")
+    spacelist = lm.get_list("space")
+    poemlinelist = lm.get_list("poemlines")
+    songlinelist = lm.get_list("songlines")
+    musicgenrelist = lm.get_list("musicgenres")
+    manwomanrelationlist = lm.get_list(csvfilename="manwomanrelations", skipheader=True, gender=gender)
+    manwomanmultiplelist = lm.get_list(csvfilename="manwomanmultiples", skipheader=True, gender=gender, delimiter="?")
+    waterlocationlist = lm.get_list("waterlocations")
+    containerlist = lm.get_list("containers")
+    firstnamelist = lm.get_list(csvfilename="firstnames", skipheader=True, gender=gender)
+    floralist = lm.get_list("flora")
+    printlist = lm.get_list("prints")
+    patternlist = lm.get_list("patterns")
+    chairlist = lm.get_list("chairs")
+    cardnamelist = lm.get_list("card_names")
+    coveringlist = lm.get_list("coverings")
+    facepartlist = lm.get_list("faceparts")
+    outfitvomitlist = lm.get_list(csvfilename="outfitvomit", delimiter="?")
+    humanvomitlist = lm.get_list("humanvomit")
+    eyecolorlist = lm.get_list("eyecolors")
+    fashiondesignerlist = lm.get_list("fashiondesigners")
+    colorcombinationlist = lm.get_list("colorcombinations")
+    materialcombinationlist = lm.get_list("materialcombinations")
+    agelist = lm.get_list("ages")
+    agecalculatorlist = lm.get_list("agecalculator")
+    elementlist = lm.get_list("elements")
+    settinglist = lm.get_list("settings")
+    charactertypelist = lm.get_list("charactertypes")
+    objectstoholdlist = lm.get_list("objectstohold")
+    episodetitlelist = lm.get_list(csvfilename="episodetitles", skipheader=True)
+    flufferlist = lm.get_list("fluff")
     tokenlist = []
     
     # New set of lists
@@ -1096,416 +1103,196 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         if "generate_concepts" in custom_mode_config:
              val = bool(custom_mode_config["generate_concepts"])
              generateevent = generateconcepts = generatepoemline = generatesongline = generatecardname = generateepisodetitle = val
+        
+        # Sync toggles back to cfg for SubjectSelector
+        cfg.generate_humanoids = bool(custom_mode_config.get("generate_humanoids", cfg.generate_humanoids))
+        cfg.generate_animals = bool(custom_mode_config.get("generate_animals", cfg.generate_animals))
+        cfg.generate_landscapes = bool(custom_mode_config.get("generate_landscapes", cfg.generate_landscapes))
+        cfg.generate_objects = bool(custom_mode_config.get("generate_objects", cfg.generate_objects))
+        cfg.generate_concepts = bool(custom_mode_config.get("generate_concepts", cfg.generate_concepts))
 
 
 
-    generatevehicle = bool(vehiclelist) and generatevehicle
-    generateobject = bool(objectlist) and generateobject
-    generatefood = bool(foodlist) and generatefood
-    generatebuilding = bool(buildinglist) and generatebuilding
-    generatespace = bool(spacelist) and generatespace
-    generateflora = bool(floralist) and generateflora
-    generateoccult = bool(occultlist) and generateoccult
-    generateobject = generatevehicle or generateobject or generatefood or generatebuilding or generatespace or generateflora or generateoccult
+
+    # --- REFACTORED SUBJECT SELECTION (Phase 8) ---
+    selection = SubjectSelector.calculate(cfg, lm)
     
-
-    if(generatevehicle):
-        objectwildcardlist.append("-vehicle-")
-        hybridlist.append("-vehicle-")
-        addontolocationlist.append("-vehicle-")
+    # Map selection lists back to legacy local variables for compatibility
+    mainchooserlist = selection.main_chooser
+    hybridlist = selection.hybrid_list
+    hybridhumanlist = selection.hybrid_human_list
+    addontolocationlist = selection.addon_location
+    addontolocationinsidelist = selection.addon_location_inside
+    objectwildcardlist = selection.object_wildcards
+    animalwildcardlist = selection.animal_wildcards
+    locationwildcardlist = selection.location_wildcards
+    humanoidsubjectchooserlist = selection.humanoid_chooser
+    locationsubjectchooserlist = selection.location_chooser
+    eventsubjectchooserlist = selection.event_chooser
     
-    if(generateobject):
-        objectwildcardlist.append("-object-")
-        hybridlist.append("-object-")
-
-    if(generatefood):
-        objectwildcardlist.append("-food-")
-        hybridlist.append("-food-")
+    # Map selection booleans back to legacy local variables
+    generatevehicle = selection.generate_vehicle
+    generateobject_primary = selection.generate_object 
+    generatefood = selection.generate_food
+    generatebuilding = selection.generate_building
+    generatespace = selection.generate_space
+    generateflora = selection.generate_flora
+    generateoccult = selection.generate_occult
+    generateobject = selection.generate_object_total
     
-    if(generatespace):
-        objectwildcardlist.append("-space-")
-        hybridlist.append("-space-")
-        addontolocationlist.append("-space-")
-
-    if(generatebuilding):
-        objectwildcardlist.append("-building-")
-        hybridlist.append("-building-")
-        addontolocationlist.append("-building-")
-        addontolocationinsidelist.append("-building-")
+    generatefictionalcharacter = selection.generate_fictional
+    generatenonfictionalcharacter = selection.generate_nonfictional
+    generatehumanoids = selection.generate_humanoids
+    generatemanwoman = selection.generate_manwoman
+    generatemanwomanrelation = selection.generate_manwomanrelation
+    generatemanwomanmultiple = selection.generate_manwomanmultiple
+    generatejob = selection.generate_job
+    generatefirstnames = selection.generate_firstname
+    generatehumanoid = selection.generate_humanoid_total
     
-    if(generateflora):
-        objectwildcardlist.append("-flora-")
-        hybridlist.append("-flora-")
-        addontolocationlist.append("-flora-")
-
-    if(generateoccult):
-        objectwildcardlist.append("-occult-")
-        hybridlist.append("-occult-")
-        addontolocationlist.append("-occult-")
+    generateanimal = selection.generate_animal
+    generatebird = selection.generate_bird
+    generatecat = selection.generate_cat
+    generatedog = selection.generate_dog
+    generateinsect = selection.generate_insect
+    generatepokemon = selection.generate_pokemon
+    generatemarinelife = selection.generate_marinelife
+    generateanimaltotal = selection.generate_animal_total
     
-    if(generateobject):
-        mainchooserlist.append("object")
-
-    if(generatelandscape):
-        mainchooserlist.append("landscape")
+    generatelocation = selection.generate_location
+    generatelocationfantasy = selection.generate_location_fantasy
+    generatelocationscifi = selection.generate_location_scifi
+    generatelocationvideogame = selection.generate_location_videogame
+    generatelocationbiome = selection.generate_location_biome
+    generatelocationcity = selection.generate_location_city
+    generatelandscape = selection.generate_landscape_total
     
-    if(generatelocationfantasy):
-        locationwildcardlist.append("-locationfantasy-")
-    
-    if(generatelocationscifi):
-        locationwildcardlist.append("-locationscifi-")
-    
-    if(generatelocationvideogame):
-        locationwildcardlist.append("-locationvideogame-")
-    
-    if(generatelocationbiome):
-        locationwildcardlist.append("-locationbiome-")
-    
-    if(generatelocationcity):
-        locationwildcardlist.append("-locationcity-")
-    
-    if(generatelocation):
-        locationwildcardlist.append("-location-")
-
-    if(generateanimal):
-        animalwildcardlist.append("-animal-")
-
-    if(generatebird):
-        animalwildcardlist.append("-bird-")
-    
-    if(generatecat):
-        animalwildcardlist.append("-cat-")
-
-    if(generatedog):
-        animalwildcardlist.append("-dog-")
-
-    if(generateinsect):
-        animalwildcardlist.append("-insect-")
-
-    if(generatepokemon):
-        animalwildcardlist.append("-pokemon-")
-    
-    if(generatemarinelife):
-        animalwildcardlist.append("-marinelife-")
-
-    generatefictionalcharacter = bool(fictionallist) and generatefictionalcharacter
-    generatenonfictionalcharacter = bool(nonfictionallist) and generatenonfictionalcharacter
-    generatehumanoids = bool(humanoidlist) and generatehumanoids
-    generatemanwoman = bool(manwomanlist) and generatemanwoman
-    generatemanwomanrelation = bool(manwomanrelationlist) and generatemanwomanrelation
-    generatemanwomanmultiple = bool(manwomanmultiplelist) and generatemanwomanmultiple
-    generatejob = bool(joblist) and generatejob
-    generatefirstnames = bool(firstnamelist) and generatefirstnames
-    generatehumanoid = generatefictionalcharacter or generatenonfictionalcharacter or generatehumanoids or generatemanwoman or generatejob or generatemanwomanrelation or generatefirstnames or generatemanwomanmultiple
-
-
-    if(generatefictionalcharacter):
-        humanoidsubjectchooserlist.append("fictional")
-        hybridlist.append("-fictional-")
-        hybridhumanlist.append("-fictional-")
-
-    if(generatefictionalcharacter):
-        humanoidsubjectchooserlist.append("non fictional")
-        hybridlist.append("-nonfictional-")
-        hybridhumanlist.append("-nonfictional-")
-    
-    if(generatehumanoids):
-        humanoidsubjectchooserlist.append("humanoid")
-        hybridlist.append("-humanoid-")
-        hybridhumanlist.append("-humanoid-")
-    
-    if(generatemanwoman):
-        humanoidsubjectchooserlist.append("human")
-
-    if(generatemanwomanrelation):
-        humanoidsubjectchooserlist.append("manwomanrelation")
-    
-    if(generatemanwomanmultiple):
-        humanoidsubjectchooserlist.append("manwomanmultiple")
-
-    if(generatejob):
-        humanoidsubjectchooserlist.append("job")
-   
-    if(generatehumanoid):
-        mainchooserlist.append("humanoid")
-
-    if(generatefirstnames):
-        humanoidsubjectchooserlist.append("firstname")
-    
-    
-    generateanimal = bool(animallist) and generateanimal
-    generatebird = bool(birdlist) and generatebird
-    generatecat = bool(catlist) and generatecat
-    generatedog = bool(doglist) and generatedog
-    generateinsect = bool(insectlist) and generateinsect
-    generatepokemon = bool(pokemonlist) and generatepokemon
-    generatemarinelife = bool(marinelifelist) and generatemarinelife
-
-    generateanimaltotal = generateanimal or generatebird or generatecat or generatedog or generateinsect or generatepokemon or generatemarinelife
-
-    if(generateanimal):
-        hybridlist.append("-animal-")
-    if(generatebird):
-        hybridlist.append("-bird-")
-    if(generatecat):
-        hybridlist.append("-cat-")
-    if(generatedog):
-        hybridlist.append("-dog-")
-    if(generateinsect):
-        hybridlist.append("-insect-")
-    if(generatepokemon):
-        hybridlist.append("-pokemon-")
-
-    if(generatemarinelife):
-        hybridlist.append("-marinelife-")
-
-    if(generateanimaltotal):
-        mainchooserlist.append("animal")
-
-    generatelocation = bool(locationlist) and generatelocation
-    generatelocationfantasy = bool(locationfantasylist) and generatelocationfantasy
-    generatelocationscifi = bool(locationscifilist) and generatelocationscifi
-    generatelocationvideogame = bool(locationvideogamelist) and generatelocationvideogame
-    generatelocationbiome = bool(locationbiomelist) and generatelocationbiome
-    generatelocationcity = bool(locationcitylist) and generatelocationcity
-    generatelandscape = generatelocation or generatelocationfantasy or generatelocationscifi or generatelocationvideogame or generatelocationbiome or generatelocationcity
-
-    if(generatelandscape):
-        addontolocationlist.append("-location-")
-        addontolocationlist.append("-background-")
-        addontolocationinsidelist.append("-location-")
-        addontolocationinsidelist.append("-background-")
-        locationsubjectchooserlist.append("landscape")
-    
-    if(generatelocation):
-        locationsubjectchooserlist.append("location")
-    if(generatelocationfantasy):
-        locationsubjectchooserlist.append("fantasy location")
-    if(generatelocationscifi):
-        locationsubjectchooserlist.append("sci-fi location")
-    if(generatelocationvideogame):
-        locationsubjectchooserlist.append("videogame location")
-    if(generatelocationbiome):
-        locationsubjectchooserlist.append("biome")
-    if(generatelocationcity):
-        locationsubjectchooserlist.append("city")
-    
-    generateevent = bool(eventlist) and generateevent
-    generateconcepts = bool(conceptprefixlist) and bool(conceptsuffixlist) and generateconcepts
-    generatepoemline = bool(poemlinelist) and generatepoemline 
-    generatesongline = bool(songlinelist) and generatesongline
-    generatecardname = bool(cardnamelist) and generatecardname
-    generateepisodetitle = bool(episodetitlelist) and generateepisodetitle
-    
-
-
-    generateconcept = generateevent or generateconcepts or generatepoemline or generatesongline
-
-    if(generateevent):
-        eventsubjectchooserlist.append("event")
-    
-    if(generateconcepts):
-        eventsubjectchooserlist.append("concept")
-
-    if(generatepoemline):
-        eventsubjectchooserlist.append("poemline")
-    
-    if(generatesongline):
-        eventsubjectchooserlist.append("songline")
-    
-    if(generatecardname):
-        eventsubjectchooserlist.append("cardname")
-
-    if(generateepisodetitle):
-        eventsubjectchooserlist.append("episodetitle")
-
-    if(generateconcept):
-        mainchooserlist.append("concept")
+    generateevent = selection.generate_event
+    generateconcepts = selection.generate_concepts
+    generatepoemline = selection.generate_poemline
+    generatesongline = selection.generate_songline
+    generatecardname = selection.generate_cardname
+    generateepisodetitle = selection.generate_episodetitle
+    generateconcept = selection.generate_concept_total
+    # --- END REFACTORED SECTION ---
 
 
 
     # determine wether we have a special mode or not
-    if(random.randint(1,int(imagemodechance)) == 1 and (imagetype == "all" or imagetype == "all - anime") and giventypeofimage == "" and onlyartists == False):
-        if(less_verbose):
-            imagetypemodelist.remove("dynamic templates mode")
-        if(anime_mode):
-            imagetypemodelist.remove("only templates mode")
-            imagetypemodelist.remove("massive madness mode")
-            imagetypemodelist.remove("fixed styles mode")
-            imagetypemodelist.remove("unique art mode")
-        imagetype = random.choice(imagetypemodelist)  # override imagetype with a random "mode" value
-
-
-
-    specialmode = False
-    templatemode = False
-    artblastermode = False
-    qualityvomitmode = False
-    uniqueartmode = False
-    colorcannonmode = False
-    photofantasymode = False
-    massivemadnessmode = False
-    onlysubjectmode = False
-    stylesmode = False
-    thetokinatormode = False
-    dynamictemplatesmode = False
-    artifymode = False
-    custommodeactive = False
-    generationmode = ""
-
-    # determine wether we should go for a template or not. Not hooked up to insanitylevel
-    if(imagetype == "only templates mode"):
-        specialmode = True
-        templatemode = True
-        generationmode = "only templates"
-        print("Running with a randomized template instead of a randomized prompt")
-
-    if(imagetype == "art blaster mode"):
-        specialmode = True
-        generationmode = "art blaster"
-        if(uncommon_dist(insanitylevel)):
-            artblastermode = True
-        elif(bool(artistlist)):
-            onlysubjectmode = True
-            artifymode = True
-        else:
-            artblastermode = True
-        print("Running in art blaster mode")
-
-    if(imagetype == "unique art mode"):
-        specialmode = True
-        uniqueartmode = True
-        generationmode = "unique art"
-        print("Running in unique art mode")
-
-    if(imagetype == "quality vomit mode"):
-        specialmode = True
-        qualityvomitmode = True
-        generationmode = "quality vomit"
-        print("Running in quality vomit mode")
-
-    if(imagetype == "color cannon mode"):
-        specialmode = True
-        colorcannonmode = True
-        generationmode = "color cannon"
-        print("Running in color cannon mode")
-
-    if(imagetype == "photo fantasy mode"):
-        specialmode = True
-        photofantasymode = True
-        generationmode = "photo fantasy"
-        print("Running in photo fantasy mode")
-
-    if(imagetype == "massive madness mode"):
-        specialmode = True
-        massivemadnessmode = True
-        generationmode = "massive madness"
-        print("Running in massive madness mode")
-        print("Are you ready for this?")
-
-    if(imagetype == "subject only mode"):
-        specialmode = True
-        onlysubjectmode = True
-        generationmode = "subject only"
-        print("Running in only subject mode")
-
-    if(imagetype == "fixed styles mode"):
-        specialmode = True
-        stylesmode = True
-        generationmode = "fixed styles"
-        print("Running with a randomized style instead of a randomized prompt")
-
-    if(imagetype == "the tokinator"):
-        specialmode = True
-        thetokinatormode = True
-        generationmode = "tokinator"
-        # for performance, load the list here
-        tokenlist = csv_to_list(csvfilename="tokens",antilist=antilist,skipheader=True)
-        print("Running with a completely random set of words")
-        print("All safety and logic is turned off")
-
-    if(imagetype == "dynamic templates mode"):
-        specialmode = True
-        dynamictemplatesmode = True
-        print("Running with dynamic templates mode")
-
-    # just for testing, you can't choose this. Artify runs through Art Blaster instead.
-    if(imagetype == "artify mode"):
-        specialmode = True
-        onlysubjectmode = True
-        artifymode = True
-        print("Running with artify mode")
-
-    # Priority 1: Config passed explicitly (from Preset or direct call)
-    custom_modes = load_custom_modes()
-    if custom_mode_config is not None:
-        specialmode = True
-        custommodeactive = True
-        generationmode = "custom mode: preset-inline"
-        print(f"Running with inline custom mode config")
-
-    # Priority 2: Named custom mode from JSON file
-    elif imagetype in custom_modes:
-        custom_mode_config = custom_modes[imagetype]
-        specialmode = True
-        custommodeactive = True
-        generationmode = f"custom mode: {imagetype}"
-        print(f"Running in custom mode: {imagetype}")
-
-    # main stuff
+    # --- REFACTORED MODE SELECTION (Phase 9) ---
+    mode_results = ModeSelector.calculate(cfg, lm, imagetypemodelist, less_verbose, anime_mode)
+    
+    # Map back selection results
+    imagetype = mode_results.imagetype
+    specialmode = mode_results.specialmode
+    templatemode = mode_results.templatemode
+    artblastermode = mode_results.artblastermode
+    qualityvomitmode = mode_results.qualityvomitmode
+    uniqueartmode = mode_results.uniqueartmode
+    colorcannonmode = mode_results.colorcannonmode
+    photofantasymode = mode_results.photofantasymode
+    massivemadnessmode = mode_results.massivemadnessmode
+    onlysubjectmode = mode_results.onlysubjectmode
+    stylesmode = mode_results.stylesmode
+    thetokinatormode = mode_results.thetokinatormode
+    dynamictemplatesmode = mode_results.dynamictemplatesmode
+    artifymode = mode_results.artifymode
+    custommodeactive = mode_results.custommodeactive
+    generationmode = mode_results.generationmode
+    if thetokinatormode:
+        tokenlist = mode_results.token_list
+    if custommodeactive:
+        custom_mode_config = mode_results.custom_mode_config
+        
+    # Main logic flags
     generatetype = not specialmode
     generatesubject = not templatemode
-    if(thetokinatormode):
+    if thetokinatormode:
         generatesubject = False
+    # --- END REFACTORED SECTION ---
 
-    # normals
-    generateartist = bool(artistlist) and not specialmode
-    if(thetokinatormode):
-        generateartist = bool(artistlist)
-    generateoutfit = bool(outfitlist) and not templatemode
-    generatebodytype = bool(bodytypelist) and not templatemode
-    generateaccessorie = bool(accessorielist) and not specialmode
-    generateartmovement = bool(artmovementlist) and not specialmode
-    generatecamera = bool(cameralist) and not specialmode
-    generatecolorscheme = bool(colorschemelist) and not specialmode
-    generatedescriptors = bool(descriptorlist) and not templatemode
-    generatedirection = bool(directionlist) and not specialmode
-    generatefocus = bool(focuslist) and not specialmode
-    generatehairstyle = bool(hairstylelist) and not templatemode
-    generatelens = bool(lenslist) and not specialmode
-    generatelighting = bool(lightinglist) and not specialmode
-    generatemood = bool(moodlist) and not specialmode
-    generatepose = bool(poselist) and not templatemode
-    generatevomit = bool(vomitlist) and not specialmode and add_vomit
-    generatequality = bool(qualitylist) and not specialmode and add_quality
-    generateshot = bool(shotsizelist) and not specialmode
-    generatetimeperiod = bool(timeperiodlist) and not specialmode
-    generateemoji = bool(emojilist) and not templatemode
-    generateface = bool(buildfacelist) and not specialmode
-    generatehumanexpression = bool(humanexpressionlist) and not specialmode
-    generatehumanvomit = bool(humanvomitlist) and not specialmode
 
-    # specials:
-    generatebackground = bool(backgroundtypelist) and not specialmode
-    generateinsideshot = bool(insideshotlist) and not specialmode
-    generatephotoaddition = bool(photoadditionlist) and not specialmode
-    generatehairstyle = bool(buildhairlist) and not templatemode
-    generateoutfit = bool(buildoutfitlist) and not templatemode
-    generateobjectaddition = bool(objectadditionslist) and not templatemode
-    generatehumanaddition = bool(humanadditionlist) and not templatemode
-    generateanimaladdition = bool(animaladditionlist) and not templatemode
-    generateaccessories = bool(buildaccessorielist) and not templatemode
-    generategreatwork = bool(greatworklist) and not specialmode
-    generatepoemline = bool(poemlinelist) and not specialmode
-    generatesongline = bool(songlinelist) and not specialmode
-    generatecardname = bool(cardnamelist) and not specialmode
-    generateepisodetitle = bool(episodetitlelist) and not specialmode
+    # --- REFACTORED ENHANCERS (Phase 10) ---
+    en = EnhancerSelector.calculate(
+        lm, mode_results, 
+        add_vomit=add_vomit, 
+        add_quality=add_quality, 
+        gen_imagetype_quality=generateimagetypequality, 
+        gen_imagetype=generateimagetype
+    )
     
-    generateminilocationaddition = bool(minilocationadditionslist) and not specialmode
-    generateminivomit = bool(minivomitlist) and not specialmode and add_vomit
-    generateimagetypequality = bool(imagetypequalitylist) and not specialmode and generateimagetypequality 
-    generateoveralladdition = bool(overalladditionlist) and not specialmode
-    generateimagetype = bool(imagetypelist) and not specialmode and generateimagetype
+    # Map back selection results
+    generateartist = en.generate_artist
+    generateoutfit = en.generate_outfit
+    generatebodytype = en.generate_bodytype
+    generateaccessorie = en.generate_accessorie
+    generateartmovement = en.generate_artmovement
+    generatebackground = en.generate_background
+    generatecolorscheme = en.generate_colorscheme
+    generatemood = en.generate_mood
+    generatelighting = en.generate_lighting
+    generatecamera = en.generate_camera
+    generatetimeperiod = en.generate_timeperiod
+    generatepose = en.generate_pose
+    generatefashiondesigner = en.generate_fashion_designer
+    generateeyecolor = en.generate_eyecolor
+    generateage = en.generate_age
+    generateagecalculator = en.generate_age_calculator
+    generatehaircolor = en.generate_haircolor
+    generatehairstyle = en.generate_hairstyle
+    generategenderdescription = en.generate_gender_description
+    genereatefantasyartist = en.generate_fantasy_artist
+    generatepopularartist = en.generate_popular_artist
+    generatetopographyartist = en.generate_photography_artist
+    generateromanticismartist = en.generate_romanticism_artist
+    generateportraitartist = en.generate_portrait_artist
+    generatecharacterartist = en.generate_character_artist
+    generatelandscapeartist = en.generate_landscape_artist
+    generatescifiartist = en.generate_scifi_artist
+    generatearchitectartist = en.generate_architect_artist
+    generatedigitalartist = en.generate_digital_artist
+    generategraphicdesignartist = en.generate_graphic_design_artist
+    generatecinemaartist = en.generate_cinema_artist
+    generatebasicbitchdescriptor = en.generate_basic_bitch_descriptor
+    generatecolorcombination = en.generate_color_combination
+    generatematerialcombination = en.generate_material_combination
+    generateface = en.generate_face
+    generatehair = en.generate_hair
+    generateoutfitdetailed = en.generate_outfit_detailed
+    generateobjectadditions = en.generate_object_additions
+    generatehumanadditions = en.generate_human_additions
+    generateanimaladditions = en.generate_animal_additions
+    generatebuildaccessorie = en.generate_build_accessorie
+    generateminilocationadditions = en.generate_minilocation_additions
+    generateoveralladditions = en.generate_overall_additions
+    generateminiactivity = en.generate_miniactivity
+    generateelement = en.generate_element
+    generatesetting = en.generate_setting
+    generatecharactertype = en.generate_charactertype
+    generateobjectstohold = en.generate_objectstohold
+
+    # Missing flags from first pass
+    generatevomit = en.generate_vomit
+    generatequality = en.generate_quality
+    generateemoji = en.generate_emoji
+    generatehumanexpression = en.generate_human_expression
+    generatehumanvomit = en.generate_human_vomit
+    generateinsideshot = en.generate_inside_shot
+    generatephotoaddition = en.generate_photo_addition
+    generategreatwork = en.generate_great_work
+    generatepoemline = en.generate_poem_line
+    generatesongline = en.generate_song_line
+    generatecardname = en.generate_card_name
+    generateepisodetitle = en.generate_episode_title
+    generateimagetypequality = en.generate_imagetype_quality
+    generateimagetype = en.generate_imagetype
+    generatedescriptors = en.generate_descriptors
+    generatedirection = en.generate_direction
+    generatefocus = en.generate_focus
+    generatelens = en.generate_lens
+    generateshot = en.generate_shot
+    generateaccessories = en.generate_accessories_legacy
+    # --- END REFACTORED SECTION ---
 
 
     # Smart subject logic

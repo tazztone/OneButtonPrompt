@@ -61,6 +61,13 @@ class PromptConfig:
     preset_prefix: str = ""
     preset_suffix: str = ""
 
+    # --- category toggles ---
+    generate_humanoids: bool = True
+    generate_animals: bool = True
+    generate_landscapes: bool = True
+    generate_objects: bool = True
+    generate_concepts: bool = True
+
     # --- advanced overrides ---
     chance_overrides: Optional[Dict[str, Any]] = None
     custom_mode_config: Optional[Dict[str, Any]] = None
