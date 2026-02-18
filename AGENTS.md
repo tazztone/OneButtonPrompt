@@ -22,8 +22,16 @@ OneButtonPrompt (OBP) is an AI prompt generation system designed for Stable Diff
 ```
 OneButtonPrompt/
 ├── Core Engine
-│   ├── build_dynamic_prompt.py    # Main generation logic
-│   ├── csv_reader.py              # Data loading & caching
+│   ├── build_dynamic_prompt.py    # Main generation logic (Monolith)
+│   ├── prompt_engine.py           # Facade & API
+│   ├── prompt_config.py           # Configuration Dataclass
+│   ├── list_manager.py            # CSV Loading & Caching
+│   ├── subject_selector.py        # Subject Logic
+│   ├── mode_selector.py           # Special Modes
+│   ├── enhancer_selector.py       # Modifier Logic
+│   ├── wildcard_processor.py      # Wildcard Logic
+│   ├── chance_config.py           # Chance Configuration
+│   ├── csv_reader.py              # Legacy Data Loading
 │   ├── random_functions.py        # Probability distribution
 │   └── one_button_presets.py      # Preset management
 ├── Platforms
@@ -48,12 +56,14 @@ OneButtonPrompt/
 ## 3. Core Engine Details
 
 ### Prompt Generation Pipeline (`build_dynamic_prompt.py`)
-1.  **Initialization**: Loads configuration based on the target `base_model` (SD1.5, SDXL, Cascade, Anime).
-2.  **Subject Selection**: Chooses a main category (Object, Animal, Humanoid, Landscape, Concept).
-    *   *Smart Subject*: Auto-detects keywords in user input to disable conflicting generation (e.g., if user types "robot", disables human body generation).
-3.  **Construction**: Builds the prompt structure:
+1.  **Initialization**: `PromptEngine` creates a `PromptConfig` object with all parameters.
+2.  **Selection (Extracted Modules)**:
+    *   **Subjects**: `SubjectSelector` determines the main category (Object, Animal, Humanoid, Landscape, Concept).
+    *   **Modes**: `ModeSelector` handles special generation modes (Art Blaster, etc.).
+    *   **Enhancers**: `EnhancerSelector` toggles specific features (artists, cameras, lighting) based on logic.
+3.  **Assembly**: `build_dynamic_prompt.py` constructs the prompt string using the decisions from the selectors.
     `[Artist] -> [Image Type] -> [Shot Size] -> [Subject Descriptors] -> [Main Subject] -> [Details] -> [Location] -> [Technical] -> [Quality]`
-4.  **Wildcard Processing**: Replaces placeholders like `-artist-`, `-subject-`, `-outfit-`.
+4.  **Wildcard Processing**: `WildcardProcessor` recursively replaces placeholders like `-artist-`, `-subject-`, `-outfit-`.
     *   Supports advanced logic: `OR(opt1;opt2)`, nested wildcards, and weight syntax.
 5.  **Refinement**: Applies weighting, switching, and model-specific formatting.
 
