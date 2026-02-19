@@ -20,6 +20,7 @@ try:
     from build_dynamic_prompt import build_dynamic_prompt
     print("✓ Imported build_dynamic_prompt (superprompter optional)")
     from csv_reader import csv_to_list
+    from list_manager import ListManager
     print("✓ Successfully imported OBP modules")
 except ImportError as e:
     print(f"✗ Error importing OBP modules: {e}")
@@ -61,6 +62,9 @@ class OBPAnalyzer:
             'chosen_artists': collections.Counter(),
         }
         
+        # Persistent list manager for performance
+        self.lm = ListManager()
+        
         # Load reference data from CSVs for matching
         self.load_reference_data()
         
@@ -69,39 +73,62 @@ class OBPAnalyzer:
         print("\nLoading reference data from CSVs...")
         
         try:
-            self.ref_artists = set(csv_to_list("artists", directory="./csvfiles/"))
+            self.ref_artists = sorted(list(self.lm.get_list("artists", directory="./csvfiles/")), key=len, reverse=True)
             print(f"  ✓ Loaded {len(self.ref_artists)} artists")
-        except Exception:
-            self.ref_artists = set()
-            print("  ✗ Could not load artists.csv")
+            # Build combined regex for performance
+            artist_patterns = [re.escape(a.lower()) for a in self.ref_artists if a]
+            self.artist_regex = re.compile(r'\b(' + '|'.join(artist_patterns) + r')\b', re.IGNORECASE)
+        except Exception as e:
+            self.ref_artists = []
+            self.artist_regex = None
+            print(f"  ✗ Could not load artists.csv or build regex: {e}")
             
         try:
-            self.ref_imagetypes = set(csv_to_list("imagetypes", directory="./csvfiles/"))
+            self.ref_imagetypes = sorted(list(self.lm.get_list("imagetypes", directory="./csvfiles/")), key=len, reverse=True)
             print(f"  ✓ Loaded {len(self.ref_imagetypes)} image types")
+            imagetype_patterns = [re.escape(it.lower()) for it in self.ref_imagetypes if it]
+            self.imagetype_regex = re.compile(r'\b(' + '|'.join(imagetype_patterns) + r')\b', re.IGNORECASE)
         except Exception:
-            self.ref_imagetypes = set()
+            self.ref_imagetypes = []
+            self.imagetype_regex = None
             print("  ✗ Could not load imagetypes.csv")
             
         try:
-            self.ref_artmovements = set(csv_to_list("artmovements", directory="./csvfiles/"))
+            self.ref_artmovements = sorted(list(self.lm.get_list("artmovements", directory="./csvfiles/")), key=len, reverse=True)
             print(f"  ✓ Loaded {len(self.ref_artmovements)} art movements")
+            movement_patterns = [re.escape(am.lower()) for am in self.ref_artmovements if am]
+            self.movement_regex = re.compile(r'\b(' + '|'.join(movement_patterns) + r')\b', re.IGNORECASE)
         except Exception:
-            self.ref_artmovements = set()
+            self.ref_artmovements = []
+            self.movement_regex = None
             print("  ✗ Could not load artmovements.csv")
             
         try:
-            self.ref_colors = set(csv_to_list("colors", directory="./csvfiles/"))
+            self.ref_colors = sorted(list(self.lm.get_list("colors", directory="./csvfiles/")), key=len, reverse=True)
             print(f"  ✓ Loaded {len(self.ref_colors)} colors")
+            color_patterns = [re.escape(c.lower()) for c in self.ref_colors if c]
+            self.color_regex = re.compile(r'\b(' + '|'.join(color_patterns) + r')\b', re.IGNORECASE)
         except Exception:
-            self.ref_colors = set()
+            self.ref_colors = []
+            self.color_regex = None
             print("  ✗ Could not load colors.csv")
             
         try:
-            self.ref_lighting = set(csv_to_list("lighting", directory="./csvfiles/"))
+            self.ref_lighting = sorted(list(self.lm.get_list("lighting", directory="./csvfiles/")), key=len, reverse=True)
             print(f"  ✓ Loaded {len(self.ref_lighting)} lighting terms")
+            light_patterns = [re.escape(l.lower()) for l in self.ref_lighting if l]
+            self.light_regex = re.compile(r'\b(' + '|'.join(light_patterns) + r')\b', re.IGNORECASE)
         except:
-            self.ref_lighting = set()
+            self.ref_lighting = []
+            self.light_regex = None
             print("  ✗ Could not load lighting.csv")
+            
+        # Camera and Quality patterns
+        camera_patterns = ['camera', 'lens', 'mm', 'aperture', 'f/\\d+', 'iso', 'shutter', 'exposure', 'bokeh', 'depth of field']
+        self.camera_regex = re.compile(r'\b(' + '|'.join(camera_patterns) + r')\b', re.IGNORECASE)
+        
+        quality_patterns = ['detailed', 'masterpiece', 'high quality', 'best quality', '8k', '4k', 'hd', 'uhd', 'sharp', 'crisp']
+        self.quality_regex = re.compile(r'\b(' + '|'.join(quality_patterns) + r')\b', re.IGNORECASE)
             
     def analyze_prompt(self, prompt, metadata=None):
         """Parse a prompt and extract identifiable elements"""
@@ -153,60 +180,49 @@ class OBPAnalyzer:
             bigram = f"{phrases[j]} | {phrases[j+1]}"
             self.results['bigrams'][bigram] += 1
             
-        # Split into words/phrases (handle commas and special chars for keyword matching)
-        words_keyword = re.split(r'[,\(\)\[\]:]', prompt_lower)
-        words_keyword = [w.strip() for w in words_keyword if w.strip()]
-        
-        # Match artists (whole phrase match)
-        for artist in self.ref_artists:
-            pattern = r'\b' + re.escape(artist.lower()) + r'\b'
-            if re.search(pattern, prompt_lower):
-                self.results['artists'][artist] += 1
+        # Match artists (combined regex for efficiency)
+        if self.artist_regex:
+            found_artists = self.artist_regex.findall(prompt_lower)
+            for artist_match in found_artists:
+                # We need to map the lowercase match back to the original case if possible
+                # But since we're using findall on prompt_lower, we'll just record what we found
+                # For consistency with report, findall returns the match as it is in the text
+                # ref_artists is sorted by length, so we match longest first
+                # Counters handle the case
+                self.results['artists'][artist_match] += 1
                 if metadata:
                     main_subj = metadata.get('mainchooser', 'unknown')
-                    self.results['co_occurrence']['subject_artist'][f"{main_subj} x {artist}"] += 1
+                    self.results['co_occurrence']['subject_artist'][f"{main_subj} x {artist_match}"] += 1
                 
         # Match image types
-        for imagetype in self.ref_imagetypes:
-            pattern = r'\b' + re.escape(imagetype.lower()) + r'\b'
-            if re.search(pattern, prompt_lower):
-                self.results['imagetypes'][imagetype] += 1
+        if self.imagetype_regex:
+            for match in self.imagetype_regex.findall(prompt_lower):
+                self.results['imagetypes'][match] += 1
                 
         # Match art movements
-        for movement in self.ref_artmovements:
-            pattern = r'\b' + re.escape(movement.lower()) + r'\b'
-            if re.search(pattern, prompt_lower):
-                self.results['art_movements'][movement] += 1
+        if self.movement_regex:
+            for match in self.movement_regex.findall(prompt_lower):
+                self.results['art_movements'][match] += 1
                 
         # Match colors
-        for color in self.ref_colors:
-            pattern = r'\b' + re.escape(color.lower()) + r'\b'
-            if re.search(pattern, prompt_lower):
-                self.results['colors'][color] += 1
+        if self.color_regex:
+            for match in self.color_regex.findall(prompt_lower):
+                self.results['colors'][match] += 1
                 
         # Match lighting
-        for light in self.ref_lighting:
-            pattern = r'\b' + re.escape(light.lower()) + r'\b'
-            if re.search(pattern, prompt_lower):
-                self.results['lighting'][light] += 1
+        if self.light_regex:
+            for match in self.light_regex.findall(prompt_lower):
+                self.results['lighting'][match] += 1
         
-        # Detect camera terms (common patterns)
-        camera_patterns = [
-            'camera', 'lens', 'mm', 'aperture', 'f/', 'iso', 
-            'shutter', 'exposure', 'bokeh', 'depth of field'
-        ]
-        for pattern in camera_patterns:
-            if pattern in prompt_lower:
-                self.results['camera_terms'][pattern] += 1
+        # Detect camera terms
+        if self.camera_regex:
+            for match in self.camera_regex.findall(prompt_lower):
+                self.results['camera_terms'][match] += 1
                 
         # Detect quality terms
-        quality_patterns = [
-            'detailed', 'masterpiece', 'high quality', 'best quality',
-            '8k', '4k', 'hd', 'uhd', 'sharp', 'crisp'
-        ]
-        for pattern in quality_patterns:
-            if pattern in prompt_lower:
-                self.results['quality_terms'][pattern] += 1
+        if self.quality_regex:
+            for match in self.quality_regex.findall(prompt_lower):
+                self.results['quality_terms'][match] += 1
                 
         # Fallback for subject type if metadata is missing (legacy support)
         if not metadata:
@@ -233,8 +249,8 @@ class OBPAnalyzer:
                 print(f"Progress: {i + 1}/{num_iterations} generations...")
                 
             try:
-                # Generate prompt with ground-truth metadata
-                result = build_dynamic_prompt(insanitylevel=insanitylevel, _return_metadata=True, **kwargs)
+                # Generate prompt with ground-truth metadata and reusable list manager
+                result = build_dynamic_prompt(insanitylevel=insanitylevel, _return_metadata=True, list_manager=self.lm, **kwargs)
                 
                 metadata = None
                 # Handle different return formats
@@ -543,9 +559,9 @@ def main():
     """Main execution function"""
     
     parser = argparse.ArgumentParser(description="OneButtonPrompt Generation Analyzer")
-    parser.add_argument("--iterations", type=int, default=1000, help="Number of generations to run")
+    parser.add_argument("--iterations", type=int, default=10, help="Number of generations to run")
     parser.add_argument("--insanity", type=int, default=5, help="Insanity level (1-10)")
-    parser.add_argument("--output", type=str, default="obp_analysis_results.json", help="Output JSON filename")
+    parser.add_argument("--output", type=str, default="obp_optimized_results.json", help="Output JSON filename")
     parser.add_argument("--output-dir", type=str, default="analysis_results", help="Directory to save results")
     parser.add_argument("--timestamp", action="store_true", help="Include timestamp in filename")
     

@@ -16,6 +16,7 @@ import inspect
 
 if __package__ is None or __package__ == '':
     from prompt_config import PromptConfig
+    from list_manager import ListManager
     from build_dynamic_prompt import (
         build_dynamic_prompt,
         build_dynamic_negative,
@@ -27,6 +28,7 @@ if __package__ is None or __package__ == '':
     )
 else:
     from .prompt_config import PromptConfig
+    from .list_manager import ListManager
     from .build_dynamic_prompt import (
         build_dynamic_prompt,
         build_dynamic_negative,
@@ -48,18 +50,19 @@ _DEEP_CONTROL_FIELDS = {
 
 
 class PromptEngine:
-    """High-level, stateless prompt generator.
+    """Class-based prompt generator with shared caching.
 
-    Wraps the legacy ``build_dynamic_prompt`` function behind a typed
-    ``PromptConfig`` interface.  All randomness is controlled by
-    ``config.seed`` — identical configs produce identical output.
+    Wraps the legacy ``build_dynamic_prompt`` logic and maintains a
+    ``ListManager`` instance to cache CSV data across multiple calls.
     """
+
+    def __init__(self, list_manager: ListManager | None = None):
+        self.list_manager = list_manager or ListManager()
 
     # ------------------------------------------------------------------
     # Core generation
     # ------------------------------------------------------------------
-    @staticmethod
-    def generate(config: PromptConfig | None = None, **overrides) -> list:
+    def generate(self, config: PromptConfig | None = None, **overrides) -> list:
         """Generate a prompt from the given config.
 
         Parameters
@@ -98,14 +101,17 @@ class PromptEngine:
 
         # Filter to only params that build_dynamic_prompt accepts
         params = {k: v for k, v in all_params.items() if k in _BDP_PARAMS}
+        
+        # Inject our list manager
+        params["list_manager"] = self.list_manager
 
         return build_dynamic_prompt(**params)
 
     # ------------------------------------------------------------------
     # Auxiliary prompt operations
     # ------------------------------------------------------------------
-    @staticmethod
     def generate_negative(
+        self,
         positive_prompt: str,
         insanitylevel: int = 0,
         enhance: bool = False,
@@ -121,8 +127,8 @@ class PromptEngine:
             base_model=base_model,
         )
 
-    @staticmethod
     def create_variant(
+        self,
         prompt: str,
         insanitylevel: int = 5,
         antivalues: str = "",
@@ -132,16 +138,15 @@ class PromptEngine:
     ) -> str:
         """Create a variation of an existing prompt."""
         return createpromptvariant(
-            prompt, insanitylevel, antivalues, gender, artists, advancedprompting
+            prompt, insanitylevel, antivalues, gender, artists, advancedprompting, list_manager=self.list_manager
         )
 
-    @staticmethod
-    def enhance(prompt: str, amount: int = 1) -> str:
+    def enhance(self, prompt: str, amount: int = 1) -> str:
         """Add random descriptive words to a prompt."""
-        return enhance_positive(positive_prompt=prompt, amountofwords=amount)
+        return enhance_positive(positive_prompt=prompt, amountofwords=amount, list_manager=self.list_manager)
 
-    @staticmethod
     def artify(
+        self,
         prompt: str,
         insanitylevel: int = 5,
         artists: str = "all",
@@ -157,10 +162,11 @@ class PromptEngine:
             amountofartists=amountofartists,
             mode=mode,
             seed=seed,
+            list_manager=self.list_manager,
         )
 
-    @staticmethod
     def flufferize(
+        self,
         prompt: str,
         amount: str = "dynamic",
         seed: int = -1,
@@ -172,9 +178,10 @@ class PromptEngine:
             amountoffluff=amount,
             seed=seed,
             reverse_polarity=reverse_polarity,
+            list_manager=self.list_manager,
         )
-    @staticmethod
     def superprompt(
+        self,
         prompt: str,
         insanitylevel: int = 5,
         superpromptstyle: str = "all",
@@ -186,4 +193,5 @@ class PromptEngine:
             prompt=prompt,
             seed=seed,
             superpromptstyle=superpromptstyle,
+            list_manager=self.list_manager,
         )

@@ -1,8 +1,8 @@
 import os
 try:
-    from .csv_reader import csv_to_list, load_config_csv, load_negative_list, load_all_artist_and_category
+    from .csv_reader import csv_to_list, load_config_csv, load_negative_list, load_all_artist_and_category, artist_category_csv_to_list, artist_descriptions_csv_to_list
 except ImportError:
-    from csv_reader import csv_to_list, load_config_csv, load_negative_list, load_all_artist_and_category
+    from csv_reader import csv_to_list, load_config_csv, load_negative_list, load_all_artist_and_category, artist_category_csv_to_list, artist_descriptions_csv_to_list
 
 class ListManager:
     """Manages loading and caching of all CSV lists used in prompt generation."""
@@ -30,12 +30,21 @@ class ListManager:
 
     def get_list(self, name: str = None, **kwargs) -> list:
         """Get a list by name, using cache if available."""
+        # ... (implementation same as before, truncated for brevity in replacement)
         # Accept 'csvfilename' as an alias for 'name' (legacy compatibility)
         if name is None:
             name = kwargs.pop("csvfilename", None)
         if name is None:
             raise TypeError("get_list() requires 'name' or 'csvfilename' argument")
-        cache_key = (name, tuple(sorted(kwargs.items())))
+        # Convert list arguments to tuples to make them hashable for the cache key
+        hashable_kwargs = {}
+        for k, v in kwargs.items():
+            if isinstance(v, list):
+                hashable_kwargs[k] = tuple(v)
+            else:
+                hashable_kwargs[k] = v
+        
+        cache_key = (name, tuple(sorted(hashable_kwargs.items())))
         if cache_key not in self._cache:
             # Only forward kwargs that csv_to_list actually accepts
             csv_kwargs = {k: v for k, v in kwargs.items() if k in self._CSV_KWARGS}
@@ -47,6 +56,27 @@ class ListManager:
             }
             params.update(csv_kwargs)
             self._cache[cache_key] = csv_to_list(**params)
+        return self._cache[cache_key]
+
+    def get_all_artists_and_categories(self):
+        """Get the full artist and category lists, cached."""
+        cache_key = ("all_artists_and_categories",)
+        if cache_key not in self._cache:
+            self._cache[cache_key] = load_all_artist_and_category()
+        return self._cache[cache_key]
+
+    def get_artist_category_list(self, csvfilename, category):
+        """Get artists by category, cached."""
+        cache_key = ("artist_category_list", csvfilename, category)
+        if cache_key not in self._cache:
+            self._cache[cache_key] = artist_category_csv_to_list(csvfilename, category)
+        return self._cache[cache_key]
+
+    def get_artist_descriptions(self, csvfilename):
+        """Get artist descriptions, cached."""
+        cache_key = ("artist_descriptions", csvfilename)
+        if cache_key not in self._cache:
+            self._cache[cache_key] = artist_descriptions_csv_to_list(csvfilename)
         return self._cache[cache_key]
 
     def load_all_standard_lists(self):

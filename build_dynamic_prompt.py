@@ -122,14 +122,14 @@ def load_custom_modes():
 
 
 
-#builds a prompt dynamically
+# builds a prompt dynamically
 # insanity level controls randomness of propmt 0-10
 # forcesubject van be used to force a certain type of subject
 # Set artistmode to none, to exclude artists 
-def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", chance_overrides = None, _return_metadata = False, custom_mode_config = None):
+def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", chance_overrides = None, _return_metadata = False, custom_mode_config = None, list_manager = None):
 
     # Build typed config from legacy arguments
-    cfg = PromptConfig.from_kwargs(**{k: v for k, v in locals().items()})
+    cfg = PromptConfig.from_kwargs(**{k: v for k, v in locals().items() if k != 'list_manager'})
 
     _metadata = None
     wildcard_to_metadata = {
@@ -149,7 +149,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     configfilesuffix = ""
     
     # Initialize ListManager early to handle all CSV loading
-    lm = ListManager(antivalues=antivalues, gender=gender, insanitylevel=insanitylevel, configfilesuffix=configfilesuffix)
+    if list_manager is None:
+        lm = ListManager(antivalues=antivalues, gender=gender, insanitylevel=insanitylevel, configfilesuffix=configfilesuffix)
+    else:
+        lm = list_manager
+        
     config = lm.config
     antilist = lm.antilist
 
@@ -314,21 +318,8 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
 
     # load the config file
-
-    config = load_config_csv(configfilesuffix)
-
-       
-    # first build up a complete anti list. Those values are removing during list building
-    # this uses the antivalues string AND the antilist.csv
-    emptylist = []
-    antilist = csv_to_list("antilist",emptylist , "./userfiles/",1)
-    
-    antivaluelist = antivalues.split(",")
-
-    antilist += antivaluelist
-
-    # clean up antivalue list:
-    antilist = [s.strip().lower() for s in antilist]
+    config = lm.config
+    antilist = lm.antilist
 
     
 
@@ -451,28 +442,28 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     tokenlist = []
     
     # New set of lists
-    locationfantasylist = csv_to_list("locationsfantasy", antilist)
-    locationscifilist = csv_to_list("locationsscifi", antilist)
-    locationvideogamelist = csv_to_list("locationsvideogame", antilist)
-    locationbiomelist = csv_to_list("locationsbiome", antilist)
-    locationcitylist = csv_to_list("locationscities", antilist)
-    birdlist = csv_to_list("birds", antilist)
-    catlist = csv_to_list(csvfilename="cats", antilist=antilist,delimiter="?")
-    doglist = csv_to_list(csvfilename="dogs", antilist=antilist,delimiter="?")
-    insectlist = csv_to_list("insects", antilist)
-    pokemonlist = csv_to_list("pokemon", antilist)
-    pokemontypelist = csv_to_list("pokemontypes", antilist)
-    occultlist = csv_to_list("occult", antilist)
-    marinelifelist = csv_to_list("marinelife", antilist)
+    locationfantasylist = lm.get_list("locationsfantasy")
+    locationscifilist = lm.get_list("locationsscifi")
+    locationvideogamelist = lm.get_list("locationsvideogame")
+    locationbiomelist = lm.get_list("locationsbiome")
+    locationcitylist = lm.get_list("locationscities")
+    birdlist = lm.get_list("birds")
+    catlist = lm.get_list(csvfilename="cats", delimiter="?")
+    doglist = lm.get_list(csvfilename="dogs", delimiter="?")
+    insectlist = lm.get_list("insects")
+    pokemonlist = lm.get_list("pokemon")
+    pokemontypelist = lm.get_list("pokemontypes")
+    occultlist = lm.get_list("occult")
+    marinelifelist = lm.get_list("marinelife")
     
 
     # additional descriptor lists
-    outfitdescriptorlist = csv_to_list("outfitdescriptors",antilist)
-    hairdescriptorlist = csv_to_list("hairdescriptors",antilist)
-    humandescriptorlist = csv_to_list("humandescriptors",antilist)
-    locationdescriptorlist = csv_to_list("locationdescriptors",antilist)
-    basicbitchdescriptorlist = csv_to_list("basicbitchdescriptors",antilist)
-    animaldescriptorlist = csv_to_list("animaldescriptors",antilist)
+    outfitdescriptorlist = lm.get_list("outfitdescriptors")
+    hairdescriptorlist = lm.get_list("hairdescriptors")
+    humandescriptorlist = lm.get_list("humandescriptors")
+    locationdescriptorlist = lm.get_list("locationdescriptors")
+    basicbitchdescriptorlist = lm.get_list("basicbitchdescriptors")
+    animaldescriptorlist = lm.get_list("animaldescriptors")
 
     # descriptorlist becomes one with everything
     descriptortotallist = descriptorlist + outfitdescriptorlist + hairdescriptorlist + humandescriptorlist + locationdescriptorlist + basicbitchdescriptorlist + animaldescriptorlist
@@ -559,9 +550,9 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         artistlist = artist_category_csv_to_list("artists_and_category",artists)
     elif(artists.startswith("personal_artists") == True or artists.startswith("personal artists") == True):
         artists = artists.replace(" ","_",-1) # add underscores back in
-        artistlist = csv_to_list(artists,antilist,"./userfiles/")
+        artistlist = lm.get_list(artists, directory="./userfiles/")
     elif(artists != "none"):
-        artistlist = csv_to_list("artists",antilist)
+        artistlist = lm.get_list("artists")
 
 
     # create special artists lists, used in templates
@@ -577,63 +568,63 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     digitalartistlist = artist_category_csv_to_list("artists_and_category","digital")
     architectartistlist = artist_category_csv_to_list("artists_and_category","architecture")
     cinemaartistlist = artist_category_csv_to_list("artists_and_category","cinema")
-    gregmodelist = csv_to_list("gregmode", antilist)
+    gregmodelist = lm.get_list("gregmode")
 
 
     # add any other custom lists
-    stylestiloralist = csv_to_list("styles_ti_lora",antilist,"./userfiles/")
+    stylestiloralist = lm.get_list("styles_ti_lora", directory="./userfiles/")
     generatestyle = bool(stylestiloralist) # True of not empty
 
-    custominputprefixlist = csv_to_list("custom_input_prefix",antilist,"./userfiles/")
+    custominputprefixlist = lm.get_list("custom_input_prefix", directory="./userfiles/")
     generatecustominputprefix = bool(custominputprefixlist) # True of not empty
 
-    custominputmidlist = csv_to_list("custom_input_mid",antilist,"./userfiles/")
+    custominputmidlist = lm.get_list("custom_input_mid", directory="./userfiles/")
     generatecustominputmid = bool(custominputmidlist) # True of not empty
 
-    custominputsuffixlist = csv_to_list("custom_input_suffix",antilist,"./userfiles/")
+    custominputsuffixlist = lm.get_list("custom_input_suffix", directory="./userfiles/")
     generatecustominputsuffix = bool(custominputsuffixlist) # True of not empty
 
-    customsubjectslist = csv_to_list("custom_subjects",antilist,"./userfiles/")
-    customoutfitslist = csv_to_list("custom_outfits",antilist,"./userfiles/")
+    customsubjectslist = lm.get_list("custom_subjects", directory="./userfiles/")
+    customoutfitslist = lm.get_list("custom_outfits", directory="./userfiles/")
 
     # special lists
-    backgroundtypelist = csv_to_list("backgroundtypes", antilist,"./csvfiles/special_lists/",0,"?")
-    insideshotlist =  csv_to_list("insideshots", antilist,"./csvfiles/special_lists/",0,"?")
-    photoadditionlist = csv_to_list("photoadditions", antilist,"./csvfiles/special_lists/",0,"?")
+    backgroundtypelist = lm.get_list("backgroundtypes", directory="./csvfiles/special_lists/", delimiter="?")
+    insideshotlist =  lm.get_list("insideshots", directory="./csvfiles/special_lists/", delimiter="?")
+    photoadditionlist = lm.get_list("photoadditions", directory="./csvfiles/special_lists/", delimiter="?")
     if(less_verbose):
-        buildhairlist = csv_to_list("buildhair_less_verbose", antilist,"./csvfiles/special_lists/",0,"?")
-        buildoutfitlist = csv_to_list("buildoutfit_less_verbose", antilist,"./csvfiles/special_lists/",0,"?")
-        humanadditionlist = csv_to_list("humanadditions_less_verbose", antilist,"./csvfiles/special_lists/",0,"?")
-        objectadditionslist = csv_to_list("objectadditions_less_verbose", antilist,"./csvfiles/special_lists/",0,"?")
-        buildfacelist = csv_to_list("buildface_less_verbose", antilist,"./csvfiles/special_lists/",0,"?")
-        buildaccessorielist = csv_to_list("buildaccessorie_less_verbose", antilist,"./csvfiles/special_lists/",0,"?")
-        humanactivitylist = csv_to_list("human_activities_less_verbose",antilist,"./csvfiles/",0,"?",False,False)
-        humanexpressionlist = csv_to_list("humanexpressions_less_verbose",antilist,"./csvfiles/",0,"?",False,False)
+        buildhairlist = lm.get_list("buildhair_less_verbose", directory="./csvfiles/special_lists/", delimiter="?")
+        buildoutfitlist = lm.get_list("buildoutfit_less_verbose", directory="./csvfiles/special_lists/", delimiter="?")
+        humanadditionlist = lm.get_list("humanadditions_less_verbose", directory="./csvfiles/special_lists/", delimiter="?")
+        objectadditionslist = lm.get_list("objectadditions_less_verbose", directory="./csvfiles/special_lists/", delimiter="?")
+        buildfacelist = lm.get_list("buildface_less_verbose", directory="./csvfiles/special_lists/", delimiter="?")
+        buildaccessorielist = lm.get_list("buildaccessorie_less_verbose", directory="./csvfiles/special_lists/", delimiter="?")
+        humanactivitylist = lm.get_list("human_activities_less_verbose", directory="./csvfiles/", delimiter="?")
+        humanexpressionlist = lm.get_list("humanexpressions_less_verbose", directory="./csvfiles/", delimiter="?")
     else:
-        buildhairlist = csv_to_list("buildhair", antilist,"./csvfiles/special_lists/",0,"?")
-        buildoutfitlist = csv_to_list("buildoutfit", antilist,"./csvfiles/special_lists/",0,"?")
-        humanadditionlist = csv_to_list("humanadditions", antilist,"./csvfiles/special_lists/",0,"?")
-        objectadditionslist = csv_to_list("objectadditions", antilist,"./csvfiles/special_lists/",0,"?")
-        buildfacelist = csv_to_list("buildface", antilist,"./csvfiles/special_lists/",0,"?")
-        buildaccessorielist = csv_to_list("buildaccessorie", antilist,"./csvfiles/special_lists/",0,"?")
-        humanactivitylist = csv_to_list("human_activities",antilist,"./csvfiles/",0,"?",False,False)
-        humanexpressionlist = csv_to_list("humanexpressions",antilist,"./csvfiles/",0,"?",False,False)
+        buildhairlist = lm.get_list("buildhair", directory="./csvfiles/special_lists/", delimiter="?")
+        buildoutfitlist = lm.get_list("buildoutfit", directory="./csvfiles/special_lists/", delimiter="?")
+        humanadditionlist = lm.get_list("humanadditions", directory="./csvfiles/special_lists/", delimiter="?")
+        objectadditionslist = lm.get_list("objectadditions", directory="./csvfiles/special_lists/", delimiter="?")
+        buildfacelist = lm.get_list("buildface", directory="./csvfiles/special_lists/", delimiter="?")
+        buildaccessorielist = lm.get_list("buildaccessorie", directory="./csvfiles/special_lists/", delimiter="?")
+        humanactivitylist = lm.get_list("human_activities", directory="./csvfiles/", delimiter="?")
+        humanexpressionlist = lm.get_list("humanexpressions", directory="./csvfiles/", delimiter="?")
 
     humanactivitylist = humanactivitylist + humanactivitycheatinglist
 
-    animaladditionlist = csv_to_list("animaladditions", antilist,"./csvfiles/special_lists/",0,"?")
+    animaladditionlist = lm.get_list("animaladditions", directory="./csvfiles/special_lists/", delimiter="?")
     
-    minilocationadditionslist = csv_to_list("minilocationadditions", antilist,"./csvfiles/special_lists/",0,"?")
-    overalladditionlist = csv_to_list("overalladditions", antilist,"./csvfiles/special_lists/",0,"?")
-    imagetypemodelist = csv_to_list("imagetypemodes", antilist,"./csvfiles/special_lists/",0,"?")
-    miniactivitylist = csv_to_list("miniactivity", antilist,"./csvfiles/special_lists/",0,"?")
-    animalsuffixadditionlist = csv_to_list("animalsuffixadditions", antilist,"./csvfiles/special_lists/",0,"?")
-    buildfacepartlist = csv_to_list("buildfaceparts", antilist,"./csvfiles/special_lists/",0,"?")
-    conceptmixerlist = csv_to_list("conceptmixer", antilist,"./csvfiles/special_lists/",0,"?")
+    minilocationadditionslist = lm.get_list("minilocationadditions", directory="./csvfiles/special_lists/", delimiter="?")
+    overalladditionlist = lm.get_list("overalladditions", directory="./csvfiles/special_lists/", delimiter="?")
+    imagetypemodelist = lm.get_list("imagetypemodes", directory="./csvfiles/special_lists/", delimiter="?")
+    miniactivitylist = lm.get_list("miniactivity", directory="./csvfiles/special_lists/", delimiter="?")
+    animalsuffixadditionlist = lm.get_list("animalsuffixadditions", directory="./csvfiles/special_lists/", delimiter="?")
+    buildfacepartlist = lm.get_list("buildfaceparts", directory="./csvfiles/special_lists/", delimiter="?")
+    conceptmixerlist = lm.get_list("conceptmixer", directory="./csvfiles/special_lists/", delimiter="?")
     
     
-    tokinatorlist = csv_to_list("tokinator", antilist,"./csvfiles/templates/",0,"?")
-    styleslist = csv_to_list("styles", antilist,"./csvfiles/templates/",0,"?")
+    tokinatorlist = lm.get_list("tokinator", directory="./csvfiles/templates/", delimiter="?")
+    styleslist = lm.get_list("styles", directory="./csvfiles/templates/", delimiter="?")
     stylessuffix = [item.split('-subject-')[1] for item in styleslist]
     breakstylessuffix = [item.split(',') for item in stylessuffix]
     allstylessuffixlist = [value for sublist in breakstylessuffix for value in sublist]
@@ -3738,7 +3729,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, True, advancedprompting, artiststyleselector, _metadata, wildcard_to_metadata.get(wildcard))
 
 
-    completeprompt = replace_user_wildcards(completeprompt)  
+    completeprompt = replace_user_wildcards(completeprompt, lm)  
     # prompt strenght stuff
 
     # if the given subject already is formed like this ( :1.x)
@@ -3803,7 +3794,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         subjectprompt = cleanup(promptlist[1], advancedprompting, insanitylevel)
         startprompt = cleanup(promptlist[0], advancedprompting, insanitylevel)
         endprompt = cleanup(promptlist[2], advancedprompting, insanitylevel)
-        superpromptresult = one_button_superprompt(insanitylevel=insanitylevel, prompt=subjectprompt, seed=seed, override_subject=givensubject, override_outfit=overrideoutfit, chosensubject=subjectchooser, gender=gender, restofprompt = startprompt + endprompt)
+        superpromptresult = one_button_superprompt(insanitylevel=insanitylevel, prompt=subjectprompt, seed=seed, override_subject=givensubject, override_outfit=overrideoutfit, chosensubject=subjectchooser, gender=gender, restofprompt = startprompt + endprompt, list_manager=lm)
         completeprompt = startprompt + ", " + superpromptresult + ", " + endprompt
         prompt_g = superpromptresult
         prompt_l = startprompt + endprompt
@@ -3836,7 +3827,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
 
 # function that takes an existing prompt and tries to create a variant out of it
-def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender = "all", artists = "all", advancedprompting = True):
+def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender = "all", artists = "all", advancedprompting = True, list_manager = None):
     # first load the lists, all copied from above (can that be done better?)
     # do we want to use the same settings or keep it open??
 
@@ -3855,102 +3846,107 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
         "-colorscheme-": "chosen_colorscheme"
     }
 
+    if list_manager is None:
+        lm = ListManager(antivalues=antivalues, gender=gender, insanitylevel=insanitylevel)
+    else:
+        lm = list_manager
+
     # first build up a complete anti list. Those values are removing during list building
     # this uses the antivalues string AND the antilist.csv
     emptylist = []
-    antilist = csv_to_list("antilist",emptylist , "./userfiles/",1)
+    antilist = lm.get_list("antilist", directory="./userfiles/", skipheader=1)
     antivaluelist = antivalues.split(",")
 
     antilist += antivaluelist
 
     # build all lists here
 
-    colorlist = csv_to_list("colors",antilist)
-    animallist = csv_to_list("animals",antilist)    
-    materiallist = csv_to_list("materials",antilist)
-    objectlist = csv_to_list("objects",antilist)
-    fictionallist = csv_to_list(csvfilename="fictional characters",antilist=antilist,skipheader=True,gender=gender)
-    nonfictionallist = csv_to_list(csvfilename="nonfictional characters",antilist=antilist,skipheader=True,gender=gender)
-    conceptsuffixlist = csv_to_list("concept_suffix",antilist)
-    buildinglist = csv_to_list("buildings",antilist)
-    vehiclelist = csv_to_list("vehicles",antilist)
-    outfitlist = csv_to_list("outfits",antilist)
-    locationlist = csv_to_list("locations",antilist)
-    backgroundlist = csv_to_list("backgrounds",antilist)
+    colorlist = lm.get_list("colors", antilist=antilist)
+    animallist = lm.get_list("animals", antilist=antilist)    
+    materiallist = lm.get_list("materials", antilist=antilist)
+    objectlist = lm.get_list("objects", antilist=antilist)
+    fictionallist = lm.get_list(csvfilename="fictional characters", antilist=antilist, skipheader=True, gender=gender)
+    nonfictionallist = lm.get_list(csvfilename="nonfictional characters", antilist=antilist, skipheader=True, gender=gender)
+    conceptsuffixlist = lm.get_list("concept_suffix", antilist=antilist)
+    buildinglist = lm.get_list("buildings", antilist=antilist)
+    vehiclelist = lm.get_list("vehicles", antilist=antilist)
+    outfitlist = lm.get_list("outfits", antilist=antilist)
+    locationlist = lm.get_list("locations", antilist=antilist)
+    backgroundlist = lm.get_list("backgrounds", antilist=antilist)
     locationlist = locationlist + backgroundlist
 
-    accessorielist = csv_to_list("accessories",antilist,"./csvfiles/",0,"?")
-    artmovementlist = csv_to_list("artmovements",antilist)
-    bodytypelist = csv_to_list("body_types",antilist)
-    cameralist = csv_to_list("cameras",antilist)
-    colorschemelist = csv_to_list("colorscheme",antilist)
-    conceptprefixlist = csv_to_list("concept_prefix",antilist)
-    culturelist = csv_to_list("cultures",antilist)
-    descriptorlist = csv_to_list("descriptors",antilist)
-    devmessagelist = csv_to_list("devmessages",antilist)
-    directionlist = csv_to_list("directions",antilist)
-    emojilist = csv_to_list("emojis",antilist)
-    eventlist = csv_to_list("events",antilist)
-    focuslist = csv_to_list("focus",antilist)
-    greatworklist = csv_to_list("greatworks",antilist)
-    haircolorlist = csv_to_list("haircolors",antilist)
-    hairstylelist = csv_to_list("hairstyles",antilist)
-    hairvomitlist = csv_to_list("hairvomit",antilist,"./csvfiles/",0,"?",False,False)
-    humanactivitylist = csv_to_list("human_activities",antilist,"./csvfiles/",0,"?",False,False)
-    humanoidlist = csv_to_list("humanoids",antilist)
-    imagetypelist = csv_to_list("imagetypes",antilist)
-    joblist = joblist = csv_to_list(csvfilename="jobs",antilist=antilist,skipheader=True,gender=gender)
-    lenslist = csv_to_list("lenses",antilist)
-    lightinglist = csv_to_list("lighting",antilist)
-    malefemalelist = csv_to_list(csvfilename="malefemale",antilist=antilist,skipheader=True,gender=gender)
-    manwomanlist = csv_to_list(csvfilename="manwoman",antilist=antilist,skipheader=True,gender=gender)
-    moodlist = csv_to_list("moods",antilist)
-    othertypelist = csv_to_list("othertypes",antilist)
-    poselist = csv_to_list("poses",antilist)
-    qualitylist = csv_to_list("quality",antilist)
-    shotsizelist = csv_to_list("shotsizes",antilist)
-    timeperiodlist = csv_to_list("timeperiods",antilist)
-    vomitlist = csv_to_list("vomit",antilist)
-    foodlist = csv_to_list("foods", antilist)
-    genderdescriptionlist = csv_to_list(csvfilename="genderdescription",antilist=antilist,skipheader=True,gender=gender)
-    minilocationlist = csv_to_list("minilocations", antilist)
-    minioutfitlist = csv_to_list("minioutfits",antilist,"./csvfiles/",0,"?",False,False,gender)
-    seasonlist = csv_to_list("seasons", antilist)
-    elaborateoutfitlist = csv_to_list("elaborateoutfits", antilist)
-    minivomitlist = csv_to_list("minivomit", antilist)
-    imagetypequalitylist = csv_to_list("imagetypequality", antilist)
-    rpgclasslist = csv_to_list("rpgclasses", antilist)
-    brandlist = csv_to_list("brands", antilist)
-    spacelist = csv_to_list("space", antilist)
-    poemlinelist = csv_to_list("poemlines", antilist)
-    songlinelist = csv_to_list("songlines", antilist)
-    musicgenrelist = csv_to_list("musicgenres", antilist)
-    manwomanrelationlist = csv_to_list(csvfilename="manwomanrelations",antilist=antilist,skipheader=True,gender=gender)
-    manwomanmultiplelist = csv_to_list(csvfilename="manwomanmultiples",antilist=antilist,skipheader=True,gender=gender,delimiter="?")
-    waterlocationlist = csv_to_list("waterlocations", antilist)
-    containerlist = csv_to_list("containers", antilist)
-    firstnamelist = csv_to_list(csvfilename="firstnames",antilist=antilist,skipheader=True,gender=gender)
-    floralist = csv_to_list("flora", antilist)
-    printlist = csv_to_list("prints", antilist)
-    patternlist = csv_to_list("patterns", antilist)
-    chairlist = csv_to_list("chairs", antilist)
-    cardnamelist = csv_to_list("card_names", antilist)
-    coveringlist = csv_to_list("coverings", antilist)
-    facepartlist = csv_to_list("faceparts", antilist)
-    humanexpressionlist = csv_to_list(csvfilename="humanexpressions",antilist=antilist,delimiter="?")
-    humanvomitlist = csv_to_list("humanvomit", antilist)
-    eyecolorlist = csv_to_list("eyecolors", antilist)
-    fashiondesignerlist = csv_to_list("fashiondesigners", antilist)
-    colorcombinationlist  = csv_to_list("colorcombinations", antilist)
-    materialcombinationlist  = csv_to_list("materialcombinations", antilist)
-    agelist = csv_to_list("ages", antilist)
-    agecalculatorlist = csv_to_list("agecalculator", antilist)
-    elementlist = csv_to_list("elements", antilist)
-    settinglist = csv_to_list("settings", antilist)
-    charactertypelist = csv_to_list("charactertypes", antilist)
-    objectstoholdlist = csv_to_list("objectstohold", antilist)
-    episodetitlelist = csv_to_list(csvfilename="episodetitles",antilist=antilist,skipheader=True)
-    flufferlist = csv_to_list("fluff", antilist)
+    accessorielist = lm.get_list("accessories", antilist=antilist, directory="./csvfiles/", skipheader=0, delimiter="?")
+    artmovementlist = lm.get_list("artmovements", antilist=antilist)
+    bodytypelist = lm.get_list("body_types", antilist=antilist)
+    cameralist = lm.get_list("cameras", antilist=antilist)
+    colorschemelist = lm.get_list("colorscheme", antilist=antilist)
+    conceptprefixlist = lm.get_list("concept_prefix", antilist=antilist)
+    culturelist = lm.get_list("cultures", antilist=antilist)
+    descriptorlist = lm.get_list("descriptors", antilist=antilist)
+    devmessagelist = lm.get_list("devmessages", antilist=antilist)
+    directionlist = lm.get_list("directions", antilist=antilist)
+    emojilist = lm.get_list("emojis", antilist=antilist)
+    eventlist = lm.get_list("events", antilist=antilist)
+    focuslist = lm.get_list("focus", antilist=antilist)
+    greatworklist = lm.get_list("greatworks", antilist=antilist)
+    haircolorlist = lm.get_list("haircolors", antilist=antilist)
+    hairstylelist = lm.get_list("hairstyles", antilist=antilist)
+    hairvomitlist = lm.get_list("hairvomit", antilist=antilist, directory="./csvfiles/", skipheader=0, delimiter="?", useoverride=False, usepredefined=False)
+    humanactivitylist = lm.get_list("human_activities", antilist=antilist, directory="./csvfiles/", skipheader=0, delimiter="?", useoverride=False, usepredefined=False)
+    humanoidlist = lm.get_list("humanoids", antilist=antilist)
+    imagetypelist = lm.get_list("imagetypes", antilist=antilist)
+    joblist = lm.get_list(csvfilename="jobs", antilist=antilist, skipheader=True, gender=gender)
+    lenslist = lm.get_list("lenses", antilist=antilist)
+    lightinglist = lm.get_list("lighting", antilist=antilist)
+    malefemalelist = lm.get_list(csvfilename="malefemale", antilist=antilist, skipheader=True, gender=gender)
+    manwomanlist = lm.get_list(csvfilename="manwoman", antilist=antilist, skipheader=True, gender=gender)
+    moodlist = lm.get_list("moods", antilist=antilist)
+    othertypelist = lm.get_list("othertypes", antilist=antilist)
+    poselist = lm.get_list("poses", antilist=antilist)
+    qualitylist = lm.get_list("quality", antilist=antilist)
+    shotsizelist = lm.get_list("shotsizes", antilist=antilist)
+    timeperiodlist = lm.get_list("timeperiods", antilist=antilist)
+    vomitlist = lm.get_list("vomit", antilist=antilist)
+    foodlist = lm.get_list("foods", antilist=antilist)
+    genderdescriptionlist = lm.get_list(csvfilename="genderdescription", antilist=antilist, skipheader=True, gender=gender)
+    minilocationlist = lm.get_list("minilocations", antilist=antilist)
+    minioutfitlist = lm.get_list("minioutfits", antilist=antilist, directory="./csvfiles/", skipheader=0, delimiter="?", useoverride=False, usepredefined=False, gender=gender)
+    seasonlist = lm.get_list("seasons", antilist=antilist)
+    elaborateoutfitlist = lm.get_list("elaborateoutfits", antilist=antilist)
+    minivomitlist = lm.get_list("minivomit", antilist=antilist)
+    imagetypequalitylist = lm.get_list("imagetypequality", antilist=antilist)
+    rpgclasslist = lm.get_list("rpgclasses", antilist=antilist)
+    brandlist = lm.get_list("brands", antilist=antilist)
+    spacelist = lm.get_list("space", antilist=antilist)
+    poemlinelist = lm.get_list("poemlines", antilist=antilist)
+    songlinelist = lm.get_list("songlines", antilist=antilist)
+    musicgenrelist = lm.get_list("musicgenres", antilist=antilist)
+    manwomanrelationlist = lm.get_list(csvfilename="manwomanrelations", antilist=antilist, skipheader=True, gender=gender)
+    manwomanmultiplelist = lm.get_list(csvfilename="manwomanmultiples", antilist=antilist, skipheader=True, gender=gender, delimiter="?")
+    waterlocationlist = lm.get_list("waterlocations", antilist=antilist)
+    containerlist = lm.get_list("containers", antilist=antilist)
+    firstnamelist = lm.get_list(csvfilename="firstnames", antilist=antilist, skipheader=True, gender=gender)
+    floralist = lm.get_list("flora", antilist=antilist)
+    printlist = lm.get_list("prints", antilist=antilist)
+    patternlist = lm.get_list("patterns", antilist=antilist)
+    chairlist = lm.get_list("chairs", antilist=antilist)
+    cardnamelist = lm.get_list("card_names", antilist=antilist)
+    coveringlist = lm.get_list("coverings", antilist=antilist)
+    facepartlist = lm.get_list("faceparts", antilist=antilist)
+    humanexpressionlist = lm.get_list(csvfilename="humanexpressions", antilist=antilist, delimiter="?")
+    humanvomitlist = lm.get_list("humanvomit", antilist=antilist)
+    eyecolorlist = lm.get_list("eyecolors", antilist=antilist)
+    fashiondesignerlist = lm.get_list("fashiondesigners", antilist=antilist)
+    colorcombinationlist  = lm.get_list("colorcombinations", antilist=antilist)
+    materialcombinationlist  = lm.get_list("materialcombinations", antilist=antilist)
+    agelist = lm.get_list("ages", antilist=antilist)
+    agecalculatorlist = lm.get_list("agecalculator", antilist=antilist)
+    elementlist = lm.get_list("elements", antilist=antilist)
+    settinglist = lm.get_list("settings", antilist=antilist)
+    charactertypelist = lm.get_list("charactertypes", antilist=antilist)
+    objectstoholdlist = lm.get_list("objectstohold", antilist=antilist)
+    episodetitlelist = lm.get_list(csvfilename="episodetitles", antilist=antilist, skipheader=True)
+    flufferlist = lm.get_list("fluff", antilist=antilist)
 
     outfitdescriptorlist = csv_to_list("outfitdescriptors",antilist)
     hairdescriptorlist = csv_to_list("hairdescriptors",antilist)
@@ -3975,46 +3971,46 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
     artistlist = []
     # create artist list to use in the code, maybe based on category  or personal lists
     if(artists != "all" and artists != "none" and artists.startswith("personal_artists") == False and artists.startswith("personal artists") == False):
-        artistlist = artist_category_csv_to_list("artists_and_category",artists)
+        artistlist = lm.get_artist_category_list("artists_and_category", artists)
     elif(artists.startswith("personal_artists") == True or artists.startswith("personal artists") == True):
         artists = artists.replace(" ","_",-1) # add underscores back in
-        artistlist = csv_to_list(artists,antilist,"./userfiles/")
+        artistlist = lm.get_list(artists, antilist=antilist, directory="./userfiles/")
     elif(artists != "none"):
-        artistlist = csv_to_list("artists",antilist)
+        artistlist = lm.get_list("artists", antilist=antilist)
 
     # create special artists lists, used in templates
-    fantasyartistlist = artist_category_csv_to_list("artists_and_category","fantasy")
-    popularartistlist = artist_category_csv_to_list("artists_and_category","popular")
-    romanticismartistlist = artist_category_csv_to_list("artists_and_category","romanticism")
-    photographyartistlist = artist_category_csv_to_list("artists_and_category","photography")
-    portraitartistlist = artist_category_csv_to_list("artists_and_category","portrait")
-    characterartistlist = artist_category_csv_to_list("artists_and_category","character")
-    landscapeartistlist = artist_category_csv_to_list("artists_and_category","landscape")
-    scifiartistlist = artist_category_csv_to_list("artists_and_category","sci-fi")
-    graphicdesignartistlist = artist_category_csv_to_list("artists_and_category","graphic design")
-    digitalartistlist = artist_category_csv_to_list("artists_and_category","digital")
-    architectartistlist = artist_category_csv_to_list("artists_and_category","architecture")
-    cinemaartistlist = artist_category_csv_to_list("artists_and_category","cinema")
-    gregmodelist = csv_to_list("gregmode", antilist)
+    fantasyartistlist = lm.get_artist_category_list("artists_and_category", "fantasy")
+    popularartistlist = lm.get_artist_category_list("artists_and_category", "popular")
+    romanticismartistlist = lm.get_artist_category_list("artists_and_category", "romanticism")
+    photographyartistlist = lm.get_artist_category_list("artists_and_category", "photography")
+    portraitartistlist = lm.get_artist_category_list("artists_and_category", "portrait")
+    characterartistlist = lm.get_artist_category_list("artists_and_category", "character")
+    landscapeartistlist = lm.get_artist_category_list("artists_and_category", "landscape")
+    scifiartistlist = lm.get_artist_category_list("artists_and_category", "sci-fi")
+    graphicdesignartistlist = lm.get_artist_category_list("artists_and_category", "graphic design")
+    digitalartistlist = lm.get_artist_category_list("artists_and_category", "digital")
+    architectartistlist = lm.get_artist_category_list("artists_and_category", "architecture")
+    cinemaartistlist = lm.get_artist_category_list("artists_and_category", "cinema")
+    gregmodelist = lm.get_list("gregmode", antilist=antilist)
 
 
     # New set of lists
-    locationfantasylist = csv_to_list("locationsfantasy", antilist)
-    locationscifilist = csv_to_list("locationsscifi", antilist)
-    locationvideogamelist = csv_to_list("locationsvideogame", antilist)
-    locationbiomelist = csv_to_list("locationsbiome", antilist)
-    locationcitylist = csv_to_list("locationscities", antilist)
-    birdlist = csv_to_list("birds", antilist)
-    catlist = csv_to_list("cats", antilist)
-    doglist = csv_to_list("dogs", antilist)
-    insectlist = csv_to_list("insects", antilist)
-    pokemonlist = csv_to_list("pokemon", antilist)
-    pokemontypelist = csv_to_list("pokemontypes", antilist)
-    occultlist = csv_to_list("occult", antilist)
-    marinelifelist = csv_to_list("marinelife", antilist)
+    locationfantasylist = lm.get_list("locationsfantasy", antilist=antilist)
+    locationscifilist = lm.get_list("locationsscifi", antilist=antilist)
+    locationvideogamelist = lm.get_list("locationsvideogame", antilist=antilist)
+    locationbiomelist = lm.get_list("locationsbiome", antilist=antilist)
+    locationcitylist = lm.get_list("locationscities", antilist=antilist)
+    birdlist = lm.get_list("birds", antilist=antilist)
+    catlist = lm.get_list("cats", antilist=antilist)
+    doglist = lm.get_list("dogs", antilist=antilist)
+    insectlist = lm.get_list("insects", antilist=antilist)
+    pokemonlist = lm.get_list("pokemon", antilist=antilist)
+    pokemontypelist = lm.get_list("pokemontypes", antilist=antilist)
+    occultlist = lm.get_list("occult", antilist=antilist)
+    marinelifelist = lm.get_list("marinelife", antilist=antilist)
 
     # add any other custom lists
-    stylestiloralist = csv_to_list("styles_ti_lora",antilist,"./userfiles/")
+    stylestiloralist = lm.get_list("styles_ti_lora", antilist=antilist, directory="./userfiles/")
     generatestyle = bool(stylestiloralist) # True of not empty
 
     custominputprefixlist = csv_to_list("custom_input_prefix",antilist,"./userfiles/")
@@ -4881,18 +4877,21 @@ def build_dynamic_negative(positive_prompt = "", insanitylevel = 0, enhance = Fa
 
     return negative_result
 
-def enhance_positive(positive_prompt = "", amountofwords = 3):
+def enhance_positive(positive_prompt = "", amountofwords = 3, list_manager = None):
+    if list_manager is None:
+        lm = ListManager()
+    else:
+        lm = list_manager
 
- 
-    wordcombilist = csv_to_list(csvfilename="wordcombis", directory="./csvfiles/special_lists/",delimiter="?")
+    wordcombilist = lm.get_list(csvfilename="wordcombis", directory="./csvfiles/special_lists/", delimiter="?")
 
     # do a trick for artists, replace with their tags instead
-    artistlist, categorylist = load_all_artist_and_category()
+    artistlist, categorylist = lm.get_all_artists_and_categories()
     # lower them
     artist_names = [artist.strip().lower() for artist in artistlist]
 
     # note, should we find a trick for some shorthands of artists??
-    artistshorthands = csv_to_list(csvfilename="artistshorthands",directory="./csvfiles/special_lists/",delimiter="?")
+    artistshorthands = lm.get_list(csvfilename="artistshorthands", directory="./csvfiles/special_lists/", delimiter="?")
     for shorthand in artistshorthands:
         parts = shorthand.split(';')
         if parts[0] in positive_prompt:
@@ -4940,7 +4939,7 @@ def enhance_positive(positive_prompt = "", amountofwords = 3):
 
     return addwords
 
-def artify_prompt(insanitylevel = 5, prompt = "", artists = "all", amountofartists = "1", mode="standard", seed = -1):
+def artify_prompt(insanitylevel = 5, prompt = "", artists = "all", amountofartists = "1", mode="standard", seed = -1, list_manager = None):
     if(amountofartists=="random"):
         intamountofartists = random.randint(1,int((insanitylevel/3) + 1.20))
     else:    
@@ -4955,10 +4954,15 @@ def artify_prompt(insanitylevel = 5, prompt = "", artists = "all", amountofartis
         random.seed(seed)
 
 
+    if list_manager is None:
+        lm = ListManager(insanitylevel=insanitylevel)
+    else:
+        lm = list_manager
+
     # first build up a complete anti list. Those values are removing during list building
     # this uses the antivalues string AND the antilist.csv
     emptylist = []
-    antilist = csv_to_list("antilist",emptylist , "./userfiles/",1)
+    antilist = lm.antilist
     
     # clean up antivalue list:
     antilist = [s.strip().lower() for s in antilist]
@@ -4977,22 +4981,22 @@ def artify_prompt(insanitylevel = 5, prompt = "", artists = "all", amountofartis
     artistlist = []
     # create artist list to use in the code, maybe based on category  or personal lists
     if(artists != "all (wild)" and artists != "all" and artists != "none" and artists.startswith("personal_artists") == False and artists.startswith("personal artists") == False and artists in artisttypes):
-        artistlist = artist_category_csv_to_list("artists_and_category",artists)
+        artistlist = lm.get_artist_category_list("artists_and_category", artists)
     elif(artists.startswith("personal_artists") == True or artists.startswith("personal artists") == True):
         artists = artists.replace(" ","_",-1) # add underscores back in
-        artistlist = csv_to_list(artists,antilist,"./userfiles/")
+        artistlist = lm.get_list(artists, antilist=antilist, directory="./userfiles/")
     elif(artists != "none"):
-        artistlist = csv_to_list("artists",antilist)
+        artistlist = lm.get_list("artists", antilist=antilist)
     
 
     # load up the styles list for the other modes
-    styleslist = csv_to_list("styles", antilist,"./csvfiles/templates/",0,"?")
+    styleslist = lm.get_list("styles", antilist=antilist, directory="./csvfiles/templates/", skipheader=0, delimiter="?")
     stylessuffix = [item.split('-subject-')[1] for item in styleslist]
     breakstylessuffix = [item.split(',') for item in stylessuffix]
     allstylessuffixlist = [value for sublist in breakstylessuffix for value in sublist]
     allstylessuffixlist = list(set(allstylessuffixlist))
 
-    artistsuffix = artist_descriptions_csv_to_list("artists_and_category")
+    artistsuffix = lm.get_artist_descriptions("artists_and_category")
     breakartiststylessuffix = [item.split(',') for item in artistsuffix]
     artiststylessuffixlist = [value for sublist in breakartiststylessuffix for value in sublist]
     artiststylessuffixlist = list(set(artiststylessuffixlist))
@@ -5040,7 +5044,7 @@ def artify_prompt(insanitylevel = 5, prompt = "", artists = "all", amountofartis
     return completeprompt
 
 
-def flufferizer(prompt = "", amountoffluff = "dynamic", seed = -1, reverse_polarity = False):
+def flufferizer(prompt = "", amountoffluff = "dynamic", seed = -1, reverse_polarity = False, list_manager = None):
     if(amountoffluff == "none"):
         return prompt
     
@@ -5051,10 +5055,15 @@ def flufferizer(prompt = "", amountoffluff = "dynamic", seed = -1, reverse_polar
     if(seed > 0):
         random.seed(seed)
     
-    if(reverse_polarity):
-        flufferlist = csv_to_list("antifluff") # all negative words
+    if list_manager is None:
+        lm = ListManager()
     else:
-        flufferlist = csv_to_list("fluff")
+        lm = list_manager
+    
+    if(reverse_polarity):
+        flufferlist = lm.get_list("antifluff") # all negative words
+    else:
+        flufferlist = lm.get_list("fluff")
 
     # dynamic = based on prompt length + insanitylevel
     minfluff = 4
@@ -5344,7 +5353,7 @@ def split_prompt_to_words(text):
 
         return totallist
 
-def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_subject = "" , override_outfit = "", chosensubject ="", gender = "", restofprompt = "", superpromptstyle = "", setnewtokens = 0, remove_bias = True):
+def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_subject = "" , override_outfit = "", chosensubject ="", gender = "", restofprompt = "", superpromptstyle = "", setnewtokens = 0, remove_bias = True, list_manager = None):
 
     if(seed <= 0):
         seed = random.randint(1,1000000)
@@ -5352,9 +5361,14 @@ def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_s
     done = False
     load_models()
 
-    superprompterstyleslist = csv_to_list("superprompter_styles")
-    descriptorlist = csv_to_list("descriptors")
-    devmessagessuperpromptlist = csv_to_list("devmessages_superprompt")
+    if list_manager is None:
+        lm = ListManager()
+    else:
+        lm = list_manager
+
+    superprompterstyleslist = lm.get_list("superprompter_styles")
+    descriptorlist = lm.get_list("descriptors")
+    devmessagessuperpromptlist = lm.get_list("devmessages_superprompt")
 
     usestyle = False
     if(superpromptstyle != "" and superpromptstyle != "all"):
@@ -5548,7 +5562,7 @@ def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_s
         # piercing green eyes problem
         # basically, the model has some biasses, lets get rid of it, OBP style!
         if(common_dist(insanitylevel) and remove_bias): # but not always
-            superpromptresult = remove_superprompt_bias(superpromptresult=superpromptresult, insanitylevel=insanitylevel, override_outfit=override_outfit)
+            superpromptresult = remove_superprompt_bias(superpromptresult=superpromptresult, insanitylevel=insanitylevel, override_outfit=override_outfit, list_manager=lm)
             
        
         #print(words_to_check)
@@ -5585,10 +5599,15 @@ def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_s
 
     return superpromptresult
 
-def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_outfit = ""):
+def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_outfit = "", list_manager = None):
+
+    if list_manager is None:
+        lm = ListManager()
+    else:
+        lm = list_manager
 
     if(" green eye" in superpromptresult):
-        eyecolorslist = csv_to_list("eyecolors")
+        eyecolorslist = lm.get_list("eyecolors")
         eyecolorslist = [x for x in eyecolorslist if not x.startswith('-')]
         neweyecolor = " " + random.choice(eyecolorslist).lower() + " eye"
         #print(neweyecolor)
@@ -5597,9 +5616,9 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
     if(" white gown" in superpromptresult 
         or " white dress" in superpromptresult
         or " black suit" in superpromptresult):
-        colorcombinationslist = csv_to_list("colorcombinations")
+        colorcombinationslist = lm.get_list("colorcombinations")
         colorcombinationslist = [x for x in colorcombinationslist if not x.startswith('-')]
-        colorslist = csv_to_list("colors")
+        colorslist = lm.get_list("colors")
         colorslist = [x for x in colorslist if not x.startswith('-')]
         if(normal_dist(insanitylevel)):
             newcolordress = " " + random.choice(colorcombinationslist).lower() + " dress"
@@ -5624,7 +5643,7 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
         and not " dressed" in superpromptresult
         and not " suited" in superpromptresult):
         if(override_outfit == ""):
-            outfitslist = csv_to_list("outfits")
+            outfitslist = lm.get_list("outfits")
             outfitslist = [x for x in outfitslist if not x.startswith('-')]
             newoutfit = " " + random.choice(outfitslist).lower()
         else:
@@ -5634,17 +5653,17 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
         superpromptresult = superpromptresult.replace(" suit", newoutfit)
     if(" sleek " in superpromptresult):
         
-        descriptorslist = csv_to_list("descriptors")
+        descriptorslist = lm.get_list("descriptors")
         descriptorslist = [x for x in descriptorslist if not x.startswith('-')]
         newdescriptor = " " + random.choice(descriptorslist).lower() + " "
         #print(newdescriptor)
-
+    
         superpromptresult = superpromptresult.replace(" sleek ", newdescriptor)
     ## lush green (meadow), sun shines down
     # A graceful woman with long, flowing hair stands on a lush green lawn, her arms spread wide as she kneels gently in the breeze. The sun shines down on her
     if("lush green meadow" in superpromptresult):
         
-        backgroundlist = csv_to_list("backgrounds")
+        backgroundlist = lm.get_list("backgrounds")
         backgroundlist = [x for x in backgroundlist if not x.startswith('-')]
         newbackground = random.choice(backgroundlist).lower()
         #print(newbackground)
@@ -5653,7 +5672,7 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
 
     if("long, flowing hair" in superpromptresult):
         
-        hairstylelist = csv_to_list("hairstyles2")
+        hairstylelist = lm.get_list("hairstyles2")
         hairstylelist = [x for x in hairstylelist if not x.startswith('-')]
         newhairstyle = random.choice(hairstylelist).lower()
         #print(newhairstyle)
@@ -5662,12 +5681,16 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
     
     return superpromptresult
 
-def replace_user_wildcards(completeprompt):
+def replace_user_wildcards(completeprompt, list_manager = None):
+    if list_manager is None:
+        lm = ListManager()
+    else:
+        lm = list_manager
     for i in range(0,10):
         user_wildcards_list = re.findall(r'-[\w_]*-', completeprompt)
         for user_wildcard in user_wildcards_list:
             user_wildcard_clean = user_wildcard.strip("-")
-            wordlist = csv_to_list(csvfilename=user_wildcard_clean, directory="./userfiles/wildcards/")
+            wordlist = lm.get_list(csvfilename=user_wildcard_clean, directory="./userfiles/wildcards/")
             if(wordlist):
                 completeprompt = completeprompt.replace(user_wildcard, random.choice(wordlist),1)
 

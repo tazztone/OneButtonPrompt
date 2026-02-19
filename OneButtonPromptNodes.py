@@ -14,6 +14,7 @@ sys.path.append(onebuttonprompt_path)
 from .build_dynamic_prompt import build_dynamic_prompt, build_dynamic_negative, artify_prompt, flufferizer, one_button_superprompt, createpromptvariant, SUPPORTED_WILDCARDS
 from .prompt_config import PromptConfig
 from .prompt_engine import PromptEngine
+prompt_engine = PromptEngine()
 from .csv_reader import *
 
 from .one_button_presets import OneButtonPresets
@@ -464,7 +465,7 @@ class OneButtonPrompt:
             prompt_enhancer=prompt_enhancer,
         )
         
-        generatedpromptlist = PromptEngine.generate(cfg)
+        generatedpromptlist = prompt_engine.generate(cfg)
         #print(generatedprompt)
         generatedprompt = generatedpromptlist[0]
         prompt_g = generatedpromptlist[1]
@@ -517,7 +518,7 @@ class CreatePromptVariant:
     CATEGORY = "OneButtonPrompt"
     
     def Comfy_OBP_PromptVariant(self, prompt_input, insanitylevel, seed):
-        generatedprompt = PromptEngine.create_variant(
+        generatedprompt = prompt_engine.create_variant(
             prompt=prompt_input, 
             insanitylevel=insanitylevel
         )
@@ -958,7 +959,7 @@ class OneButtonPreset:
             chance_overrides=chance_overrides,
             custom_mode_config=preset_custom_mode_config,
         )
-        generatedpromptlist = PromptEngine.generate(cfg)
+        generatedpromptlist = prompt_engine.generate(cfg)
         
         generatedprompt = generatedpromptlist[0]
         return (generatedprompt,)
@@ -1024,7 +1025,7 @@ class AutoNegativePrompt:
     CATEGORY = "OneButtonPrompt"
     
     def Comfy_OBP_AutoNegativePrompt(self, postive_prompt, insanitylevel, enhancenegative,base_negative, seed, base_model):
-        generatedprompt = PromptEngine.generate_negative(
+        generatedprompt = prompt_engine.generate_negative(
             positive_prompt=postive_prompt, 
             insanitylevel=insanitylevel, 
             enhance=enhancenegative, 
@@ -1085,7 +1086,7 @@ class OneButtonArtify:
     
     def Comfy_OBP_Artify(self, prompt, artist, amount_of_artists,artify_mode, seed):
         # artify here
-        artified_prompt = PromptEngine.artify(
+        artified_prompt = prompt_engine.artify(
             prompt=prompt, 
             artists=artist, 
             amountofartists=amount_of_artists, 
@@ -1142,7 +1143,7 @@ class OneButtonFlufferize:
     
     def Comfy_OBP_Flufferize(self, prompt, amount_of_fluff, reverse_polarity, seed):
         # artify here
-        fluffed_prompt = PromptEngine.flufferize(
+        fluffed_prompt = prompt_engine.flufferize(
             prompt=prompt, 
             amount=amount_of_fluff, 
             reverse_polarity=reverse_polarity, 
@@ -1200,7 +1201,7 @@ class OneButtonSuperPrompt:
     CATEGORY = "OneButtonPrompt"
     
     def Comfy_OBP_SuperPrompt(self, insanitylevel, prompt, superpromptstyle, seed):
-        OBPsuperprompt = PromptEngine.superprompt(
+        OBPsuperprompt = prompt_engine.superprompt(
             prompt=prompt,
             insanitylevel=insanitylevel,
             seed=seed,
@@ -1271,7 +1272,7 @@ class OneButtonPrompt_Simple:
             prefixprompt=prompt_prefix,
             suffixprompt=prompt_suffix
         )
-        generatedpromptlist = PromptEngine.generate(cfg)
+        generatedpromptlist = prompt_engine.generate(cfg)
         
         return (generatedpromptlist[0],)
 
