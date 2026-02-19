@@ -22,15 +22,16 @@ class ListManager:
         
         # Config
         self.config = load_config_csv(configfilesuffix)
+        self.config_dict = {row[0]: row[1] for row in self.config if row and len(row) >= 2}
         
         # Cache for lazy loading
         self._cache = {}
 
+        # History for anti-repeat cooldown (Phase 4)
+        self._pick_history = {} # name -> deque
+
     # Valid kwargs for csv_to_list (beyond the defaults we always pass)
     _CSV_KWARGS = {"directory", "lowerandstrip", "delimiter", "listoflistmode", "skipheader"}
-    
-    # History for anti-repeat cooldown (Phase 4)
-    _pick_history = {} # name -> deque
 
     def get_list(self, name: str = None, copy: bool = True, **kwargs) -> list:
         """Get a list by name, using cache if available."""

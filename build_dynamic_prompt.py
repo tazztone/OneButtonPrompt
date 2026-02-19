@@ -10,6 +10,8 @@ if __package__ is None or __package__ == '':
     # A1111 style (standalone script or direct module execution)
     from csv_reader import csv_to_list, load_config_csv, load_all_artist_and_category, artist_category_csv_to_list, artist_descriptions_csv_to_list
     from random_functions import chance_roll
+    from artist_selector import ArtistSelector
+    from wildcard_resolver import WildcardResolver
     from one_button_presets import OneButtonPresets
     from prompt_config import PromptConfig
     from list_manager import ListManager
@@ -29,6 +31,8 @@ else:
     # ComfyUI style (imported as a package)
     from .csv_reader import csv_to_list, load_config_csv, load_all_artist_and_category, artist_category_csv_to_list, artist_descriptions_csv_to_list
     from .random_functions import chance_roll
+    from .artist_selector import ArtistSelector
+    from .wildcard_resolver import WildcardResolver
     from .one_button_presets import OneButtonPresets
     from .prompt_config import PromptConfig
     from .list_manager import ListManager
@@ -144,9 +148,29 @@ def get_compatible_pools(theme: str, category: str, lm: ListManager) -> list[str
             "locations": ["locations_videogame"],
             "outfits": ["outfits_videogame"]
         },
-        "apocalyptic": {
-             "locations": ["locations_apocalyptic", "locations_city"],
-             "outfits": ["outfits_apocalyptic"]
+        "photography": {
+            "locations": ["locations_biome", "locations_city"],
+            "lighting": ["lighting"]
+        },
+        "cinema": {
+            "locations": ["locations_biome", "locations_city", "locations_videogame"],
+            "lighting": ["lighting"]
+        },
+        "romanticism": {
+            "locations": ["locations_fantasy", "locations_biome"],
+            "artmovements": ["artmovements"]
+        },
+        "architecture": {
+            "locations": ["locations_city", "buildings"],
+            "lighting": ["lighting"]
+        },
+        "portrait": {
+            "locations": ["locations_biome"],
+            "lighting": ["lighting"]
+        },
+        "abstract": {
+            "locations": ["shapes", "textures"],
+            "colorscheme": ["colorscheme"]
         }
     }
     
@@ -540,76 +564,41 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                                  "OR(;, -heshe- is;uncommon) -miniactivity- OR(in;at) a OR(-location-;-building-;-waterlocation-)",
                                  "OR(;, -heshe- is;uncommon) -miniactivity- OR(in;at) a OR(-location-;-building-;-waterlocation-)"]
     
-    # build artists list
-    if artists == "wild":
-        artists = "all (wild)"
+    # --- Artist Selection & Theme Coherence (Phase 8 Modularization) ---
+    class SelectorConfig:
+        def __init__(self, artists, insanitylevel, onlyartists):
+            self.artists = artists
+            self.insanitylevel = insanitylevel
+            self.onlyartists = onlyartists
 
-    # we want to create more cohorence, so we are adding all (wild) mode for the old logic
-    
-    # all else will be more constrained per type, to produce better images.
-    # the popular artists will be used more the lower the insanitylevel is
-    # Future: add in personal artists lists as well
-    
-    # lets maybe go wild "sometimes", based on insanitylevel
-    if(artists == "all" and chance_roll(insanitylevel, 'rare')):
-       artists = "all (wild)"
-       originalartistchoice = artists
+    sel_cfg = SelectorConfig(artists, insanitylevel, onlyartists)
+    sel = ArtistSelector.calculate(sel_cfg, lm, get_compatible_pools)
 
-    artisttypes = ["popular", "3D",	"abstract",	"angular", "anime"	,"architecture",	"art nouveau",	"art deco",	"baroque",	"bauhaus", 	"cartoon",	"character",	"children's illustration", 	"cityscape", "cinema",	"clean",	"cloudscape",	"collage",	"colorful",	"comics",	"cubism",	"dark",	"detailed", 	"digital",	"expressionism",	"fantasy",	"fashion",	"fauvism",	"figurativism",	"graffiti",	"graphic design",	"high contrast",	"horror",	"impressionism",	"installation",	"landscape",	"light",	"line drawing",	"low contrast",	"luminism",	"magical realism",	"manga",	"melanin",	"messy",	"monochromatic",	"nature",	"photography",	"pop art",	"portrait",	"primitivism",	"psychedelic",	"realism",	"renaissance",	"romanticism",	"scene",	"sci-fi",	"sculpture",	"seascape",	"space",	"stained glass",	"still life",	"storybook realism",	"street art",	"streetscape",	"surrealism",	"symbolism",	"textile",	"ukiyo-e",	"vibrant",	"watercolor",	"whimsical"]
-    artiststyleselector = ""
-    artiststyleselectormode = "normal"
-    if(artists == "all" and chance_roll(insanitylevel + 1, 'normal')):
-        artiststyleselector = random.choice(artisttypes)
-        artists = artiststyleselector
-    elif(artists == "all"):
-        artiststyleselectormode = "custom"
-         # then else maybe do nothing??
-        if(random.randint(0,6) == 0 and onlyartists == False):
-            generateartist = False
-        # go popular! Or even worse, we go full greg mode!
-        elif(chance_roll(max(3,insanitylevel), 'common')):
-            artists = "popular" 
-        elif(random.randint(0,1) == 0):
-            # only on lower instanity levels anyway
-            if(insanitylevel < 6):
-                #too much greg mode!
-                
-                artists = "greg mode"
-            else:
-                artists = "popular"
-        else:
-            artists = "none"
+    # Unpack results
+    artists = sel.artists
+    artiststyleselector = sel.artiststyleselector
+    artiststyleselectormode = sel.artiststyleselectormode
+    generateartist = sel.generateartist
+    artistlist = sel.artistlist
+    fantasyartistlist = sel.fantasyartistlist
+    popularartistlist = sel.popularartistlist
+    romanticismartistlist = sel.romanticismartistlist
+    photographyartistlist = sel.photographyartistlist
+    portraitartistlist = sel.portraitartistlist
+    characterartistlist = sel.characterartistlist
+    landscapeartistlist = sel.landscapeartistlist
+    scifiartistlist = sel.scifiartistlist
+    graphicdesignartistlist = sel.graphicdesignartistlist
+    digitalartistlist = sel.digitalartistlist
+    architectartistlist = sel.architectartistlist
+    cinemaartistlist = sel.cinemaartistlist
+    gregmodelist = sel.gregmodelist
 
-    else:
-        artiststyleselectormode = "custom"
-
-
-
-    artistlist = []
-    # create artist list to use in the code, maybe based on category  or personal lists
-    if(artists != "all (wild)" and artists != "all" and artists != "none" and artists.startswith("personal_artists") == False and artists.startswith("personal artists") == False and artists in artisttypes):
-        artistlist = artist_category_csv_to_list("artists_and_category",artists)
-    elif(artists.startswith("personal_artists") == True or artists.startswith("personal artists") == True):
-        artists = artists.replace(" ","_",-1) # add underscores back in
-        artistlist = lm.get_list(artists, directory="./userfiles/")
-    elif(artists != "none"):
-        artistlist = lm.get_list("artists")
-
-
-    # create special artists lists, used in templates
-    fantasyartistlist = artist_category_csv_to_list("artists_and_category","fantasy")
-    popularartistlist = artist_category_csv_to_list("artists_and_category","popular")
-    romanticismartistlist = artist_category_csv_to_list("artists_and_category","romanticism")
-    photographyartistlist = artist_category_csv_to_list("artists_and_category","photography")
-    portraitartistlist = artist_category_csv_to_list("artists_and_category","portrait")
-    characterartistlist = artist_category_csv_to_list("artists_and_category","character")
-    landscapeartistlist = artist_category_csv_to_list("artists_and_category","landscape")
-    scifiartistlist = artist_category_csv_to_list("artists_and_category","sci-fi")
-    graphicdesignartistlist = artist_category_csv_to_list("artists_and_category","graphic design")
-    digitalartistlist = artist_category_csv_to_list("artists_and_category","digital")
-    architectartistlist = artist_category_csv_to_list("artists_and_category","architecture")
-    cinemaartistlist = artist_category_csv_to_list("artists_and_category","cinema")
-    gregmodelist = lm.get_list("gregmode")
+    if sel.location_pool_override is not None:
+        locationlist = sel.location_pool_override
+    if sel.lighting_pool_override is not None:
+        lightinglist = sel.lighting_pool_override
+    # -------------------------------------------------------------------
 
 
     # add any other custom lists
@@ -815,222 +804,125 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
     artistsatbackchance = 'uncommon'
 
-    for item in config:
-        # objects
-        if item[0] == 'subject_vehicle' and item[1] != 'on':
-            generatevehicle = False
-        if item[0] == 'subject_object' and item[1] != 'on':
-            generateobject = False
-        if item[0] == 'subject_food' and item[1] != 'on':
-            generatefood = False
-        if item[0] == 'subject_building' and item[1] != 'on':
-            generatebuilding = False
-        if item[0] == 'subject_space' and item[1] != 'on':
-            generatespace = False
-        if item[0] == 'subject_flora' and item[1] != 'on':
-            generateflora = False
-        if item[0] == 'subject_occult' and item[1] != 'on':
-            generateoccult = False
-        # animals
-        if item[0] == 'subject_animal' and item[1] != 'on':
-            generateanimal = False
-        if item[0] == 'subject_bird' and item[1] != 'on':
-            generatebird = False
-        if item[0] == 'subject_cat' and item[1] != 'on':
-            generatecat = False
-        if item[0] == 'subject_dog' and item[1] != 'on':
-            generatedog = False
-        if item[0] == 'subject_insect' and item[1] != 'on':
-            generateinsect = False
-        if item[0] == 'subject_pokemon' and item[1] != 'on':
-            generatepokemon = False
-        if item[0] == 'subject_marinelife' and item[1] != 'on':
-            generatemarinelife = False
-        # humanoids
-        if item[0] == 'subject_manwoman' and item[1] != 'on':
-            generatemanwoman = False
-        if item[0] == 'subject_manwomanrelation' and item[1] != 'on':
-            generatemanwomanrelation = False
-        if item[0] == 'subject_manwomanmultiple' and item[1] != 'on':
-            generatemanwomanmultiple = False
-        if item[0] == 'subject_fictional' and item[1] != 'on':
-            generatefictionalcharacter = False
-        if item[0] == 'subject_nonfictional' and item[1] != 'on':
-            generatenonfictionalcharacter = False
-        if item[0] == 'subject_humanoid' and item[1] != 'on':
-            generatehumanoids = False
-        if item[0] == 'subject_job' and item[1] != 'on':
-            generatejob = False
-        if item[0] == 'subject_firstnames' and item[1] != 'on':
-            generatefirstnames = False
-        # landscape
-        if item[0] == 'subject_location' and item[1] != 'on':
-            generatelocation = False
-        if item[0] == 'subject_location_fantasy' and item[1] != 'on':
-            generatelocationfantasy = False
-        if item[0] == 'subject_location_scifi' and item[1] != 'on':
-            generatelocationscifi = False
-        if item[0] == 'subject_location_videogame' and item[1] != 'on':
-            generatelocationvideogame = False
-        if item[0] == 'subject_location_biome' and item[1] != 'on':
-            generatelocationbiome = False
-        if item[0] == 'subject_location_city' and item[1] != 'on':
-            generatelocationcity = False
-        # concept
-        if item[0] == 'subject_event' and item[1] != 'on':
-            generateevent = False
-        if item[0] == 'subject_concept' and item[1] != 'on':
-            generateconcepts = False
-        if item[0] == 'subject_poemline' and item[1] != 'on':
-            generatepoemline = False
-        if item[0] == 'subject_songline' and item[1] != 'on':
-            generatesongline = False
-        if item[0] == 'subject_cardname' and item[1] != 'on':
-            generatecardname = False
-        if item[0] == 'subject_episodetitle' and item[1] != 'on':
-            generateepisodetitle = False
-        
-        # main list stuff
-        if item[0] == 'custominputprefixrepeats':
-            custominputprefixrepeats = int(item[1])
-        if item[0] == 'custominputprefixchance':
-            custominputprefixchance = item[1]
-            if(custominputprefixchance == 'never'):
-                generatecustominputprefix = False
-        if item[0] == 'imagetypechance':
-            imagetypechance = item[1]
-            if(imagetypechance == 'never'):
-                generateimagetype = False
-        if item[0] == 'imagetypequalitychance':
-            imagetypequalitychance = item[1]
-            if(imagetypequalitychance == 'never'):
-                generateimagetypequality = False
-        if item[0] == 'minilocationadditionchance':
-            minilocationadditionchance = item[1]
-        if item[0] == 'artmovementprefixchance':
-            artmovementprefixchance = item[1]
-        if item[0] == 'minivomitprefix1chance':
-            minivomitprefix1chance = item[1]
-        if item[0] == 'minivomitprefix2chance':
-            minivomitprefix2chance = item[1]
-        
-        if item[0] == 'shotsizechance':
-            shotsizechance = item[1]
-
-        if item[0] == 'subjectdescriptor1chance':
-            subjectdescriptor1chance = item[1]
-        if item[0] == 'subjectdescriptor2chance':
-            subjectdescriptor2chance = item[1]
-        if item[0] == 'subjectbodytypechance':
-            subjectbodytypechance = item[1]
-        if item[0] == 'subjectculturechance':
-            subjectculturechance = item[1]
-        if item[0] == 'subjectconceptsuffixchance':
-            subjectconceptsuffixchance = item[1]
-
-        if item[0] == 'subjectlandscapeinsideshotchance':
-            subjectlandscapeinsideshotchance = item[1]
-        if item[0] == 'subjectlandscapeaddonlocationchance':
-            subjectlandscapeaddonlocationchance = item[1]
-        if item[0] == 'subjectlandscapeaddonlocationdescriptorchance':
-            subjectlandscapeaddonlocationdescriptorchance = item[1]
-        if item[0] == 'subjectlandscapeaddonlocationculturechance':
-            subjectlandscapeaddonlocationculturechance = item[1]
-
-        if item[0] == 'objectadditionsrepeats':
-            objectadditionsrepeats = int(item[1])
-        if item[0] == 'objectadditionschance':
-            objectadditionschance = item[1]
-        if item[0] == 'humanadditionchance':
-            humanadditionchance = item[1]
-        if item[0] == 'overalladditionchance':
-            overalladditionchance = item[1]
-
-        if item[0] == 'emojichance':
-            emojichance = item[1]
-            if(hardturnoffemojis==True):
-                emojichance='never'
-        if item[0] == 'buildfacechance':
-            buildfacechance = item[1]
-        if item[0] == 'humanexpressionchance':
-            humanexpressionchance = item[1]
-        if item[0] == 'humanvomitchance':
-            humanvomitchance = item[1]
-        if item[0] == 'joboractivitychance':
-            joboractivitychance = item[1]
-
-        if item[0] == 'custominputmidrepeats':
-            custominputmidrepeats = int(item[1])
-        if item[0] == 'custominputmidchance':
-            custominputmidchance = item[1]
-        if item[0] == 'minivomitmidchance':
-            minivomitmidchance = item[1]
-        
-        if item[0] == 'outfitchance':
-            outfitchance = item[1]
-        if item[0] == 'posechance':
-            posechance = item[1]
-        if item[0] == 'hairchance':
-            hairchance = item[1]
-        if item[0] == 'accessorychance':
-            accessorychance = item[1]
-        if item[0] == 'humanoidinsideshotchance':
-            humanoidinsideshotchance = item[1]
-        if item[0] == 'humanoidbackgroundchance':
-            humanoidbackgroundchance = item[1]
-
-        if item[0] == 'landscapeminilocationchance':
-            landscapeminilocationchance = item[1]
-        if item[0] == 'generalminilocationchance':
-            generalminilocationchance = item[1]
-
-        if item[0] == 'timperiodchance':
-            timperiodchance = item[1]
-        if item[0] == 'focuschance':
-            focuschance = item[1]
-        if item[0] == 'directionchance':
-            directionchance = item[1]
-        if item[0] == 'moodchance':
-            moodchance = item[1]
-        if item[0] == 'minivomitsuffixchance':
-            minivomitsuffixchance = item[1]
-        if item[0] == 'artmovementchance':
-            artmovementchance = item[1]
-        if item[0] == 'lightingchance':
-            lightingchance = item[1]
-        if item[0] == 'photoadditionchance':
-            photoadditionchance = item[1]
-        if item[0] == 'lenschance':
-            lenschance = item[1]
-        if item[0] == 'colorschemechance':
-            colorschemechance = item[1]
-        if item[0] == 'vomit1chance':
-            vomit1chance = item[1]
-        if item[0] == 'vomit2chance':
-            vomit2chance = item[1]
-        if item[0] == 'greatworkchance':
-            greatworkchance = item[1]
-        if item[0] == 'poemlinechance':
-            poemlinechance = item[1]
-        if item[0] == 'songlinechance':
-            songlinechance = item[1]
-        if item[0] == 'quality1chance':
-            quality1chance = item[1]
-        if item[0] == 'quality2chance':
-            quality2chance = item[1]
-
-        if item[0] == 'customstyle1chance':
-            customstyle1chance = item[1]
-        if item[0] == 'customstyle2chance':
-            customstyle2chance = item[1]
-        
-        if item[0] == 'custominputsuffixrepeats':
-            custominputsuffixrepeats = int(item[1])
-        if item[0] == 'custominputsuffixchance':
-            custominputsuffixchance = item[1]
-
-        if item[0] == 'artistsatbackchance':
-            artistsatbackchance = item[1]
+    # Optimized config lookups (Phase 6)
+    conf = lm.config_dict
+    
+    # objects
+    if conf.get('subject_vehicle') != 'on': generatevehicle = False
+    if conf.get('subject_object') != 'on': generateobject = False
+    if conf.get('subject_food') != 'on': generatefood = False
+    if conf.get('subject_building') != 'on': generatebuilding = False
+    if conf.get('subject_space') != 'on': generatespace = False
+    if conf.get('subject_flora') != 'on': generateflora = False
+    if conf.get('subject_occult') != 'on': generateoccult = False
+    # animals
+    if conf.get('subject_animal') != 'on': generateanimal = False
+    if conf.get('subject_bird') != 'on': generatebird = False
+    if conf.get('subject_cat') != 'on': generatecat = False
+    if conf.get('subject_dog') != 'on': generatedog = False
+    if conf.get('subject_insect') != 'on': generateinsect = False
+    if conf.get('subject_pokemon') != 'on': generatepokemon = False
+    if conf.get('subject_marinelife') != 'on': generatemarinelife = False
+    # humanoids
+    if conf.get('subject_manwoman') != 'on': generatemanwoman = False
+    if conf.get('subject_manwomanrelation') != 'on': generatemanwomanrelation = False
+    if conf.get('subject_manwomanmultiple') != 'on': generatemanwomanmultiple = False
+    if conf.get('subject_fictional') != 'on': generatefictionalcharacter = False
+    if conf.get('subject_nonfictional') != 'on': generatenonfictionalcharacter = False
+    if conf.get('subject_humanoid') != 'on': generatehumanoids = False
+    if conf.get('subject_job') != 'on': generatejob = False
+    if conf.get('subject_firstnames') != 'on': generatefirstnames = False
+    # landscape
+    if conf.get('subject_location') != 'on': generatelocation = False
+    if conf.get('subject_location_fantasy') != 'on': generatelocationfantasy = False
+    if conf.get('subject_location_scifi') != 'on': generatelocationscifi = False
+    if conf.get('subject_location_videogame') != 'on': generatelocationvideogame = False
+    if conf.get('subject_location_biome') != 'on': generatelocationbiome = False
+    if conf.get('subject_location_city') != 'on': generatelocationcity = False
+    # concept
+    if conf.get('subject_event') != 'on': generateevent = False
+    if conf.get('subject_concept') != 'on': generateconcepts = False
+    if conf.get('subject_poemline') != 'on': generatepoemline = False
+    if conf.get('subject_songline') != 'on': generatesongline = False
+    if conf.get('subject_cardname') != 'on': generatecardname = False
+    if conf.get('subject_episodetitle') != 'on': generateepisodetitle = False
+    
+    # main list stuff
+    if 'custominputprefixrepeats' in conf: custominputprefixrepeats = int(conf['custominputprefixrepeats'])
+    if 'custominputprefixchance' in conf:
+        custominputprefixchance = conf['custominputprefixchance']
+        if custominputprefixchance == 'never': generatecustominputprefix = False
+    if 'imagetypechance' in conf:
+        imagetypechance = conf['imagetypechance']
+        if imagetypechance == 'never': generateimagetype = False
+    if 'imagetypequalitychance' in conf:
+        imagetypequalitychance = conf['imagetypequalitychance']
+        if imagetypequalitychance == 'never': generateimagetypequality = False
+    
+    if 'minilocationadditionchance' in conf: minilocationadditionchance = conf['minilocationadditionchance']
+    if 'artmovementprefixchance' in conf: artmovementprefixchance = conf['artmovementprefixchance']
+    if 'minivomitprefix1chance' in conf: minivomitprefix1chance = conf['minivomitprefix1chance']
+    if 'minivomitprefix2chance' in conf: minivomitprefix2chance = conf['minivomitprefix2chance']
+    if 'shotsizechance' in conf: shotsizechance = conf['shotsizechance']
+    if 'subjectdescriptor1chance' in conf: subjectdescriptor1chance = conf['subjectdescriptor1chance']
+    if 'subjectdescriptor2chance' in conf: subjectdescriptor2chance = conf['subjectdescriptor2chance']
+    if 'subjectbodytypechance' in conf: subjectbodytypechance = conf['subjectbodytypechance']
+    if 'subjectculturechance' in conf: subjectculturechance = conf['subjectculturechance']
+    if 'subjectconceptsuffixchance' in conf: subjectconceptsuffixchance = conf['subjectconceptsuffixchance']
+    if 'subjectlandscapeinsideshotchance' in conf: subjectlandscapeinsideshotchance = conf['subjectlandscapeinsideshotchance']
+    if 'subjectlandscapeaddonlocationchance' in conf: subjectlandscapeaddonlocationchance = conf['subjectlandscapeaddonlocationchance']
+    if 'subjectlandscapeaddonlocationdescriptorchance' in conf: subjectlandscapeaddonlocationdescriptorchance = conf['subjectlandscapeaddonlocationdescriptorchance']
+    if 'subjectlandscapeaddonlocationculturechance' in conf: subjectlandscapeaddonlocationculturechance = conf['subjectlandscapeaddonlocationculturechance']
+    
+    if 'objectadditionsrepeats' in conf: objectadditionsrepeats = int(conf['objectadditionsrepeats'])
+    if 'objectadditionschance' in conf: objectadditionschance = conf['objectadditionschance']
+    if 'humanadditionchance' in conf: humanadditionchance = conf['humanadditionchance']
+    if 'overalladditionchance' in conf: overalladditionchance = conf['overalladditionchance']
+    
+    if 'emojichance' in conf:
+        emojichance = conf['emojichance']
+        if hardturnoffemojis: emojichance = 'never'
+    
+    if 'buildfacechance' in conf: buildfacechance = conf['buildfacechance']
+    if 'humanexpressionchance' in conf: humanexpressionchance = conf['humanexpressionchance']
+    if 'humanvomitchance' in conf: humanvomitchance = conf['humanvomitchance']
+    if 'joboractivitychance' in conf: joboractivitychance = conf['joboractivitychance']
+    
+    if 'custominputmidrepeats' in conf: custominputmidrepeats = int(conf['custominputmidrepeats'])
+    if 'custominputmidchance' in conf: custominputmidchance = conf['custominputmidchance']
+    if 'minivomitmidchance' in conf: minivomitmidchance = conf['minivomitmidchance']
+    
+    if 'outfitchance' in conf: outfitchance = conf['outfitchance']
+    if 'posechance' in conf: posechance = conf['posechance']
+    if 'hairchance' in conf: hairchance = conf['hairchance']
+    if 'accessorychance' in conf: accessorychance = conf['accessorychance']
+    if 'humanoidinsideshotchance' in conf: humanoidinsideshotchance = conf['humanoidinsideshotchance']
+    if 'humanoidbackgroundchance' in conf: humanoidbackgroundchance = conf['humanoidbackgroundchance']
+    if 'landscapeminilocationchance' in conf: landscapeminilocationchance = conf['landscapeminilocationchance']
+    if 'generalminilocationchance' in conf: generalminilocationchance = conf['generalminilocationchance']
+    
+    if 'timperiodchance' in conf: timperiodchance = conf['timperiodchance']
+    if 'focuschance' in conf: focuschance = conf['focuschance']
+    if 'directionchance' in conf: directionchance = conf['directionchance']
+    if 'moodchance' in conf: moodchance = conf['moodchance']
+    if 'minivomitsuffixchance' in conf: minivomitsuffixchance = conf['minivomitsuffixchance']
+    if 'artmovementchance' in conf: artmovementchance = conf['artmovementchance']
+    if 'lightingchance' in conf: lightingchance = conf['lightingchance']
+    if 'photoadditionchance' in conf: photoadditionchance = conf['photoadditionchance']
+    if 'lenschance' in conf: lenschance = conf['lenschance']
+    if 'colorschemechance' in conf: colorschemechance = conf['colorschemechance']
+    if 'vomit1chance' in conf: vomit1chance = conf['vomit1chance']
+    if 'vomit2chance' in conf: vomit2chance = conf['vomit2chance']
+    if 'greatworkchance' in conf: greatworkchance = conf['greatworkchance']
+    if 'poemlinechance' in conf: poemlinechance = conf['poemlinechance']
+    if 'songlinechance' in conf: songlinechance = conf['songlinechance']
+    if 'quality1chance' in conf: quality1chance = conf['quality1chance']
+    if 'quality2chance' in conf: quality2chance = conf['quality2chance']
+    if 'customstyle1chance' in conf: customstyle1chance = conf['customstyle1chance']
+    if 'customstyle2chance' in conf: customstyle2chance = conf['customstyle2chance']
+    if 'custominputsuffixrepeats' in conf: custominputsuffixrepeats = int(conf['custominputsuffixrepeats'])
+    if 'custominputsuffixchance' in conf: custominputsuffixchance = conf['custominputsuffixchance']
+    if 'artistsatbackchance' in conf: artistsatbackchance = conf['artistsatbackchance']
 
     # Apply chance overrides if provided
     if chance_overrides:
@@ -3763,11 +3655,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         #  keywordsinstring = any(word.lower() in givensubject.lower() for word in keywordslist)
         for wildcard in allwildcardslistnohybrid:
             attachedlist = allwildcardslistnohybridlists[allwildcardslistnohybrid.index(wildcard)]
-            completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, False, advancedprompting, artiststyleselector, _metadata, wildcard_to_metadata.get(wildcard))
+            completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, False, advancedprompting, artiststyleselector, _metadata, wildcard_to_metadata.get(wildcard), list_manager=lm)
 
         for wildcard in allwildcardslistwithhybrid:
             attachedlist = allwildcardslistwithhybridlists[allwildcardslistwithhybrid.index(wildcard)]
-            completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, True, advancedprompting, artiststyleselector, _metadata, wildcard_to_metadata.get(wildcard))
+            completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, True, advancedprompting, artiststyleselector, _metadata, wildcard_to_metadata.get(wildcard), list_manager=lm)
 
 
     completeprompt = replace_user_wildcards(completeprompt, lm)  
@@ -4621,13 +4513,13 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
             #  keywordsinstring = any(word.lower() in givensubject.lower() for word in keywordslist)
             for wildcard in allwildcardslistnohybrid:
                 attachedlist = allwildcardslistnohybridlists[allwildcardslistnohybrid.index(wildcard)]
-                completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, False, advancedprompting, "", _metadata, wildcard_to_metadata.get(wildcard))
+                completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, False, advancedprompting, "", _metadata, wildcard_to_metadata.get(wildcard), list_manager=list_manager)
 
 
             
             for wildcard in allwildcardslistwithhybrid:
                 attachedlist = allwildcardslistwithhybridlists[allwildcardslistwithhybrid.index(wildcard)]
-                completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, True, advancedprompting, "", _metadata, wildcard_to_metadata.get(wildcard))
+                completeprompt = replacewildcard(completeprompt, insanitylevel, wildcard, attachedlist, True, advancedprompting, "", _metadata, wildcard_to_metadata.get(wildcard), list_manager=list_manager)
 
 
         
@@ -4641,177 +4533,12 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
     return completeprompt
 
     # function
-def replacewildcard(completeprompt, insanitylevel, wildcard,listname, activatehybridorswap, advancedprompting, artiststyleselector = "", _metadata=None, metadata_key=None):
-
-    if(len(listname) == 0):
-        # handling empty lists
-        completeprompt = completeprompt.replace(wildcard, "",1)
-    else:
-
-        while wildcard in completeprompt:
-            if(chance_roll(insanitylevel, 'unique') and activatehybridorswap == True and len(listname)>2 and advancedprompting==True):
-                hybridorswaplist = ["hybrid", "swap"]
-                hybridorswap = random.choice(hybridorswaplist)
-                replacementvalue = random.choice(listname)
-                
-                # Metadata logging for hybrid/swap
-                if _metadata is not None and metadata_key is not None:
-                    if isinstance(_metadata.get(metadata_key), list):
-                        _metadata[metadata_key].append(replacementvalue)
-                    else:
-                        _metadata[metadata_key] = replacementvalue
-                
-                listname.remove(replacementvalue)
-                hybridorswapreplacementvalue = "[" + replacementvalue
-                
-                if(hybridorswap == "hybrid"):
-                        replacementvalue = random.choice(listname)
-                        
-                        # Metadata logging for second hybrid value
-                        if _metadata is not None and metadata_key is not None:
-                            if isinstance(_metadata[metadata_key], list):
-                                _metadata[metadata_key].append(replacementvalue)
-
-                        listname.remove(replacementvalue)
-                        hybridorswapreplacementvalue += "|" + replacementvalue + "] "
-                if(hybridorswap == "swap"):
-                        replacementvalue = random.choice(listname)
-                        
-                        # Metadata logging for swapped value
-                        if _metadata is not None and metadata_key is not None:
-                            if isinstance(_metadata[metadata_key], list):
-                                _metadata[metadata_key].append(replacementvalue)
-
-                        listname.remove(replacementvalue)
-                        hybridorswapreplacementvalue += ":" + replacementvalue + ":" + str(random.randint(1,20)) +  "] "
-                
-                completeprompt = completeprompt.replace(wildcard, hybridorswapreplacementvalue,1)
-
-            #if list is not empty
-            if(bool(listname)):
-                replacementvalue = random.choice(listname)
-                
-                # Metadata logging for standard replacement
-                if _metadata is not None and metadata_key is not None:
-                    if isinstance(_metadata.get(metadata_key), list):
-                        _metadata[metadata_key].append(replacementvalue)
-                    else:
-                        _metadata[metadata_key] = replacementvalue
-                
-                if(wildcard not in ["-heshe-", "-himher-","-hisher-"]):
-                    listname.remove(replacementvalue)
-
-
-                
-            else:
-                replacementvalue = ""
-
-            # override for artist and artiststyle, only for first artist
-            if(wildcard == "-artist-" and ("-artiststyle-" in completeprompt or "-artistmedium-" in completeprompt or "-artistdescription-" in completeprompt)):
-                artiststyles = []
-                artiststyle = []
-                chosenartiststyle = ""
-                artistscomplete = artist_category_by_category_csv_to_list("artists_and_category",replacementvalue)
-                artiststyles = artistscomplete[0]
-                artistmediums = artistscomplete[1]
-                artistdescriptions = artistscomplete[2]
-                artiststyle = [x.strip() for x in artiststyles[0].split(",")]
-
-                artiststyle = list(filter(lambda x: len(x) > 0, artiststyle)) # remove empty values
-
-                if(artiststyleselector in artiststyle):
-                    artiststyle.remove(artiststyleselector)
-
-                # Sorry folks, this only works when you directly select it as a style
-                if("nudity" in artiststyle):
-                    artiststyle.remove("nudity")
-
-                # keep on looping until we have no more wildcards or no more styles to choose from
-                # leftovers will be removed in the cleaning step
-                while bool(artiststyle) and "-artiststyle-" in completeprompt:
-                
-                    chosenartiststyle = random.choice(artiststyle)
-                    completeprompt = completeprompt.replace("-artiststyle-",chosenartiststyle ,1)
-                    artiststyle.remove(chosenartiststyle)
-
-                if("-artistmedium-" in completeprompt):
-                    if(artistmediums[0].lower() not in completeprompt.lower()):
-                        completeprompt = completeprompt.replace("-artistmedium-",artistmediums[0] ,1)
-
-                if("-artistdescription-" in completeprompt):
-                    completeprompt = completeprompt.replace("-artistdescription-",artistdescriptions[0] ,1)
-                
-                while bool(artiststyle) and "-artiststyle-" in completeprompt:
-                
-                    chosenartiststyle = random.choice(artiststyle)
-                    completeprompt = completeprompt.replace("-artiststyle-",chosenartiststyle ,1)
-                    artiststyle.remove(chosenartiststyle)
-
-            
-            
-            # Sneaky overrides for "same" wildcards
-            # Are overwritten with their first parent
-            if(wildcard == "-outfit-" or wildcard == "-minioutfit-"):
-                completeprompt = completeprompt.replace("-sameoutfit-", replacementvalue,1)
-
-            # Why do it in this detail?? Because we can:
-            # Check if "from" exists in the string. For example Chun Li from Streetfighter, becomes Chun li
-            if "from" in replacementvalue:
-                # Find the index of "from" in the string
-                from_index = replacementvalue.find("from")
-
-                # Remove everything from and including "from"
-                replacementvalueforoverrides = replacementvalue[:from_index].strip()
-            else:
-                replacementvalueforoverrides = replacementvalue
-
-            if(wildcard in ["-human-"
-                            ,"-humanoid-"
-                            , "-manwoman-"                            
-                            , "-manwomanrelation-"
-                            , "-manwomanmultiple-"]
-                            and "-samehumansubject-" in completeprompt):
-                            if(completeprompt.index(wildcard) < completeprompt.index("-samehumansubject-")):
-                                completeprompt = completeprompt.replace("-samehumansubject-", "the " + replacementvalueforoverrides)
-            
-            if(wildcard in ["-fictional-"
-                            , "-nonfictional-"
-                            , "-firstname-"
-                            , "-oppositefictional-"
-                            , "-oppositenonfictional-"]
-                            and "-samehumansubject-" in completeprompt):
-                            if(completeprompt.index(wildcard) < completeprompt.index("-samehumansubject-")):
-                                completeprompt = completeprompt.replace("-samehumansubject-", replacementvalueforoverrides)
-            
-            # job is here, to prevent issue with a job outfit being replace. So doing it later solves that issue
-            if(wildcard in ["-job-"]
-                            and "-samehumansubject-" in completeprompt):
-                            if(completeprompt.index(wildcard) < completeprompt.index("-samehumansubject-")):
-                                completeprompt = completeprompt.replace("-samehumansubject-", "the " + replacementvalueforoverrides)
-            
-            
-            # This one last, since then it is the only subject we have left
-            if(wildcard in ["-malefemale-"]
-               and "-samehumansubject-" in completeprompt):
-               if(completeprompt.index(wildcard) < completeprompt.index("-samehumansubject-")):
-                    completeprompt = completeprompt.replace("-samehumansubject-", "the " + replacementvalueforoverrides)
-
-            if(wildcard in ["-animal-"                         
-                            , "-object-"
-                            , "-vehicle-"
-                            , "-food-"
-                            , "-objecttotal-" 
-                            , "-space-"
-                            , "-flora-"
-                            , "-location-"
-                            , "-building-"]
-                        and "-sameothersubject-" in completeprompt):
-                if(completeprompt.index(wildcard) < completeprompt.index("-sameothersubject-")):
-                            completeprompt = completeprompt.replace("-sameothersubject-", "the " + replacementvalueforoverrides)
-
-
-
-            completeprompt = completeprompt.replace(wildcard, replacementvalue,1)
+def replacewildcard(completeprompt, insanitylevel, wildcard, listname, activatehybridorswap, advancedprompting, artiststyleselector = "", _metadata=None, metadata_key=None, list_manager=None):
+    return WildcardResolver.resolve(
+        completeprompt, insanitylevel, wildcard, listname, 
+        activatehybridorswap, advancedprompting, 
+        artiststyleselector, _metadata, metadata_key, list_manager
+    )
             
             
 
@@ -5079,7 +4806,7 @@ def artify_prompt(insanitylevel = 5, prompt = "", artists = "all", amountofartis
     
     while ("-artist-" in completeprompt):
 
-        completeprompt = replacewildcard(completeprompt,5,"-artist-", artistlist,"","",artiststyleselector)
+        completeprompt = replacewildcard(completeprompt, 5, "-artist-", artistlist, "", "", artiststyleselector, list_manager=list_manager)
 
 
     return completeprompt

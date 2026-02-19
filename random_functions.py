@@ -20,6 +20,8 @@ CHANCE_MAPPING = {
 }
 
 def chance_roll(insanitylevel, chance):
+    if chance == 'always':
+        return True
     if chance == 'never':
         return False
     if chance in CHANCE_MAPPING:
