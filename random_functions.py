@@ -1,42 +1,11 @@
 import random
-def common_dist(insanitylevel):
-    return (random.randint(1, 5)<insanitylevel or insanitylevel >= 10)
+import logging
 
-def normal_dist(insanitylevel):
-    return (random.randint(1, 10)<insanitylevel or insanitylevel >= 10)
+# Set up logger
+logger = logging.getLogger(__name__)
 
-def uncommon_dist(insanitylevel):
-    return (random.randint(1, 18)<insanitylevel or insanitylevel >= 10)
-
-def rare_dist(insanitylevel):
-    roll = (random.randint(1, 30)<insanitylevel or insanitylevel >= 10)
-    if(roll):
-        print("adding something rare to the prompt")
-    return roll
-
-def legendary_dist(insanitylevel):
-        roll = (random.randint(1, 50)<insanitylevel)
-        if(roll):
-            print("Nice! adding something legendary to the prompt")
-        return roll
-
-def unique_dist(insanitylevel):
-        roll = (random.randint(1, 75)<insanitylevel)
-        if(roll):
-            print("Critical hit! Something unique has been added to the prompt")
-        return roll
-
-def extraordinary_dist(insanitylevel):
-        roll = (random.randint(1, 200)<insanitylevel)
-        if(roll):
-            print("Extraordinary! Something special has been added to the prompt")
-        return roll
-
-def novel_dist(insanitylevel):
-        roll = (random.randint(1, 500)<insanitylevel)
-        if(roll):
-            print("Uh, something novel has been added to the prompt. Interesting.")
-        return roll
+# CHANCE_MAPPING mapping moved to here as it is only used by chance_roll function.
+# ... (CHANCE_MAPPING content)
 CHANCE_MAPPING = {
     'never': {'set_number': 0, 'message': ""},
     'novel': {'set_number': 500, 'message': "Uh, something novel has been added to the prompt. Interesting."},
@@ -60,11 +29,11 @@ def chance_roll(insanitylevel, chance):
         # if we have insanity level of 10, then every under rare is alwas true
         if (set_number <= 35 and insanitylevel >= 10):
             if(message != ""):
-                print(message)
+                logger.debug(message)
             return True 
         roll = random.randint(1, set_number) <= insanitylevel
         if(message != "" and roll == True):
-                print(message)
+            logger.debug(message)
         return roll
     else:
         raise ValueError(f"Invalid chance value: {chance}")

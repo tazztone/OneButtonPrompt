@@ -44,21 +44,19 @@ def csv_to_list(csvfilename, antilist=[], directory="./csvfiles/", lowerandstrip
 
                 # Go check for light or medium files if there is no override and there is an insanitylevel
                 if(replacing == False and insanitylevel > 0):
-                        if(insanitylevel < 4):   
-                                for filename in os.listdir(directoryfilesfolder):
-                                        if(filename == mediumfilename):
-                                                # Just override the parameters, and let it run normally
-                                                full_path = os.path.join(script_dir, directory )
-                                                csvfilename = csvfilename + "_light"
-                                                replacing = True
-                        # under 7, than only SOMETIMES take the full list
-                        if(insanitylevel < 7 and random.randint(0,13) < 12 and replacing == False):   
-                                for filename in os.listdir(directoryfilesfolder):
-                                        if(filename == lightfilename):
-                                                # Just override the parameters, and let it run normally
-                                                full_path = os.path.join(script_dir, directory )
-                                                csvfilename = csvfilename + "_medium"
-                                                replacing = True
+                        has_light  = os.path.isfile(os.path.join(full_path, csvfilename + "_light.csv"))
+                        has_medium = os.path.isfile(os.path.join(full_path, csvfilename + "_medium.csv"))
+
+                        if insanitylevel < 4 and has_light:
+                                csvfilename += "_light"
+                                replacing = True
+                        elif insanitylevel < 7 and has_medium:
+                                # Probability falls from 1.0 (at lv3) to 0.0 (at lv6+)
+                                threshold = max(0.0, 1.0 - (insanitylevel - 3) / 3.0)
+                                if random.random() < threshold:
+                                        csvfilename += "_medium"
+                                        replacing = True
+
                         
                         
 

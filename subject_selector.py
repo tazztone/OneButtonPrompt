@@ -74,18 +74,19 @@ class SubjectSelector:
         
         # Objects
         if cfg.generate_objects:
-            res.generate_vehicle = bool(lm.get_list("vehicles"))
-            res.generate_object = bool(lm.get_list("objects"))
-            res.generate_food = bool(lm.get_list("foods"))
-            res.generate_building = bool(lm.get_list("buildings"))
-            res.generate_space = bool(lm.get_list("space"))
-            res.generate_flora = bool(lm.get_list("flora"))
-            res.generate_occult = bool(lm.get_list("occult"))
+            res.generate_vehicle = lm.list_exists("vehicles")
+            res.generate_object = lm.list_exists("objects")
+            res.generate_food = lm.list_exists("foods")
+            res.generate_building = lm.list_exists("buildings")
+            res.generate_space = lm.list_exists("space")
+            res.generate_flora = lm.list_exists("flora")
+            res.generate_occult = lm.list_exists("occult")
             
             res.generate_object_total = res.generate_vehicle or res.generate_object or res.generate_food or res.generate_building or res.generate_space or res.generate_flora or res.generate_occult
             
             if res.generate_object_total:
-                res.main_chooser.append("object")
+                object_weight = sum([res.generate_vehicle, res.generate_object, res.generate_food, res.generate_building, res.generate_space, res.generate_flora, res.generate_occult])
+                res.main_chooser.extend(["object"] * object_weight)
 
             if res.generate_vehicle:
                 res.object_wildcards.append("-vehicle-")
@@ -117,14 +118,14 @@ class SubjectSelector:
 
         # Humanoids
         if cfg.generate_humanoids:
-            res.generate_fictional = bool(lm.get_list("fictional characters", skipheader=True))
-            res.generate_nonfictional = bool(lm.get_list("nonfictional characters", skipheader=True))
-            res.generate_humanoids = bool(lm.get_list("humanoids"))
-            res.generate_manwoman = bool(lm.get_list("manwoman", skipheader=True))
-            res.generate_manwomanrelation = bool(lm.get_list("manwomanrelations", skipheader=True))
-            res.generate_manwomanmultiple = bool(lm.get_list("manwomanmultiples", skipheader=True, delimiter="?"))
-            res.generate_job = bool(lm.get_list("jobs", skipheader=True))
-            res.generate_firstname = bool(lm.get_list("firstnames", skipheader=True))
+            res.generate_fictional = lm.list_exists("fictional characters")
+            res.generate_nonfictional = lm.list_exists("nonfictional characters")
+            res.generate_humanoids = lm.list_exists("humanoids")
+            res.generate_manwoman = lm.list_exists("manwoman")
+            res.generate_manwomanrelation = lm.list_exists("manwomanrelations")
+            res.generate_manwomanmultiple = lm.list_exists("manwomanmultiples")
+            res.generate_job = lm.list_exists("jobs")
+            res.generate_firstname = lm.list_exists("firstnames")
             
             res.generate_humanoid_total = res.generate_fictional or res.generate_nonfictional or res.generate_humanoids or res.generate_manwoman or res.generate_job or res.generate_manwomanrelation or res.generate_firstname or res.generate_manwomanmultiple
             
@@ -151,17 +152,18 @@ class SubjectSelector:
             if res.generate_firstname:
                 res.humanoid_chooser.append("firstname")
             if res.generate_humanoid_total:
-                res.main_chooser.append("humanoid")
+                humanoid_weight = sum([res.generate_fictional, res.generate_nonfictional, res.generate_humanoids, res.generate_manwoman, res.generate_job, res.generate_manwomanrelation, res.generate_firstname, res.generate_manwomanmultiple])
+                res.main_chooser.extend(["humanoid"] * humanoid_weight)
 
         # Animals
         if cfg.generate_animals:
-            res.generate_animal = bool(lm.get_list("animals"))
-            res.generate_bird = bool(lm.get_list("birds"))
-            res.generate_cat = bool(lm.get_list("cats"))
-            res.generate_dog = bool(lm.get_list("dogs"))
-            res.generate_insect = bool(lm.get_list("insects"))
-            res.generate_pokemon = bool(lm.get_list("pokemon"))
-            res.generate_marinelife = bool(lm.get_list("marinelife"))
+            res.generate_animal = lm.list_exists("animals")
+            res.generate_bird = lm.list_exists("birds")
+            res.generate_cat = lm.list_exists("cats")
+            res.generate_dog = lm.list_exists("dogs")
+            res.generate_insect = lm.list_exists("insects")
+            res.generate_pokemon = lm.list_exists("pokemon")
+            res.generate_marinelife = lm.list_exists("marinelife")
             
             res.generate_animal_total = res.generate_animal or res.generate_bird or res.generate_cat or res.generate_dog or res.generate_insect or res.generate_pokemon or res.generate_marinelife
             
@@ -172,20 +174,23 @@ class SubjectSelector:
             if res.generate_insect: res.animal_wildcards.append("-insect-"); res.hybrid_list.append("-insect-")
             if res.generate_pokemon: res.animal_wildcards.append("-pokemon-"); res.hybrid_list.append("-pokemon-")
             if res.generate_marinelife: res.animal_wildcards.append("-marinelife-"); res.hybrid_list.append("-marinelife-")
-            if res.generate_animal_total: res.main_chooser.append("animal")
+            if res.generate_animal_total:
+                animal_weight = sum([res.generate_animal, res.generate_bird, res.generate_cat, res.generate_dog, res.generate_insect, res.generate_pokemon, res.generate_marinelife])
+                res.main_chooser.extend(["animal"] * animal_weight)
 
         # Landscapes / Locations
         if cfg.generate_landscapes:
-            res.generate_location = bool(lm.get_list("locations"))
-            res.generate_location_fantasy = bool(lm.get_list("locations_fantasy"))
-            res.generate_location_scifi = bool(lm.get_list("locations_scifi"))
-            res.generate_location_videogame = bool(lm.get_list("locations_videogame"))
-            res.generate_location_biome = bool(lm.get_list("locations_biome"))
-            res.generate_location_city = bool(lm.get_list("locations_city"))
-            res.generate_landscape_total = res.generate_location or res.generate_location_fantasy or res.generate_locationscifi or res.generate_location_videogame or res.generate_location_biome or res.generate_location_city
+            res.generate_location = lm.list_exists("locations")
+            res.generate_location_fantasy = lm.list_exists("locations_fantasy")
+            res.generate_location_scifi = lm.list_exists("locations_scifi")
+            res.generate_location_videogame = lm.list_exists("locations_videogame")
+            res.generate_location_biome = lm.list_exists("locations_biome")
+            res.generate_location_city = lm.list_exists("locations_city")
+            res.generate_landscape_total = res.generate_location or res.generate_location_fantasy or res.generate_location_scifi or res.generate_location_videogame or res.generate_location_biome or res.generate_location_city
             
             if res.generate_landscape_total:
-                res.main_chooser.append("landscape")
+                landscape_weight = sum([res.generate_location, res.generate_location_fantasy, res.generate_location_scifi, res.generate_location_videogame, res.generate_location_biome, res.generate_location_city])
+                res.main_chooser.extend(["landscape"] * landscape_weight)
                 res.location_chooser.append("landscape")
                 res.addon_location.append("-location-")
                 res.addon_location.append("-background-")
@@ -213,12 +218,12 @@ class SubjectSelector:
 
         # Concepts
         if cfg.generate_concepts:
-            res.generate_event = bool(lm.get_list("events"))
-            res.generate_concepts = bool(lm.get_list("concept_prefix")) or bool(lm.get_list("concept_suffix"))
-            res.generate_poemline = bool(lm.get_list("poemlines"))
-            res.generate_songline = bool(lm.get_list("songlines"))
-            res.generate_cardname = bool(lm.get_list("card_names"))
-            res.generate_episodetitle = bool(lm.get_list("episodetitles"))
+            res.generate_event = lm.list_exists("events")
+            res.generate_concepts = lm.list_exists("concept_prefix") or lm.list_exists("concept_suffix")
+            res.generate_poemline = lm.list_exists("poemlines")
+            res.generate_songline = lm.list_exists("songlines")
+            res.generate_cardname = lm.list_exists("card_names")
+            res.generate_episodetitle = lm.list_exists("episodetitles")
             
             res.generate_concept_total = res.generate_event or res.generate_concepts or res.generate_poemline or res.generate_songline
             
@@ -230,6 +235,7 @@ class SubjectSelector:
             if res.generate_episodetitle: res.event_chooser.append("episodetitle")
             
             if res.generate_concept_total:
-                res.main_chooser.append("concept")
+                concept_weight = sum([res.generate_event, res.generate_concepts, res.generate_poemline, res.generate_songline, res.generate_cardname, res.generate_episodetitle])
+                res.main_chooser.extend(["concept"] * concept_weight)
         
         return res

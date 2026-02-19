@@ -1,11 +1,15 @@
 import json
 import random
 import re
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 if __package__ is None or __package__ == '':
     # A1111 style (standalone script or direct module execution)
-    from csv_reader import *
-    from random_functions import *
+    from csv_reader import csv_to_list, load_config_csv, load_all_artist_and_category, artist_category_csv_to_list, artist_descriptions_csv_to_list
+    from random_functions import chance_roll
     from one_button_presets import OneButtonPresets
     from prompt_config import PromptConfig
     from list_manager import ListManager
@@ -23,8 +27,8 @@ if __package__ is None or __package__ == '':
             return args[0] if args else ""
 else:
     # ComfyUI style (imported as a package)
-    from .csv_reader import *
-    from .random_functions import *
+    from .csv_reader import csv_to_list, load_config_csv, load_all_artist_and_category, artist_category_csv_to_list, artist_descriptions_csv_to_list
+    from .random_functions import chance_roll
     from .one_button_presets import OneButtonPresets
     from .prompt_config import PromptConfig
     from .list_manager import ListManager
@@ -113,11 +117,48 @@ def load_custom_modes():
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 _CUSTOM_MODES_CACHE = json.load(f)
-                print(f"OneButtonPrompt: Loaded {len(_CUSTOM_MODES_CACHE)} custom modes from custom_modes.json")
+                logger.debug(f"OneButtonPrompt: Loaded {len(_CUSTOM_MODES_CACHE)} custom modes from custom_modes.json")
         except Exception as e:
-            print(f"OneButtonPrompt: Error loading custom_modes.json: {e}")
+            logger.debug(f"OneButtonPrompt: Error loading custom_modes.json: {e}")
     
     return _CUSTOM_MODES_CACHE
+
+def get_compatible_pools(theme: str, category: str, lm: ListManager) -> list[str]:
+    """
+    Returns a list of compatible CSV pool names for a given theme and category.
+    Assists in 'Theme Coherence Anchoring' by filtering pools.
+    """
+    theme_lower = theme.lower()
+    
+    # Mapping of themes to specific list pools
+    THEME_MAP = {
+        "fantasy": {
+            "locations": ["locations_fantasy", "locations_biome"],
+            "outfits": ["outfits_fantasy", "material_fantasy"]
+        },
+        "sci-fi": {
+            "locations": ["locations_scifi", "locations_biome"],
+            "outfits": ["outfits_sci-fi", "material_sci-fi"]
+        },
+        "videogame": {
+            "locations": ["locations_videogame"],
+            "outfits": ["outfits_videogame"]
+        },
+        "apocalyptic": {
+             "locations": ["locations_apocalyptic", "locations_city"],
+             "outfits": ["outfits_apocalyptic"]
+        }
+    }
+    
+    if theme_lower in THEME_MAP and category in THEME_MAP[theme_lower]:
+        # Return matched pools that actually exist
+        pools = THEME_MAP[theme_lower][category]
+        valid_pools = [p for p in pools if lm.list_exists(p)]
+        if valid_pools:
+            return valid_pools
+            
+    # Fallback: if category exists as a base list, return it
+    return [category]
 
 
 
@@ -200,7 +241,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     if(OBP_preset == OBPresets.RANDOM_PRESET_OBP):
         obp_options = OBPresets.load_obp_presets()
         random_preset = random.choice(list(obp_options.keys()))
-        print("Engaging randomized presets, locking on to: " + random_preset)
+        logger.debug("Engaging randomized presets, locking on to: " + random_preset)
 
         selected_opb_preset = OBPresets.get_obp_preset(random_preset)
         insanitylevel = selected_opb_preset["insanitylevel"]
@@ -313,7 +354,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         configfilesuffix = "anime"
     
     # Hard overwrite some stuff because people dont config this themselves
-    if((anime_mode or imagetype == "all - anime") and (artists == "all" or normal_dist(insanitylevel))):
+    if((anime_mode or imagetype == "all - anime") and (artists == "all" or chance_roll(insanitylevel, 'normal'))):
         artists = "none"
 
 
@@ -510,14 +551,14 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     # Future: add in personal artists lists as well
     
     # lets maybe go wild "sometimes", based on insanitylevel
-    if(artists == "all" and rare_dist(insanitylevel)):
+    if(artists == "all" and chance_roll(insanitylevel, 'rare')):
        artists = "all (wild)"
        originalartistchoice = artists
 
     artisttypes = ["popular", "3D",	"abstract",	"angular", "anime"	,"architecture",	"art nouveau",	"art deco",	"baroque",	"bauhaus", 	"cartoon",	"character",	"children's illustration", 	"cityscape", "cinema",	"clean",	"cloudscape",	"collage",	"colorful",	"comics",	"cubism",	"dark",	"detailed", 	"digital",	"expressionism",	"fantasy",	"fashion",	"fauvism",	"figurativism",	"graffiti",	"graphic design",	"high contrast",	"horror",	"impressionism",	"installation",	"landscape",	"light",	"line drawing",	"low contrast",	"luminism",	"magical realism",	"manga",	"melanin",	"messy",	"monochromatic",	"nature",	"photography",	"pop art",	"portrait",	"primitivism",	"psychedelic",	"realism",	"renaissance",	"romanticism",	"scene",	"sci-fi",	"sculpture",	"seascape",	"space",	"stained glass",	"still life",	"storybook realism",	"street art",	"streetscape",	"surrealism",	"symbolism",	"textile",	"ukiyo-e",	"vibrant",	"watercolor",	"whimsical"]
     artiststyleselector = ""
     artiststyleselectormode = "normal"
-    if(artists == "all" and normal_dist(insanitylevel + 1)):
+    if(artists == "all" and chance_roll(insanitylevel + 1, 'normal')):
         artiststyleselector = random.choice(artisttypes)
         artists = artiststyleselector
     elif(artists == "all"):
@@ -526,7 +567,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         if(random.randint(0,6) == 0 and onlyartists == False):
             generateartist = False
         # go popular! Or even worse, we go full greg mode!
-        elif(common_dist(max(3,insanitylevel))):
+        elif(chance_roll(max(3,insanitylevel), 'common')):
             artists = "popular" 
         elif(random.randint(0,1) == 0):
             # only on lower instanity levels anyway
@@ -1478,7 +1519,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             chosentemplate = random.choice(templateprompts)
             templateindex = templateprompts.index(chosentemplate)
 
-            print("Processing a prompt that was inspired from: " + templatepromptcreator[templateindex])
+            logger.debug("Processing a prompt that was inspired from: " + templatepromptcreator[templateindex])
 
             # if there is a subject override, then replace the subject with that
             if(givensubject==""):
@@ -1501,7 +1542,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             insanitylevel =  random.randint(1, 10)  # 10 = add everything, 1 is add almost nothing
         insanitylevel3 = int((insanitylevel/3) + 1.20)
 
-        # print("Setting insanity level to " + str(insanitylevel))
+        # logger.debug("Setting insanity level to " + str(insanitylevel))
 
         # main chooser: 0 object, 1 animal, 2 humanoid, 3 landscape, 4 event/concept
         #mainchooserlist = ["object","animal","humanoid", "landscape", "concept"]
@@ -1708,17 +1749,17 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(artistlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(artistlist)):
                     completeprompt += "-artist-, "
-                if(uncommon_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(unique_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(unique_dist(insanitylevel) and bool(imagetypelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(imagetypelist)):
                     completeprompt += "-imagetype-, "
-                if(unique_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
-                if(uncommon_dist(insanitylevel) and bool(artistlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(artistlist)):
                     completeprompt += "-artiststyle-, "
                 step = step + 1 
 
@@ -1728,21 +1769,21 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(othertypelist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(othertypelist)):
                     completeprompt += "-othertype-, "
-                if(uncommon_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(uncommon_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
-                if(rare_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(rare_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(lightinglist)):
                     completeprompt += "-lighting-, "
-                if(unique_dist(insanitylevel) and bool(imagetypelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(imagetypelist)):
                     completeprompt += "-imagetype-, "
-                if(unique_dist(insanitylevel) and bool(qualitylist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(qualitylist)):
                     completeprompt += "-quality-, "
-                if(unique_dist(insanitylevel) and bool(artistlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(artistlist)):
                     completeprompt += "-artistdescription-, "
                 
                 step = step + 1 
@@ -1752,17 +1793,17 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(uncommon_dist(insanitylevel) and bool(flufferlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(flufferlist)):
                     completeprompt += "-fluff-, "
-                if(uncommon_dist(insanitylevel) and bool(qualitylist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(qualitylist)):
                     completeprompt += "-quality-, "
-                if(unique_dist(insanitylevel) and bool(minivomitlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(minivomitlist)):
                     completeprompt += "-minivomit-, "
-                if(unique_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(unique_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
                 step = step + 1
 
@@ -1771,17 +1812,17 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(moodlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(moodlist)):
                     completeprompt += "-mood-, "
-                if(uncommon_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
-                if(rare_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(unique_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(unique_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(lightinglist)):
                     completeprompt += "-lighting-, "
-                if(unique_dist(insanitylevel) and bool(allstylessuffixlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(allstylessuffixlist)):
                     completeprompt += "-allstylessuffix-, "
                 step = step + 1 
 
@@ -1789,22 +1830,22 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         if(photofantasymode == True):
             step = 0
             end = random.randint(1, insanitylevel) + 1
-            if(common_dist(insanitylevel)):
-                if(uncommon_dist(insanitylevel)):
+            if(chance_roll(insanitylevel, 'common')):
+                if(chance_roll(insanitylevel, 'uncommon')):
                     completeprompt += "-imagetypequality- "
                 completeprompt += " photograph, "
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(lightinglist)):
                     completeprompt += "-photoaddition-, "
-                if(uncommon_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(lightinglist)):
                     completeprompt += "-lighting-, "
-                if(uncommon_dist(insanitylevel) and bool(cameralist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(cameralist)):
                     completeprompt += "-camera-, "
-                if(rare_dist(insanitylevel) and bool(lenslist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(lenslist)):
                     completeprompt += "-lens-, "
-                if(unique_dist(insanitylevel) and bool(moodlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(moodlist)):
                     completeprompt += "-mood-, "
-                if(unique_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
                 step = step + 1 
 
@@ -1813,33 +1854,33 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(rare_dist(insanitylevel) and bool(artistlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(artistlist)):
                     completeprompt += "-artist-, "
-                if(rare_dist(insanitylevel) and bool(descriptorlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(descriptorlist)):
                     completeprompt += "-descriptor-, "
-                if(rare_dist(insanitylevel) and bool(moodlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(moodlist)):
                     completeprompt += "-mood-, "
-                if(rare_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
-                if(rare_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(rare_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(rare_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(lightinglist)):
                     completeprompt += "-lighting-, "
-                if(rare_dist(insanitylevel) and bool(minilocationadditionslist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(minilocationadditionslist)):
                     completeprompt += "-minilocationaddition-, "
-                if(rare_dist(insanitylevel) and bool(materiallist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(materiallist)):
                     completeprompt += "-material-, "
-                if(rare_dist(insanitylevel) and bool(conceptsuffixlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(conceptsuffixlist)):
                     completeprompt += "-conceptsuffix-, "
-                if(rare_dist(insanitylevel) and bool(qualitylist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(qualitylist)):
                     completeprompt += "-quality-, "
-                if(rare_dist(insanitylevel) and bool(cameralist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(cameralist)):
                     completeprompt += "-camera-, "
-                if(rare_dist(insanitylevel) and bool(lenslist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(lenslist)):
                     completeprompt += "-lens-, "
-                if(rare_dist(insanitylevel) and bool(imagetypelist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(imagetypelist)):
                     completeprompt += "-imagetype-, "
                 step = step + 1 
             
@@ -1971,7 +2012,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     completeprompt += " ["
                     
                 while step < end: 
-                    if(normal_dist(insanitylevel) and remove_weights == False):
+                    if(chance_roll(insanitylevel, 'normal') and remove_weights == False):
                         isweighted = 1
                     
                     if isweighted == 1:
@@ -2041,7 +2082,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 # clean it up
                 completeprompt = cleanup(completeprompt, advancedprompting, insanitylevel)
 
-                print("only generated these artists:" + completeprompt)
+                logger.debug("only generated these artists:" + completeprompt)
                 if(_return_metadata):
                     return completeprompt, _metadata
                 return completeprompt
@@ -2101,12 +2142,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             if(imagetype != "all" and imagetype != "all - force multiple" and imagetype != "only other types" and imagetype != "all - anime"):
                  
                     completeprompt += " " + imagetype + ", "
-            elif(imagetype == "all - force multiple" or unique_dist(insanitylevel) and not anime_mode):
+            elif(imagetype == "all - force multiple" or chance_roll(insanitylevel, 'unique') and not anime_mode):
                 amountofimagetypes = random.randint(2,3)
             elif(imagetype == "only other types"):
                 if(amountofimagetypes < 2 and random.randint(0,2) == 0):
                         partlystylemode = True
-                        print("Ohhh! Adding some secret sauce to this prompt")
+                        logger.debug("Ohhh! Adding some secret sauce to this prompt")
                         chosenstyle = random.choice(styleslist)
                         chosenstyleprefix = chosenstyle.split("-subject-")[0]
                         chosenstylesuffix = chosenstyle.split("-subject-")[1]
@@ -2145,7 +2186,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 elif(not anime_mode):
                     if(amountofimagetypes < 2 and random.randint(0,1) == 0):
                         partlystylemode = True
-                        print("Ohhh! Adding some secret sauce to this prompt")
+                        logger.debug("Ohhh! Adding some secret sauce to this prompt")
                         chosenstyle = random.choice(styleslist)
                         chosenstyleprefix = chosenstyle.split("-subject-")[0]
                         chosenstylesuffix = chosenstyle.split("-subject-")[1]
@@ -2218,7 +2259,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             
             if(outfitmode == 1):
                 completeprompt += "OR(wearing;dressed in;in;normal) OR(;OR(;a very;rare) -outfitdescriptor-;normal) OR(;-color-;uncommon) OR(;-culture-;uncommon) OR(;-material-;rare) -outfit-, "
-                if(extraordinary_dist(insanitylevel)):
+                if(chance_roll(insanitylevel, 'extraordinary')):
                     completeprompt += " -outfitvomit-, "
             
 
@@ -2227,7 +2268,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 completeprompt += " " + givensubjectpromptlist[0] + " "
 
             # Once in a very rare while, we get a ... full of ...s
-            if(novel_dist(insanitylevel) and (animalashuman or subjectchooser in ["human", "job", "fictional", "non fictional", "humanoid", "manwomanrelation","firstname"])):         
+            if(chance_roll(insanitylevel, 'novel') and (animalashuman or subjectchooser in ["human", "job", "fictional", "non fictional", "humanoid", "manwomanrelation","firstname"])):         
                 buildingfullmode = True
                 insideshot = 1
                 heshelist = ["they"]
@@ -2267,11 +2308,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                         completeprompt += "-descriptor- "
             
             # color, for animals, landscape, objects and concepts
-            if(mainchooser in ["animal", "object", "landscape", "concept"] and unique_dist(insanitylevel)):
+            if(mainchooser in ["animal", "object", "landscape", "concept"] and chance_roll(insanitylevel, 'unique')):
                 completeprompt += " OR(-color-;-colorcombination-) "
             
             # age, very rare to add.
-            if(subjectchooser in ["human", "job", "fictional", "non fictional", "humanoid", "manwomanrelation", "manwomanmultiple","firstname"] and extraordinary_dist(insanitylevel)):
+            if(subjectchooser in ["human", "job", "fictional", "non fictional", "humanoid", "manwomanrelation", "manwomanmultiple","firstname"] and chance_roll(insanitylevel, 'extraordinary')):
                 completeprompt += str(random.randint(20,99)) + " OR(y.o.;year old) "
 
             if((animalashuman or subjectchooser in ["human", "job", "fictional", "non fictional", "humanoid", "manwomanrelation", "manwomanmultiple","firstname"]) and chance_roll(insanitylevel, subjectbodytypechance) and generatebodytype == True):
@@ -2309,7 +2350,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
                 if(givensubject == "" or (subjectingivensubject and givensubject != "")):
 
-                    if(rare_dist(insanitylevel) and advancedprompting == True):
+                    if(chance_roll(insanitylevel, 'rare') and advancedprompting == True):
                         hybridorswaplist = ["hybrid", "swap"]
                         hybridorswap = random.choice(hybridorswaplist)
                         completeprompt += "["
@@ -2319,14 +2360,14 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     completeprompt += chosenobjectwildcard + " "
 
                     if(hybridorswap == "hybrid"):
-                        if(uncommon_dist(insanitylevel)):
+                        if(chance_roll(insanitylevel, 'uncommon')):
                             completeprompt += "|" + random.choice(objectwildcardlist) + "] "
                         else:
                             completeprompt += "|" 
                             completeprompt += chosenobjectwildcard + " "
                             completeprompt += "] "
                     if(hybridorswap == "swap"):
-                        if(uncommon_dist(insanitylevel)):
+                        if(chance_roll(insanitylevel, 'uncommon')):
                             completeprompt += ":" + random.choice(objectwildcardlist) + ":" + str(random.randint(1,5)) +  "] "
                         else:
                             completeprompt += ":"
@@ -2373,12 +2414,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     
                     chosenanimalwildcard = random.choice(animalwildcardlist)
 
-                    if(rare_dist(insanitylevel) and advancedprompting == True):
+                    if(chance_roll(insanitylevel, 'rare') and advancedprompting == True):
                         hybridorswaplist = ["hybrid", "swap"]
                         hybridorswap = random.choice(hybridorswaplist)
                         completeprompt += "["
                         
-                    if(unique_dist(insanitylevel) and generateanimaladditions == True):
+                    if(chance_roll(insanitylevel, 'unique') and generateanimaladditions == True):
                         animaladdedsomething = 1
                         completeprompt += "-animaladdition- " + chosenanimalwildcard + " "
                     if(animaladdedsomething != 1):
@@ -2387,12 +2428,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                    
 
                     if(hybridorswap == "hybrid"):
-                        if(uncommon_dist(insanitylevel)):
+                        if(chance_roll(insanitylevel, 'uncommon')):
                             completeprompt += "|" + random.choice(hybridlist) + "] "
                         else:
                             completeprompt += "| " + chosenanimalwildcard +  " ] "
                     if(hybridorswap == "swap"):
-                        if(uncommon_dist(insanitylevel)):
+                        if(chance_roll(insanitylevel, 'uncommon')):
                             completeprompt += ":" + random.choice(hybridlist) + ":" + str(random.randint(1,5)) +  "] "
                         else:
                             completeprompt += ":" + chosenanimalwildcard +  ":" + str(random.randint(1,5)) +  "] "
@@ -2449,13 +2490,13 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                         completeprompt += "-job-"
 
                     if(subjectchooser == "fictional"):
-                        if(rare_dist(insanitylevel) and advancedprompting == True and buildingfullmode == False):
+                        if(chance_roll(insanitylevel, 'rare') and advancedprompting == True and buildingfullmode == False):
                             hybridorswaplist = ["hybrid", "swap"]
                             hybridorswap = random.choice(hybridorswaplist)
                             completeprompt += "["
                         
                         # Sometimes, we do a gender swap. Much fun!
-                        if(novel_dist(insanitylevel)):
+                        if(chance_roll(insanitylevel, 'novel')):
                             completeprompt += gender + " version of -oppositefictional-"
                         else:
                             completeprompt += "-fictional-"
@@ -2467,12 +2508,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                         hybridorswap = ""
 
                     if(subjectchooser == "non fictional"):
-                        if(rare_dist(insanitylevel)  and advancedprompting == True and buildingfullmode == False):
+                        if(chance_roll(insanitylevel, 'rare')  and advancedprompting == True and buildingfullmode == False):
                             hybridorswaplist = ["hybrid", "swap"]
                             hybridorswap = random.choice(hybridorswaplist)
                             completeprompt += "["
                         # Sometimes, we do a gender swap. Much fun!
-                        if(novel_dist(insanitylevel)):
+                        if(chance_roll(insanitylevel, 'novel')):
                             completeprompt += gender + " version of -oppositenonfictional-"
                         else:
                             completeprompt += "-nonfictional-"
@@ -2486,7 +2527,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     if(subjectchooser == "humanoid"):
                         if(gender != "all"):
                             completeprompt += "-malefemale- "
-                        if(rare_dist(insanitylevel)  and advancedprompting == True and buildingfullmode == False):
+                        if(chance_roll(insanitylevel, 'rare')  and advancedprompting == True and buildingfullmode == False):
                             hybridorswaplist = ["hybrid", "swap"]
                             hybridorswap = random.choice(hybridorswaplist)
                             completeprompt += "["
@@ -2500,7 +2541,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                         hybridorswap = ""
 
                     if(subjectchooser == "firstname"):
-                        if(rare_dist(insanitylevel)  and advancedprompting == True and buildingfullmode == False):
+                        if(chance_roll(insanitylevel, 'rare')  and advancedprompting == True and buildingfullmode == False):
                             hybridorswaplist = ["hybrid", "swap"]
                             hybridorswap = random.choice(hybridorswaplist)
                             completeprompt += "["
@@ -2534,7 +2575,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             # completion of strenght end
                 completeprompt += "-objectstrengthend-"  
             
-            if(mainchooser == 'animal' and legendary_dist(insanitylevel)):
+            if(mainchooser == 'animal' and chance_roll(insanitylevel, 'legendary')):
                 animaladdedsomething = 1
                 completeprompt += " -animalsuffixaddition- "
             
@@ -2545,7 +2586,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 
                 # if we have a given subject, we should skip making an actual subject
                 if(givensubject == "" or (subjectingivensubject and givensubject != "")):
-                    if(rare_dist(insanitylevel) and advancedprompting == True):
+                    if(chance_roll(insanitylevel, 'rare') and advancedprompting == True):
                         hybridorswaplist = ["hybrid", "swap"]
                         hybridorswap = random.choice(hybridorswaplist)
                         completeprompt += "["
@@ -2584,11 +2625,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 if(chance_roll(max(1,insanitylevel-2), subjectlandscapeaddonlocationchance) and insideshot == 0):
                     insideshot = 1
                     # lets cheat a bit here, we can do something cool I saw on reddit
-                    if(mainchooser=="humanoid" and legendary_dist(insanitylevel)):
+                    if(mainchooser=="humanoid" and chance_roll(insanitylevel, 'legendary')):
                         completeprompt += " looking at a -addontolocationinside- "
-                    elif(mainchooser=="humanoid" and legendary_dist(insanitylevel)):
+                    elif(mainchooser=="humanoid" and chance_roll(insanitylevel, 'legendary')):
                         completeprompt += " facing a -addontolocationinside- "
-                    elif(legendary_dist(insanitylevel)):
+                    elif(chance_roll(insanitylevel, 'legendary')):
                         completeprompt += " in the distance there is a -addontolocationinside- "
                     else:
                         completeprompt += " from inside of a -addontolocationinside- "
@@ -2759,7 +2800,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 
 
             # cosplaying
-            #if(subjectchooser in ["animal as human", "non fictional", "humanoid"] and rare_dist(insanitylevel) and humanspecial != 1):
+            #if(subjectchooser in ["animal as human", "non fictional", "humanoid"] and chance_roll(insanitylevel, 'rare') and humanspecial != 1):
             #    completeprompt += "cosplaying as " + random.choice(fictionallist) + ", "
 
             # Job 
@@ -2794,11 +2835,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
            
             if(outfitmode == 2):
                 completeprompt += " " + random.choice(buildoutfitlist) + ", "
-                if(extraordinary_dist(insanitylevel)):
+                if(chance_roll(insanitylevel, 'extraordinary')):
                     completeprompt += " -outfitvomit-, "
             elif(outfitmode == 2 and overrideoutfit != "" and imagetype != "only templates mode"):
                 completeprompt += " " + random.choice(buildoutfitlist) + ", "
-                if(extraordinary_dist(insanitylevel)):
+                if(chance_roll(insanitylevel, 'extraordinary')):
                     completeprompt += " -outfitvomit-, "
             
 
@@ -2808,7 +2849,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             
             if(subjectchooser in ["human","job","fictional", "non fictional", "humanoid", "manwomanrelation","manwomanmultiple", "firstname"]  and chance_roll(insanitylevel, hairchance) and generatehairstyle == True):
                 completeprompt += random.choice(buildhairlist) + ", "
-                if(unique_dist(insanitylevel)):
+                if(chance_roll(insanitylevel, 'unique')):
                     completeprompt += " -hairvomit-, "
 
             if((animalashuman or subjectchooser in ["human","fictional", "non fictional", "humanoid", "manwomanrelation","manwomanmultiple", "firstname"])  and chance_roll(insanitylevel, accessorychance) and generateaccessorie == True and generateaccessories == True):
@@ -2911,7 +2952,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     completeprompt += " ["
                     
                 while step < end: 
-                    if(normal_dist(insanitylevel) and remove_weights == False):
+                    if(chance_roll(insanitylevel, 'normal') and remove_weights == False):
                         isweighted = 1
                     
                     if isweighted == 1:
@@ -2963,7 +3004,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 # if we have artists, maybe go in artists descriptor mode
                 if(not anime_mode and not less_verbose and templatemode == False and specialmode == False and "-artist-" in completeprompt and uncommon_dist(max(8 - insanitylevel,3))):
                     for i in range(random.randint(1,3)):
-                        # print("adding artist stuff")
+                        # logger.debug("adding artist stuff")
                         completeprompt += ", -artistdescription-"
                         descriptivemode = True
                     completeprompt += ", "
@@ -2973,13 +3014,13 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 # if not, we could go in random styles descriptor mode
                 elif(not anime_mode and not less_verbose and templatemode == False and specialmode == False and legendary_dist(10 - insanitylevel)):
                     for i in range(random.randint(1,max(7,insanitylevel + 2))):
-                        # print("adding random crap")
+                        # logger.debug("adding random crap")
                         completeprompt += ", -allstylessuffix-"
                         descriptivemode = True
                     completeprompt += ", "
 
                 # and on high levels, DO EVERYTHING :D
-                if(descriptivemode == False or rare_dist(insanitylevel)):
+                if(descriptivemode == False or chance_roll(insanitylevel, 'rare')):
 
                     # Add more quality while in greg mode lol
                     if(originalartistchoice == "greg mode" and generatequality == True):
@@ -3056,15 +3097,15 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(artistlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(artistlist)):
                     completeprompt += "-artist-, "
-                if(uncommon_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(unique_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(unique_dist(insanitylevel) and bool(imagetypelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(imagetypelist)):
                     completeprompt += "-imagetype-, "
-                if(unique_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
                 step = step + 1 
         
@@ -3073,23 +3114,23 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(uncommon_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
-                if(rare_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(rare_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(lightinglist)):
                     completeprompt += "-lighting-, "
-                if(unique_dist(insanitylevel) and bool(qualitylist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(qualitylist)):
                     completeprompt += "-quality-, "
-                if(unique_dist(insanitylevel) and bool(artistlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(artistlist)):
                     completeprompt += "-artist-, "
-                if(novel_dist(insanitylevel) and bool(greatworklist)):
+                if(chance_roll(insanitylevel, 'novel') and bool(greatworklist)):
                     completeprompt += "in style of -greatwork-, "
-                if(novel_dist(insanitylevel) and bool(poemlinelist)):
+                if(chance_roll(insanitylevel, 'novel') and bool(poemlinelist)):
                     completeprompt += "\"-poemline-\", "
-                if(novel_dist(insanitylevel) and bool(songlinelist)):
+                if(chance_roll(insanitylevel, 'novel') and bool(songlinelist)):
                     completeprompt += "\"-songline-\", "
                 
                 step = step + 1 
@@ -3100,15 +3141,15 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(uncommon_dist(insanitylevel) and bool(qualitylist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(qualitylist)):
                     completeprompt += "-quality-, "
-                if(unique_dist(insanitylevel) and bool(minivomitlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(minivomitlist)):
                     completeprompt += "-minivomit-, "
-                if(unique_dist(insanitylevel) and bool(artmovementlist)) :
+                if(chance_roll(insanitylevel, 'unique') and bool(artmovementlist)) :
                     completeprompt += "-artmovement-, "
-                if(unique_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
                 step = step + 1 
         
@@ -3117,15 +3158,15 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(moodlist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(moodlist)):
                     completeprompt += "-mood-, "
-                if(uncommon_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
-                if(rare_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(unique_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(unique_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(lightinglist)):
                     completeprompt += "-lighting-, "
                 step = step + 1 
 
@@ -3135,15 +3176,15 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(uncommon_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(lightinglist)):
                     completeprompt += "-lighting-, "
-                if(uncommon_dist(insanitylevel) and bool(cameralist)):
+                if(chance_roll(insanitylevel, 'uncommon') and bool(cameralist)):
                     completeprompt += "-camera-, "
-                if(rare_dist(insanitylevel) and bool(lenslist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(lenslist)):
                     completeprompt += "-lens-, "
-                if(unique_dist(insanitylevel) and bool(moodlist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(moodlist)):
                     completeprompt += "-mood-, "
-                if(unique_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'unique') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
                 step = step + 1 
         
@@ -3153,29 +3194,29 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             step = 0
             end = random.randint(1, insanitylevel) + 1
             while step < end:
-                if(rare_dist(insanitylevel) and bool(artistlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(artistlist)):
                     completeprompt += "-artist-, "
-                if(rare_dist(insanitylevel) and bool(descriptorlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(descriptorlist)):
                     completeprompt += "-descriptor-, "
-                if(rare_dist(insanitylevel) and bool(moodlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(moodlist)):
                     completeprompt += "-mood-, "
-                if(rare_dist(insanitylevel) and bool(colorschemelist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(colorschemelist)):
                     completeprompt += "-colorscheme-, "
-                if(rare_dist(insanitylevel) and bool(vomitlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(vomitlist)):
                     completeprompt += "-vomit-, "
-                if(rare_dist(insanitylevel) and bool(artmovementlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(artmovementlist)):
                     completeprompt += "-artmovement-, "
-                if(rare_dist(insanitylevel) and bool(lightinglist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(lightinglist)):
                     completeprompt += "-lighting-, "
-                if(rare_dist(insanitylevel) and bool(minilocationadditionslist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(minilocationadditionslist)):
                     completeprompt += "-minilocationaddition-, "
-                if(rare_dist(insanitylevel) and bool(materiallist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(materiallist)):
                     completeprompt += "-material-, "
-                if(rare_dist(insanitylevel) and bool(conceptsuffixlist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(conceptsuffixlist)):
                     completeprompt += "-conceptsuffix-, "
-                if(rare_dist(insanitylevel) and bool(qualitylist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(qualitylist)):
                     completeprompt += "-quality-, "
-                if(rare_dist(insanitylevel) and bool(cameralist)):
+                if(chance_roll(insanitylevel, 'rare') and bool(cameralist)):
                     completeprompt += "-camera-, "
                 step = step + 1 
 
@@ -3184,7 +3225,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             completeprompt += chosenstylesuffix
         
         templatesmodechance = 0
-        if(uncommon_dist(insanitylevel) and not anime_mode): # not for anime models!
+        if(chance_roll(insanitylevel, 'uncommon') and not anime_mode): # not for anime models!
            templatesmodechance = 1
 
         if(dynamictemplatesmode == True and templatesmodechance == 1):
@@ -3193,7 +3234,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             
 
        
-        if(dynamictemplatesmode == True and common_dist(insanitylevel) and templatesmodechance == 0):
+        if(dynamictemplatesmode == True and chance_roll(insanitylevel, 'common') and templatesmodechance == 0):
             if("-artist-" in completeprompt or artists == "none"):
                 dynamictemplatessuffixlist = [sentence for sentence in dynamictemplatessuffixlist if "-artist-" not in sentence.lower()]
                 dynamictemplatessuffixlist = [sentence for sentence in dynamictemplatessuffixlist if "-artiststyle-" not in sentence.lower()]
@@ -3216,7 +3257,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             chosenstylesuffix = random.choice(dynamictemplatessuffixlist)
             completeprompt += ". " + chosenstylesuffix
 
-            if(normal_dist(insanitylevel)):
+            if(chance_roll(insanitylevel, 'normal')):
                 if("-artist-" in completeprompt):
                     dynamictemplatessuffixlist = [sentence for sentence in dynamictemplatessuffixlist if "-artist-" not in sentence.lower()]
                 if("-lighting-" in completeprompt):
@@ -3315,7 +3356,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     completeprompt += " ["
                     
                 while step < end: 
-                    if(normal_dist(insanitylevel) and remove_weights == False):
+                    if(chance_roll(insanitylevel, 'normal') and remove_weights == False):
                         isweighted = 1
                     
                     if isweighted == 1:
@@ -3374,9 +3415,9 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             
         if(artifymode == True):
             amountofartists = "random"
-            if(unique_dist(insanitylevel)):
+            if(chance_roll(insanitylevel, 'unique')):
                mode = "super remix turbo"
-            elif(legendary_dist(insanitylevel)):
+            elif(chance_roll(insanitylevel, 'legendary')):
                  mode = "remix"
             else:
                 mode = "standard"
@@ -3454,32 +3495,32 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         completeprompt = "".join(completeprompt_list)
 
     # hair descriptor
-    if(rare_dist(insanitylevel)): # Use base hair descriptor, until we are not.
+    if(chance_roll(insanitylevel, 'rare')): # Use base hair descriptor, until we are not.
         completeprompt = completeprompt.replace("-hairdescriptor-", "-descriptor-")
     
     # human descriptor
-    if(rare_dist(insanitylevel)): # Use base human descriptor, until we are not.
+    if(chance_roll(insanitylevel, 'rare')): # Use base human descriptor, until we are not.
         completeprompt = completeprompt.replace("-humandescriptor-", "-descriptor-")
     
     # location descriptor
-    if(rare_dist(insanitylevel)): # Use base location descriptor, until we are not.
+    if(chance_roll(insanitylevel, 'rare')): # Use base location descriptor, until we are not.
         completeprompt = completeprompt.replace("-locationdescriptor-", "-descriptor-")
     
     # animeal descriptor
-    if(rare_dist(insanitylevel)): # Use base animal descriptor, until we are not.
+    if(chance_roll(insanitylevel, 'rare')): # Use base animal descriptor, until we are not.
         completeprompt = completeprompt.replace("-animaldescriptor-", "-descriptor-")
 
 
     # sometimes, culture becomes traditional!
-    if(unique_dist(insanitylevel)):
+    if(chance_roll(insanitylevel, 'unique')):
         completeprompt = completeprompt.replace("-culture-", "traditional -culture-")
 
 
     # first some manual stuff for outfit
 
-    if(unique_dist(insanitylevel)): # sometimes, its just nice to have descriptor and a normal "outfit". We use mini outfits for this!
+    if(chance_roll(insanitylevel, 'unique')): # sometimes, its just nice to have descriptor and a normal "outfit". We use mini outfits for this!
         completeprompt = completeprompt.replace("-outfit-", "-minioutfit-",1)
-    if(rare_dist(insanitylevel)): # Use base outfit descriptor, until we are not.
+    if(chance_roll(insanitylevel, 'rare')): # Use base outfit descriptor, until we are not.
         completeprompt = completeprompt.replace("-outfitdescriptor-", "-descriptor-")
     
     # if -outfit- is in the override, we want a consistent result
@@ -3505,7 +3546,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     completeprompt = completeprompt.replace("-overrideoutfit-", "")
 
     # sometimes replace one descriptor with a artmovement, only on high insanitylevels
-    if(insanitylevel > 7 and unique_dist(insanitylevel)):
+    if(insanitylevel > 7 and chance_roll(insanitylevel, 'unique')):
         completeprompt = completeprompt.replace("-descriptor-", "-artmovement-",1)
 
     # On low insanity levels (lower than 5) ,a chance refer to the basic bitch list on some occasions
@@ -3564,7 +3605,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         completeprompt = "".join(completeprompt_list)
 
         
-    #    print(completeprompt)
+    #    logger.debug(completeprompt)
     
     # lol, this needs a rewrite :D
     while (
@@ -3810,11 +3851,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
     #just for me, some fun with posting fake dev messages (ala old sim games)
     if(random.randint(1, 50)==1):
-        print("")
-        print(random.choice(devmessagelist))
-        print("")
+        logger.debug("")
+        logger.debug(random.choice(devmessagelist))
+        logger.debug("")
 
-    print(completeprompt) # keep this! :D 
+    logger.debug(completeprompt) # keep this! :D 
 
     if(prompt_g_and_l == False):
         if(_return_metadata):
@@ -4061,15 +4102,15 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
 
     words = prompt.split()
     num_words = len(words)
-    if(num_words < 15 and common_dist(insanitylevel)):
+    if(num_words < 15 and chance_roll(insanitylevel, 'common')):
         # add some random words maybe?
-        if(common_dist(insanitylevel)):
+        if(chance_roll(insanitylevel, 'common')):
             
             if(random.randint(0,1)== 0):
                 prompt += basicenhance
             else:
                 prompt = basicenhance + prompt
-            if(common_dist(insanitylevel)):
+            if(chance_roll(insanitylevel, 'common')):
                 prompt += basicenhance
             prompt = parse_custom_functions(prompt, insanitylevel)
 
@@ -4094,9 +4135,9 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
     runs = 0
 
     if(insanitylevel != 0):
-        print("")
-        print("Creating a prompt variation")
-        print("")
+        logger.debug("")
+        logger.debug("Creating a prompt variation")
+        logger.debug("")
         while(originalprompt == prompt and runs != maxamountofruns):
             for combination in combinations_list:
                 lowercase_combination = combination.lower()
@@ -4608,7 +4649,7 @@ def replacewildcard(completeprompt, insanitylevel, wildcard,listname, activatehy
     else:
 
         while wildcard in completeprompt:
-            if(unique_dist(insanitylevel) and activatehybridorswap == True and len(listname)>2 and advancedprompting==True):
+            if(chance_roll(insanitylevel, 'unique') and activatehybridorswap == True and len(listname)>2 and advancedprompting==True):
                 hybridorswaplist = ["hybrid", "swap"]
                 hybridorswap = random.choice(hybridorswaplist)
                 replacementvalue = random.choice(listname)
@@ -4934,7 +4975,7 @@ def enhance_positive(positive_prompt = "", amountofwords = 3, list_manager = Non
     for i in range(0,amountofwords):
         if(len(newwordlist) > 0):
                addwords += ", " + newwordlist.pop(random.randrange(len(newwordlist)))
-               #print(addwords)
+               #logger.debug(addwords)
     
 
     return addwords
@@ -5003,7 +5044,7 @@ def artify_prompt(insanitylevel = 5, prompt = "", artists = "all", amountofartis
     allstylessuffixlist += artiststylessuffixlist
 
     completeprompt = ""
-    if(common_dist(insanitylevel)):
+    if(chance_roll(insanitylevel, 'common')):
         completeprompt += "-artiststyle- "
     completeprompt += "art by "
     #Lets go effing artify this MF'er
@@ -5014,7 +5055,7 @@ def artify_prompt(insanitylevel = 5, prompt = "", artists = "all", amountofartis
         else:
             completeprompt += "-artist-, "
     
-    if(uncommon_dist(insanitylevel)):
+    if(chance_roll(insanitylevel, 'uncommon')):
         completeprompt += "-artistmedium-, " 
             
     # now add the prompt in
@@ -5275,7 +5316,7 @@ def custom_or(values, insanitylevel = 5):
     return selected_value
 
 def parse_custom_functions(completeprompt, insanitylevel = 5):
-    #print(completeprompt)
+    #logger.debug(completeprompt)
 
     # Regular expression pattern to match 'or()' function calls and their arguments
     ORpattern = r'OR\((.*?)\)'
@@ -5309,8 +5350,8 @@ def parse_custom_functions(completeprompt, insanitylevel = 5):
         # Evaluate the 'or()' function and append the result to the results list
 
         # For debugging, enable these lines
-        #print(completeprompt)
-        #print(arguments)
+        #logger.debug(completeprompt)
+        #logger.debug(arguments)
         or_replacement = custom_or(arguments, insanitylevel)
         completematch = 'OR(' + match + ')'
         completeprompt = completeprompt.replace(completematch, or_replacement)
@@ -5466,17 +5507,17 @@ def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_s
 
      # check if its matching all words from the override:
     possible_words_to_check = override_subject.lower().split() + override_outfit.lower().split()
-    #print(possible_words_to_check)
+    #logger.debug(possible_words_to_check)
     words_to_check = []
     words_to_remove = ['subject', 'solo', '1girl', '1boy']
     for word in possible_words_to_check:
         word = word.translate(translation_table_remove_stuff)
-        #print(word)
+        #logger.debug(word)
         if word not in words_to_remove:
             if (not word.startswith("-") and not word.endswith("-")) and (not word.startswith("_") and not word.endswith("_")) :
                 words_to_check.append(word)
 
-    #print(words_to_check)
+    #logger.debug(words_to_check)
     if chosensubject not in ("humanoid","firstname","job","fictional","non fictional","human"):
         gender = ""
     if(superpromptstyle == "" or superpromptstyle == "all"):
@@ -5517,11 +5558,11 @@ def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_s
     elif "game" in restofprompt:
         imagetype = "video game artwork"
     
-    if imagetype != "" and (normal_dist(insanitylevel) or usestyle == True):
+    if imagetype != "" and (chance_roll(insanitylevel, 'normal') or usestyle == True):
         question += "Expand the following " + gender + " " + subject_to_generate + " prompt to describe " + superpromptstyle + " " + imagetype + ": "
     elif imagetype != "":
         question += "Expand the following " + gender + " " + subject_to_generate + " prompt to describe " + imagetype + ": "
-    elif(normal_dist(insanitylevel) or usestyle == True):
+    elif(chance_roll(insanitylevel, 'normal') or usestyle == True):
         question += "Expand the following " + gender + " " + subject_to_generate + " prompt to make it more " + superpromptstyle
     else:
         question += "Expand the following " + gender + " " + subject_to_generate + " prompt to add more detail: "
@@ -5531,20 +5572,20 @@ def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_s
     prompt = prompt.translate(translation_table_remove_numbers)
 
     while done == False:
-        #print(seed)
-        #print(temperature)
-        #print(top_p)
-        #print(question)
-        #print("chosen subject: " + chosensubject)
+        #logger.debug(seed)
+        #logger.debug(temperature)
+        #logger.debug(top_p)
+        #logger.debug(question)
+        #logger.debug("chosen subject: " + chosensubject)
         
     	
         superpromptresult = answer(input_text=question + prompt, max_new_tokens=max_new_tokens, repetition_penalty=2.0, temperature=temperature, top_p=top_p, top_k=10, seed=seed)
 
-        #print("orignal: " + prompt)
-        #print("insanitylevel: " + str(insanitylevel))
-        #print("")
-        #print("complete superprompt: " + superpromptresult)
-        #print("")
+        #logger.debug("orignal: " + prompt)
+        #logger.debug("insanitylevel: " + str(insanitylevel))
+        #logger.debug("")
+        #logger.debug("complete superprompt: " + superpromptresult)
+        #logger.debug("")
 
         # Find the indices of the nearest period and comma
         period_index = superpromptresult.rfind('.')
@@ -5561,11 +5602,11 @@ def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_s
 
         # piercing green eyes problem
         # basically, the model has some biasses, lets get rid of it, OBP style!
-        if(common_dist(insanitylevel) and remove_bias): # but not always
+        if(chance_roll(insanitylevel, 'common') and remove_bias): # but not always
             superpromptresult = remove_superprompt_bias(superpromptresult=superpromptresult, insanitylevel=insanitylevel, override_outfit=override_outfit, list_manager=lm)
             
        
-        #print(words_to_check)
+        #logger.debug(words_to_check)
         # Iterate through each word and check if it exists in the other string
         i = 0
         for word in words_to_check:
@@ -5589,9 +5630,9 @@ def one_button_superprompt(insanitylevel = 5, prompt = "", seed = -1, override_s
             else:
                 top_p -= 0.3
             max_new_tokens += 3
-            print("")
-            print(random.choice(devmessagessuperpromptlist) + "... Retrying...")
-            print("")
+            logger.debug("")
+            logger.debug(random.choice(devmessagessuperpromptlist) + "... Retrying...")
+            logger.debug("")
             
         
 
@@ -5610,7 +5651,7 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
         eyecolorslist = lm.get_list("eyecolors")
         eyecolorslist = [x for x in eyecolorslist if not x.startswith('-')]
         neweyecolor = " " + random.choice(eyecolorslist).lower() + " eye"
-        #print(neweyecolor)
+        #logger.debug(neweyecolor)
         superpromptresult = superpromptresult.replace(" green eye", neweyecolor)
     #  white gown  or white dress
     if(" white gown" in superpromptresult 
@@ -5620,7 +5661,7 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
         colorcombinationslist = [x for x in colorcombinationslist if not x.startswith('-')]
         colorslist = lm.get_list("colors")
         colorslist = [x for x in colorslist if not x.startswith('-')]
-        if(normal_dist(insanitylevel)):
+        if(chance_roll(insanitylevel, 'normal')):
             newcolordress = " " + random.choice(colorcombinationslist).lower() + " dress"
             newcolorgown = " " + random.choice(colorcombinationslist).lower() + " gown"
             newcolorsuit = " " + random.choice(colorcombinationslist).lower() + " suit"
@@ -5628,9 +5669,9 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
             newcolordress = " " + random.choice(colorslist).lower() + " dress"
             newcolorgown = " " + random.choice(colorslist).lower() + " gown"
             newcolorsuit = " " + random.choice(colorcombinationslist).lower() + " suit"
-        #print(newcolordress)                
-        #print(newcolorgown)                
-        #print(newcolorsuit)
+        #logger.debug(newcolordress)                
+        #logger.debug(newcolorgown)                
+        #logger.debug(newcolorsuit)
         superpromptresult = superpromptresult.replace(" white dress", newcolordress)
         superpromptresult = superpromptresult.replace(" white gown", newcolorgown)
         superpromptresult = superpromptresult.replace(" black suit", newcolorsuit)
@@ -5656,7 +5697,7 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
         descriptorslist = lm.get_list("descriptors")
         descriptorslist = [x for x in descriptorslist if not x.startswith('-')]
         newdescriptor = " " + random.choice(descriptorslist).lower() + " "
-        #print(newdescriptor)
+        #logger.debug(newdescriptor)
     
         superpromptresult = superpromptresult.replace(" sleek ", newdescriptor)
     ## lush green (meadow), sun shines down
@@ -5666,7 +5707,7 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
         backgroundlist = lm.get_list("backgrounds")
         backgroundlist = [x for x in backgroundlist if not x.startswith('-')]
         newbackground = random.choice(backgroundlist).lower()
-        #print(newbackground)
+        #logger.debug(newbackground)
 
         superpromptresult = superpromptresult.replace("lush green meadow", newbackground)
 
@@ -5675,7 +5716,7 @@ def remove_superprompt_bias(superpromptresult = "", insanitylevel = 5, override_
         hairstylelist = lm.get_list("hairstyles2")
         hairstylelist = [x for x in hairstylelist if not x.startswith('-')]
         newhairstyle = random.choice(hairstylelist).lower()
-        #print(newhairstyle)
+        #logger.debug(newhairstyle)
 
         superpromptresult = superpromptresult.replace("long, flowing hair", newhairstyle)
     

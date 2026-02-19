@@ -1,3 +1,4 @@
+from collections import deque
 import os
 try:
     from .csv_reader import csv_to_list, load_config_csv, load_negative_list, load_all_artist_and_category, artist_category_csv_to_list, artist_descriptions_csv_to_list
@@ -27,8 +28,11 @@ class ListManager:
 
     # Valid kwargs for csv_to_list (beyond the defaults we always pass)
     _CSV_KWARGS = {"directory", "lowerandstrip", "delimiter", "listoflistmode", "skipheader"}
+    
+    # History for anti-repeat cooldown (Phase 4)
+    _pick_history = {} # name -> deque
 
-    def get_list(self, name: str = None, **kwargs) -> list:
+    def get_list(self, name: str = None, copy: bool = True, **kwargs) -> list:
         """Get a list by name, using cache if available."""
         # ... (implementation same as before, truncated for brevity in replacement)
         # Accept 'csvfilename' as an alias for 'name' (legacy compatibility)
@@ -57,11 +61,54 @@ class ListManager:
             params.update(csv_kwargs)
             self._cache[cache_key] = csv_to_list(**params)
         
-        # Return a copy to prevent in-place mutations from corrupting the cache
+        # Return a copy by default to prevent in-place mutations from corrupting the cache
         result = self._cache[cache_key]
         if isinstance(result, list):
-            return result[:]
+            return result[:] if copy else result
         return result
+
+    def list_exists(self, name: str, directory: str = "./csvfiles/") -> bool:
+        """Checks if a list CSV file exists without loading it."""
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # 1. Check for replacement in userfiles
+        if os.path.isfile(os.path.join(script_dir, "./userfiles/", name + "_replace.csv")):
+            return True
+        # 2. Check for base file in target directory
+        if os.path.isfile(os.path.join(script_dir, directory, name + ".csv")):
+            return True
+        # 3. Check for light/medium variants
+        if os.path.isfile(os.path.join(script_dir, directory, name + "_light.csv")):
+            return True
+        if os.path.isfile(os.path.join(script_dir, directory, name + "_medium.csv")):
+            return True
+        
+        return False
+
+    def pick(self, name: str, cooldown: int = 3, **kwargs) -> str:
+        """Picks a random item from a list, using anti-repeat cooldown (Phase 4)."""
+        lst = self.get_list(name, copy=False, **kwargs)
+        if not lst:
+            return ""
+            
+        # Filter out recently picked items
+        history = self._pick_history.get(name)
+        if history is None:
+            history = deque(maxlen=cooldown)
+            self._pick_history[name] = history
+            
+        available = [item for item in lst if item not in history]
+        
+        if not available:
+            # Fallback if everything is in cooldown (e.g. list too small)
+            available = lst
+            
+        choice = random.choice(available)
+        
+        # Update history
+        history.append(choice)
+        
+        return choice
 
     def get_all_artists_and_categories(self):
         """Get the full artist and category lists, cached."""
