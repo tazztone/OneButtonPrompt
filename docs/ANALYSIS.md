@@ -6,7 +6,8 @@
 
 **Step 1: Run Analysis (3 minutes)**
 ```bash
-python3 run_full_analysis.py --iterations 1000 --timestamp
+# From the OneButtonPrompt root directory:
+../../venv/bin/python3 run_full_analysis.py --iterations 1000 --timestamp
 ```
 This will generate 1000 test prompts, analyze them using **Ground Truth Tracking**, and output:
 *   `csv_architecture_analysis.json`
@@ -54,6 +55,23 @@ This system uses a **data-driven approach** to solve variety problems at the sou
 *   Tracks frequency of Artists, Subject Types, Lighting, Cameras, and Moods.
 *   Identifies overused elements (>2% frequency).
 
+### `run_insanity_sweep.py`
+**Purpose**: Compare variety across insanity levels.
+*   Runs analysis at levels 1, 3, 5, 7, 10 (configurable).
+*   Outputs comparison table showing diversity score, artist count, subject distribution.
+*   Helps understand how insanity level affects prompt complexity.
+
+### `audit_structural_bias.py`
+**Purpose**: Simulates the list-pruning logic to uncover hidden probability biases.
+*   Replays the subject chooser logic from `build_dynamic_prompt.py`.
+*   Identifies how artist style selection biases subject type distribution.
+*   Useful for understanding why certain subjects appear more often.
+
+### `compare_analyses.py`
+**Purpose**: Compare two analysis JSON files to measure improvement or regression.
+*   Side-by-side comparison of diversity scores, subject distribution, artist variety.
+*   Useful for validating that CSV changes had the intended effect.
+
 ### `create_addon_template.py`
 **Purpose**: Smart Advisor for content expansion.
 *   **Artist Gaps**: Suggests specific artists from underrepresented style tags.
@@ -91,12 +109,39 @@ analyzer.run_analysis(
 
 ---
 
-## 6. Troubleshooting
+## 6. Testing
 
-*   **"Error importing OBP modules"**: Run scripts from the root `OneButtonPrompt` directory.
-*   **"Analysis takes too long"**: Reduce `NUM_ITERATIONS` to 100 in the script.
+The analysis tools have smoke tests to catch regressions:
+
+```bash
+../../venv/bin/python3 -m pytest tests/test_analysis_tools.py -v
+```
+
+This runs 5 tests covering `OBPAnalyzer`, `run_full_analysis`, and `run_insanity_sweep`.
+
+## 7. Troubleshooting
+
+*   **"Error importing OBP modules"**: Run scripts from the root `OneButtonPrompt` directory, using the venv Python (`../../venv/bin/python3`).
+*   **"Analysis takes too long"**: Reduce `--iterations` to 100 or use `run_full_analysis.py --count 100`.
 *   **"No improvements after adding files"**:
     *   Ensure files are in `userfiles/`.
     *   Ensure files match the naming convention: `filename_addon.csv`.
     *   **Crucial**: Ensure no empty lines in CSV files (this can cause crashes or silent failures).
     *   Restart ComfyUI/WebUI if running as a node (though CLI tools don't need restart).
+
+---
+
+## 8. Current Baseline (Feb 2026)
+
+Last fresh baseline run (1000 iterations, insanity 5):
+
+| Metric | Value |
+|--------|-------|
+| Diversity Score | 12.96 |
+| Subject Distribution | humanoid 23%, landscape 22%, animal 18%, object 19%, concept 18% |
+| Mode Distribution | standard 95%, special modes ~1% each |
+
+Insanity sweep (levels 1→10):
+- Diversity scales from 10.3 → 11.9
+- Artist variety scales from 119 → 402 unique artists
+- Image type variety scales from 14 → 37 unique types
