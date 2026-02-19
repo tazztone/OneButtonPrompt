@@ -56,7 +56,12 @@ class ListManager:
             }
             params.update(csv_kwargs)
             self._cache[cache_key] = csv_to_list(**params)
-        return self._cache[cache_key]
+        
+        # Return a copy to prevent in-place mutations from corrupting the cache
+        result = self._cache[cache_key]
+        if isinstance(result, list):
+            return result[:]
+        return result
 
     def get_all_artists_and_categories(self):
         """Get the full artist and category lists, cached."""

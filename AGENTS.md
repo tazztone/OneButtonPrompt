@@ -23,7 +23,7 @@ OneButtonPrompt (OBP) is an AI prompt generation system designed for Stable Diff
 OneButtonPrompt/
 ├── Core Engine
 │   ├── build_dynamic_prompt.py    # Main generation logic (Monolith)
-│   ├── prompt_engine.py           # Facade & API
+│   ├── prompt_engine.py           # Stateful Facade & Cache Manager
 │   ├── prompt_config.py           # Configuration Dataclass
 │   ├── list_manager.py            # CSV Loading & Caching
 │   ├── subject_selector.py        # Subject Logic
@@ -56,9 +56,10 @@ OneButtonPrompt/
 ## 3. Core Engine Details
 
 ### Prompt Generation Pipeline (`build_dynamic_prompt.py`)
-1.  **Initialization**: `PromptEngine` creates a `PromptConfig` object with all parameters.
-2.  **Selection (Extracted Modules)**:
-    *   **Subjects**: `SubjectSelector` determines the main category (Object, Animal, Humanoid, Landscape, Concept).
+1.  **Initialization**: `PromptEngine` is instantiated (typically globally in ComfyUI). It maintains a persistent `ListManager` instance.
+2.  **Configuration**: `engine.generate(config)` merges the provided `PromptConfig` and overrides.
+3.  **Selection (Extracted Modules)**:
+    *   **Subjects**: `SubjectSelector` determines the main category.
     *   **Modes**: `ModeSelector` handles special generation modes (Art Blaster, etc.).
     *   **Enhancers**: `EnhancerSelector` toggles specific features (artists, cameras, lighting) based on logic.
 3.  **Assembly**: `build_dynamic_prompt.py` constructs the prompt string using the decisions from the selectors.
