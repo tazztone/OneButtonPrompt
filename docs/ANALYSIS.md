@@ -145,3 +145,27 @@ Insanity sweep (levels 1→10):
 - Diversity scales from 10.3 → 11.9
 - Artist variety scales from 119 → 402 unique artists
 - Image type variety scales from 14 → 37 unique types
+
+---
+
+## 9. Known Gaps & Future Work
+
+While the current suite covers distribution frequency well, several architectural blind spots remain:
+
+### Missing Capabilities
+
+| Gap | Impact | Plan |
+|---|---|---|
+| **CSV Call-Graph** | Cannot detect "dead code" (CSVs that are never called). | Create static analysis tool to map `csv_reader` calls. |
+| **Tier Verification** | No automated check that `_light` subsets are representative of parent. | Add `verify_tier_coverage.py`. |
+| **Weight Syntax Audit** | `(word:1.2)` syntax breaks Stable Cascade. | Add regex search for weights in all CSVs. |
+| **Vocabulary Overlap** | Identical terms in different files reduce effective variety. | Add cross-file duplicate detection. |
+| **Output Traceability** | Cannot tell *which* CSV a word came from in final prompt. | Add reverse-lookup tool for generated prompts. |
+
+### Healthy Metrics Targets
+
+When analyzing a healthy CSV distribution, aim for:
+- **Max Frequency**: No single item > 2.0% (except `comma`, `break`).
+- **Artist Distribution**: Top 10 artists should sum to < 15% of total artist calls.
+- **Subject Variety**: Standard deviation between subject types should be < 5%.
+
