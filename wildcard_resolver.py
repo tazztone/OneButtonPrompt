@@ -28,7 +28,9 @@ class WildcardResolver:
             return completeprompt.replace(wildcard, "", 1)
 
         while wildcard in completeprompt:
+            hybrid_ran = False
             if chance_roll(insanitylevel, 'unique') and activatehybridorswap and len(listname) > 2 and advancedprompting:
+                hybrid_ran = True
                 hybridorswaplist = ["hybrid", "swap"]
                 hybridorswap = random.choice(hybridorswaplist)
                 
@@ -79,7 +81,7 @@ class WildcardResolver:
                 completeprompt = completeprompt.replace(wildcard, hybridorswapreplacementvalue, 1)
 
             # Standard selection
-            if bool(listname):
+            if not hybrid_ran and bool(listname):
                 category_map = {
                     "-artist-": "artists",
                     "-mood-": "moods",

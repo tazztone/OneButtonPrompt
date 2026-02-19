@@ -37,5 +37,26 @@ def chance_roll(insanitylevel, chance):
         if(message != "" and roll == True):
             logger.debug(message)
         return roll
-    else:
-        raise ValueError(f"Invalid chance value: {chance}")
+def uncommon_dist(level):
+    return random.randint(1, max(1, level)) == 1
+
+def rare_dist(level):
+    return random.randint(1, max(1, level)) == 1
+
+def legendary_dist(level):
+    return random.randint(1, max(1, level)) == 1
+
+def extraordinary_dist(level):
+    return random.randint(1, max(1, level)) == 1
+
+def unique_dist(level):
+    return random.randint(1, max(1, level)) == 1
+
+def novel_dist(level):
+    return random.randint(1, max(1, level)) == 1
+
+def common_dist(level):
+    return random.randint(1, max(1, level)) == 1
+
+def normal_dist(level):
+    return random.randint(1, max(1, level)) == 1

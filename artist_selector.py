@@ -38,7 +38,30 @@ class ArtistSelection:
     lighting_pool_override: Optional[List[str]] = None
 
 class ArtistSelector:
-    
+    @staticmethod
+    def get_compatible_pools(style: str, pool_type: str, lm) -> List[str]:
+        """Returns compatible CSV list names for a given artist style and pool type."""
+        # Biased mappings provided by user
+        LOCATION_MAP = {
+            "fantasy":      ["locations_fantasy"],
+            "romanticism":  ["locations_fantasy", "locations_fantasy"],  # bias
+            "sci-fi":       ["locations_scifi"],
+            "digital":      ["locations_scifi"],
+            "photography":  ["locations"],
+            "cinema":       ["locations"],
+            "architecture": ["locations_city", "locations"],
+            "portrait":     ["locations_city"], # minilocations? let's stick to what's available or user spec
+            "abstract":     ["locations"],
+        }
+        LIGHTING_MAP = {
+            "photography":  ["lighting"],
+            "cinema":       ["lighting"],
+            "dark":         ["lighting"],
+            "horror":       ["lighting"],
+        }
+        mapping = LOCATION_MAP if pool_type == "locations" else LIGHTING_MAP
+        return mapping.get(style.lower(), [pool_type])  # fallback to pool name itself
+
     ARTIST_TYPES = [
         "popular", "3D", "abstract", "angular", "anime", "architecture", 
         "art nouveau", "art deco", "baroque", "bauhaus", "cartoon", "character", 
@@ -56,7 +79,7 @@ class ArtistSelector:
     ]
 
     @staticmethod
-    def calculate(cfg, lm, get_compatible_pools_func) -> ArtistSelection:
+    def calculate(cfg, lm) -> ArtistSelection:
         res = ArtistSelection(artists=cfg.artists)
         insanitylevel = cfg.insanitylevel
         
@@ -84,6 +107,9 @@ class ArtistSelector:
                     res.artists = "popular"
             else:
                 res.artists = "none"
+        elif res.artists in ArtistSelector.ARTIST_TYPES:
+            res.artiststyleselector = res.artists
+            res.artiststyleselectormode = "custom"
         else:
             res.artiststyleselectormode = "custom"
 
@@ -91,7 +117,7 @@ class ArtistSelector:
         if res.artists != "all (wild)" and res.artists != "all" and res.artists != "none" and \
            not res.artists.startswith("personal_artists") and not res.artists.startswith("personal artists") and \
            res.artists in ArtistSelector.ARTIST_TYPES:
-            res.artistlist = artist_category_csv_to_list("artists_and_category", res.artists)
+            res.artistlist = lm.get_artist_category_list("artists_and_category", res.artists)
         elif res.artists.startswith("personal_artists") or res.artists.startswith("personal artists"):
             artists_path = res.artists.replace(" ", "_", -1)
             res.artistlist = lm.get_list(artists_path, directory="./userfiles/")
@@ -99,29 +125,29 @@ class ArtistSelector:
             res.artistlist = lm.get_list("artists")
 
         # create special artists lists
-        res.fantasyartistlist = artist_category_csv_to_list("artists_and_category", "fantasy")
-        res.popularartistlist = artist_category_csv_to_list("artists_and_category", "popular")
-        res.romanticismartistlist = artist_category_csv_to_list("artists_and_category", "romanticism")
-        res.photographyartistlist = artist_category_csv_to_list("artists_and_category", "photography")
-        res.portraitartistlist = artist_category_csv_to_list("artists_and_category", "portrait")
-        res.characterartistlist = artist_category_csv_to_list("artists_and_category", "character")
-        res.landscapeartistlist = artist_category_csv_to_list("artists_and_category", "landscape")
-        res.scifiartistlist = artist_category_csv_to_list("artists_and_category", "sci-fi")
-        res.graphicdesignartistlist = artist_category_csv_to_list("artists_and_category", "graphic design")
-        res.digitalartistlist = artist_category_csv_to_list("artists_and_category", "digital")
-        res.architectartistlist = artist_category_csv_to_list("artists_and_category", "architecture")
-        res.cinemaartistlist = artist_category_csv_to_list("artists_and_category", "cinema")
+        res.fantasyartistlist = lm.get_artist_category_list("artists_and_category", "fantasy")
+        res.popularartistlist = lm.get_artist_category_list("artists_and_category", "popular")
+        res.romanticismartistlist = lm.get_artist_category_list("artists_and_category", "romanticism")
+        res.photographyartistlist = lm.get_artist_category_list("artists_and_category", "photography")
+        res.portraitartistlist = lm.get_artist_category_list("artists_and_category", "portrait")
+        res.characterartistlist = lm.get_artist_category_list("artists_and_category", "character")
+        res.landscapeartistlist = lm.get_artist_category_list("artists_and_category", "landscape")
+        res.scifiartistlist = lm.get_artist_category_list("artists_and_category", "sci-fi")
+        res.graphicdesignartistlist = lm.get_artist_category_list("artists_and_category", "graphic design")
+        res.digitalartistlist = lm.get_artist_category_list("artists_and_category", "digital")
+        res.architectartistlist = lm.get_artist_category_list("artists_and_category", "architecture")
+        res.cinemaartistlist = lm.get_artist_category_list("artists_and_category", "cinema")
         res.gregmodelist = lm.get_list("gregmode")
 
         # Theme Coherence Anchoring (Phase 7)
         if res.artiststyleselector:
-            comp_loc_pools = get_compatible_pools_func(res.artiststyleselector, "locations", lm)
+            comp_loc_pools = ArtistSelector.get_compatible_pools(res.artiststyleselector, "locations", lm)
             if comp_loc_pools and comp_loc_pools != ["locations"]:
                 res.location_pool_override = []
                 for pool in comp_loc_pools:
                     res.location_pool_override.extend(lm.get_list(pool, copy=False))
             
-            comp_light_pools = get_compatible_pools_func(res.artiststyleselector, "lighting", lm)
+            comp_light_pools = ArtistSelector.get_compatible_pools(res.artiststyleselector, "lighting", lm)
             if comp_light_pools and comp_light_pools != ["lighting"]:
                 res.lighting_pool_override = []
                 for pool in comp_light_pools:

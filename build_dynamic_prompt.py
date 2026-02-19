@@ -38,7 +38,9 @@ else:
     from .list_manager import ListManager
     from .subject_selector import SubjectSelector, SubjectSelection
     from .mode_selector import ModeSelector, ModeSelection
+    from .mode_selector import ModeSelector, ModeSelection
     from .enhancer_selector import EnhancerSelector, EnhancerSelection
+    from .preset_resolver import PresetResolver
     try:
         from .superprompter.superprompter import one_button_superprompt, remove_superprompt_bias
         _HAS_SUPERPROMPTER = True
@@ -262,66 +264,27 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         advancedprompting = False
 
     original_OBP_preset = OBP_preset
-    if(OBP_preset == OBPresets.RANDOM_PRESET_OBP):
-        obp_options = OBPresets.load_obp_presets()
-        random_preset = random.choice(list(obp_options.keys()))
-        logger.debug("Engaging randomized presets, locking on to: " + random_preset)
+    
+    # Apply Preset (Phase 10 Modularization)
+    PresetResolver.apply(cfg, lm, OBP_preset)
 
-        selected_opb_preset = OBPresets.get_obp_preset(random_preset)
-        insanitylevel = selected_opb_preset["insanitylevel"]
-        forcesubject = selected_opb_preset["subject"]
-        artists = selected_opb_preset["artist"]
-        subtypeobject = selected_opb_preset["chosensubjectsubtypeobject"]
-        subtypehumanoid = selected_opb_preset["chosensubjectsubtypehumanoid"]
-        subtypeconcept = selected_opb_preset["chosensubjectsubtypeconcept"]
-        gender = selected_opb_preset["chosengender"]
-        imagetype = selected_opb_preset["imagetype"]
-        imagemodechance = selected_opb_preset["imagemodechance"]
-        givensubject = selected_opb_preset["givensubject"]
-        smartsubject = selected_opb_preset["smartsubject"]
-        overrideoutfit = selected_opb_preset["givenoutfit"]
-        prefixprompt = selected_opb_preset["prefixprompt"]
-        suffixprompt = selected_opb_preset["suffixprompt"]
-        giventypeofimage = selected_opb_preset["giventypeofimage"]
-        antistring = selected_opb_preset["antistring"]
-
-        # Extract inline custom mode config if present in the random preset
-        if "prompt_parts" in selected_opb_preset:
-            custom_mode_config = {
-                "prompt_parts": selected_opb_preset.get("prompt_parts", []),
-                "prompt_prefix": selected_opb_preset.get("prompt_prefix_mode", ""),
-                "prompt_suffix": selected_opb_preset.get("prompt_suffix_mode", ""),
-            }
-
-        # api support tricks for OBP presets
-        OBP_preset = ""
-
-    if(OBP_preset != "" and OBP_preset != 'Custom...'):
-        selected_opb_preset = OBPresets.get_obp_preset(OBP_preset)
-        insanitylevel = selected_opb_preset["insanitylevel"]
-        forcesubject = selected_opb_preset["subject"]
-        artists = selected_opb_preset["artist"]
-        subtypeobject = selected_opb_preset["chosensubjectsubtypeobject"]
-        subtypehumanoid = selected_opb_preset["chosensubjectsubtypehumanoid"]
-        subtypeconcept = selected_opb_preset["chosensubjectsubtypeconcept"]
-        gender = selected_opb_preset["chosengender"]
-        imagetype = selected_opb_preset["imagetype"]
-        imagemodechance = selected_opb_preset["imagemodechance"]
-        givensubject = selected_opb_preset["givensubject"]
-        smartsubject = selected_opb_preset["smartsubject"]
-        overrideoutfit = selected_opb_preset["givenoutfit"]
-        prefixprompt = selected_opb_preset["prefixprompt"]
-        suffixprompt = selected_opb_preset["suffixprompt"]
-        giventypeofimage = selected_opb_preset["giventypeofimage"]
-        antistring = selected_opb_preset["antistring"]
-
-        # Extract inline custom mode config if present in the named preset
-        if "prompt_parts" in selected_opb_preset:
-            custom_mode_config = {
-                "prompt_parts": selected_opb_preset.get("prompt_parts", []),
-                "prompt_prefix": selected_opb_preset.get("prompt_prefix_mode", ""),
-                "prompt_suffix": selected_opb_preset.get("prompt_suffix_mode", ""),
-            }
+    # Sync local variables from config (Temporary until full refactor)
+    insanitylevel = cfg.insanitylevel
+    forcesubject = cfg.forcesubject
+    artists = cfg.artists
+    subtypeobject = cfg.subtypeobject
+    subtypehumanoid = cfg.subtypehumanoid
+    subtypeconcept = cfg.subtypeconcept
+    gender = cfg.gender
+    imagetype = cfg.imagetype
+    imagemodechance = cfg.imagemodechance
+    givensubject = cfg.givensubject
+    smartsubject = cfg.smartsubject
+    overrideoutfit = cfg.overrideoutfit
+    prefixprompt = cfg.prefixprompt
+    suffixprompt = cfg.suffixprompt
+    giventypeofimage = cfg.giventypeofimage
+    custom_mode_config = cfg.custom_mode_config
 
     prefixprompt = preset_prefix + ", " + prefixprompt
     suffixprompt = suffixprompt + ", " + preset_suffix
@@ -572,7 +535,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             self.onlyartists = onlyartists
 
     sel_cfg = SelectorConfig(artists, insanitylevel, onlyartists)
-    sel = ArtistSelector.calculate(sel_cfg, lm, get_compatible_pools)
+    sel = ArtistSelector.calculate(sel_cfg, lm)
 
     # Unpack results
     artists = sel.artists
