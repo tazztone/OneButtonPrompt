@@ -3871,7 +3871,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             )
             _cl.text = replace_user_wildcards(_cl.text, ctx=ctx)
             _cl.text = parse_custom_functions(_cl.text, insanitylevel, ctx=ctx)
-            _cl.text = _cl.text.replace("-objectstrengthstart-", "").replace("-objectstrengthend-", "").replace("-tempnewwords-", "")
+            _cl.text = _cl.text.replace("-objectstrengthstart-", "").replace("-objectstrengthend-", "").replace("-tempnewwords-", "").replace("-overrideoutfit-", overrideoutfit)
 
         soup_pools = {
             "tokens": tokenlist,

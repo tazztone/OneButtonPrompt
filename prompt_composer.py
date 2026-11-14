@@ -202,6 +202,10 @@ def _format_natural_compound(buckets: dict, ctx, natural_language: bool = False)
     return base
 
 
+def _strip_trailing_of_a(text: str) -> str:
+    return re.sub(r"\b(?:of\s+a|of\s+an|of)\s*$", "", text, flags=re.IGNORECASE).strip(" ,;")
+
+
 def _format_shuffled_compound(buckets: dict, coherence: str, ctx) -> str:
     non_subj_keys = [k for k in ("framing", "details", "style", "atmosphere_tech") if buckets.get(k)]
     ctx.shuffle(non_subj_keys)
@@ -216,7 +220,11 @@ def _format_shuffled_compound(buckets: dict, coherence: str, ctx) -> str:
     for k in non_subj_keys:
         if drop_chance > 0 and ctx.random() < drop_chance and len(kept) >= 1:
             continue
-        kept.append(_clean_fragment(buckets[k]))
+        val = _clean_fragment(buckets[k])
+        if k == "framing":
+            val = _strip_trailing_of_a(val)
+        if val:
+            kept.append(val)
 
     subj = _clean_fragment(buckets.get("subject", ""))
     if subj:
@@ -226,7 +234,13 @@ def _format_shuffled_compound(buckets: dict, coherence: str, ctx) -> str:
 
 
 def _format_soup_compound(buckets: dict, soup_pools: dict, ctx) -> str:
-    parts = [_clean_fragment(v) for v in buckets.values() if _clean_fragment(v)]
+    parts = []
+    for k, v in buckets.items():
+        val = _clean_fragment(v)
+        if k == "framing":
+            val = _strip_trailing_of_a(val)
+        if val:
+            parts.append(val)
     if soup_pools:
         for key in ("tokens", "abstract_concepts", "interactions", "media_artifacts"):
             pool = soup_pools.get(key)

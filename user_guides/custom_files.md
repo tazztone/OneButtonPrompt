@@ -81,3 +81,8 @@ Example values:
 
 ## loading subject from a file with a special wildcard
 In the user_files folder, you can place a file called custom_subjects.csv . If you use this -subjectfromfile- wildcard, it will select a random value from this file. Suggested use is on the Overwrite Subject field.
+
+## New & Imported Wildcard CSVs
+
+- Imported `dev` pools: `weather.csv` (`-weather-`), `textures.csv` (`-texture-`), `props.csv` (`-prop-`), `architectural_styles.csv` (`-archstyle-`), `cinematicstyles.csv` (`-cinematicstyle-`).
+- New pools: `interactions.csv` (`-interaction-`), `camera_angles.csv` (`-cameraangle-`), `compositions.csv` (`-composition-`), `atmosphere.csv` (`-atmosphere-`), `media_artifacts.csv` (`-mediaartifact-`), `scale_modifiers.csv` (`-scalemod-`), `abstract_concepts.csv` (`-abstractconcept-`), and `templates/modern_templates.csv`.

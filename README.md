@@ -241,3 +241,8 @@ Thanks to openart.ai for setting up the very helpful [prompt book](https://opena
 Thanks to this [ai art modifier guide](https://www.the-ai-art.com/modifiers)
 
 Everyone at the [stable diffusion subreddit](https://www.reddit.com/r/StableDiffusion/) for inspiration and sharing workflows
+
+## High-Variance Natural Language Mode & `OneButtonPromptWild`
+
+- **`OneButtonPromptWild` (`"One Button Prompt (Wild)"`)**: Side-by-side ComfyUI node tailored for modern natural-language models (`base_model="Natural Language"`, `coherence="wild"`, `grammar_mode="auto"`, `shuffle_bag=True`, `multi_subject_chance=0.25`, `mute_pop_culture=True`). Legacy `OneButtonPrompt` remains untouched for A/B comparison.
+- **`Natural Language` `base_model`**: Strips A1111 `(weight:1.2)` weights and `[A|B]` brackets, disables `vomit`/`quality` tag spam, and uses `csvfiles/templates/modern_templates.csv` in template mode.

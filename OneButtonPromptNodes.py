@@ -24,7 +24,7 @@ subjects =["all", "object", "animal", "humanoid", "landscape", "concept"]
 genders = ["all", "male", "female"]
 emojis = [False, True]
 
-models = ["SD1.5", "SDXL", "Stable Cascade", "Anime Model"]
+models = ["SD1.5", "SDXL", "Stable Cascade", "Anime Model", "Natural Language"]
 prompt_enhancers = ["none", "superprompt-v1"]
 subjects =["------ all"]
 subjectsubtypesobject = ["all"]
@@ -830,10 +830,117 @@ class OneButtonSuperPrompt:
         return (OBPsuperprompt,)
 
 
+class OneButtonPromptWild:
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "insanitylevel": ("INT", {
+                    "default": 5,
+                    "min": 1,
+                    "max": 10,
+                    "step": 1,
+                }),
+            },
+            "optional": {
+                "subject": (subjects, {"default": "------ all"}),
+                "artist": (artists, {"default": "all"}),
+                "imagetype": (imagetypes, {"default": "all"}),
+                "base_model": (models, {"default": "Natural Language"}),
+                "coherence": (["strict", "balanced", "wild", "chaos"], {"default": "wild"}),
+                "grammar_mode": (["auto", "natural", "shuffled", "soup", "standard"], {"default": "auto"}),
+                "shuffle_bag": ("BOOLEAN", {"default": True}),
+                "multi_subject_chance": ("FLOAT", {
+                    "default": 0.25,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.05,
+                }),
+                "mute_pop_culture": ("BOOLEAN", {"default": True}),
+                "imagemodechance": ("INT", {
+                    "default": 5,
+                    "min": 1,
+                    "max": 100,
+                    "step": 1,
+                }),
+                "prompt_compounder": (["1", "2", "3", "4", "5"], {"default": "1"}),
+                "obp_preset": (["none"] + allpresets, {"default": "none"}),
+                "antivalues": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                }),
+                "givensubject": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                }),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+            },
+            "hidden": {
+                "unique_id": "UNIQUE_ID",
+            },
+        }
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_NAMES = ("prompt", "prompt_g", "prompt_l")
+
+    FUNCTION = "Comfy_OBP_Wild"
+
+    CATEGORY = "OneButtonPrompt"
+
+    def Comfy_OBP_Wild(
+        self,
+        insanitylevel=5,
+        subject="------ all",
+        artist="all",
+        imagetype="all",
+        base_model="Natural Language",
+        coherence="wild",
+        grammar_mode="auto",
+        shuffle_bag=True,
+        multi_subject_chance=0.25,
+        mute_pop_culture=True,
+        imagemodechance=5,
+        prompt_compounder="1",
+        obp_preset="none",
+        antivalues="",
+        givensubject="",
+        seed=0,
+        unique_id=None,
+    ):
+        resolved_preset = "" if obp_preset == "none" else obp_preset
+        generatedpromptlist = build_dynamic_prompt(
+            insanitylevel=insanitylevel,
+            forcesubject=subject,
+            artists=artist,
+            imagetype=imagetype,
+            onlyartists=False,
+            antivalues=antivalues,
+            promptcompounderlevel=prompt_compounder,
+            givensubject=givensubject,
+            imagemodechance=imagemodechance,
+            seed=seed,
+            prompt_g_and_l=True,
+            base_model=base_model,
+            OBP_preset=resolved_preset,
+            coherence=coherence,
+            grammar_mode=grammar_mode,
+            use_shuffle_bag=shuffle_bag,
+            multi_subject_chance=multi_subject_chance,
+            mute_pop_culture=mute_pop_culture,
+            stream_id=str(unique_id or "wild"),
+        )
+        return (generatedpromptlist[0], generatedpromptlist[1], generatedpromptlist[2])
+
+
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "OneButtonPrompt": OneButtonPrompt,
+    "OneButtonPromptWild": OneButtonPromptWild,
     "OneButtonPreset": OneButtonPreset,
     "OneButtonArtify": OneButtonArtify,
     "CreatePromptVariant": CreatePromptVariant,
@@ -847,6 +954,7 @@ NODE_CLASS_MAPPINGS = {
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "OneButtonPrompt": "One Button Prompt",
+    "OneButtonPromptWild": "One Button Prompt (Wild)",
     "OneButtonPreset": "One Button Preset",
     "OneButtonArtify": "One Button Artify",
     "CreatePromptVariant": "Create Prompt Variant",

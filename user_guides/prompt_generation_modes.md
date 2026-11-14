@@ -177,3 +177,10 @@ Example prompts:
 ### Thank you
 
 I hope these new prompt modes will inspire you even more!
+
+## Natural Language, Coherence & Grammar Modes
+
+- **`coherence`**: `strict` (grounded, no surreal modes/soup), `balanced` (default), `wild` (higher structural & relational variety), `chaos` (unsaturated rolls, surreal soup/mixing).
+- **`grammar_mode`**: `standard` (legacy linear order), `shuffled` (permuted modifier buckets + stochastic drop), `natural` (rotating English sentence frames + tag-salad separation), `soup` (surreal collage), `auto` (dynamically chooses `natural`/`shuffled`/`soup`).
+- **`shuffle_bag`**: Non-repeating cycle-shuffled draws per ComfyUI node stream (`stream_id`), with LRU replay cache for identical fixed `(seed, params)`.
+- **`multi_subject_chance` & `mute_pop_culture`**: Cross-domain relational subjects (`[scalemod] subject_a + interaction + [scalemod] subject_b`) and optional filtering of celebrity/franchise pools.
