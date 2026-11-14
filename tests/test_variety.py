@@ -278,6 +278,17 @@ class TestHighVariancePrompts(unittest.TestCase):
                 self.assertEqual(len(parts), 2, f"minioutfits.csv:{line_no} invalid format: {s}")
                 self.assertIn(parts[1], ("both", "female", "male"), f"minioutfits.csv:{line_no} invalid gender: {s}")
 
+    def test_09_all_node_inputs_have_tooltips(self):
+        for node_name, node_cls in OneButtonPromptNodes.NODE_CLASS_MAPPINGS.items():
+            input_types = node_cls.INPUT_TYPES()
+            for section in ("required", "optional"):
+                for input_name, spec in input_types.get(section, {}).items():
+                    self.assertGreaterEqual(len(spec), 2, f"{node_name}.{section}.{input_name} missing options dict")
+                    self.assertIsInstance(spec[1], dict, f"{node_name}.{section}.{input_name} options must be dict")
+                    tooltip = spec[1].get("tooltip")
+                    self.assertIsInstance(tooltip, str, f"{node_name}.{section}.{input_name} missing string tooltip")
+                    self.assertTrue(tooltip.strip(), f"{node_name}.{section}.{input_name} has empty tooltip")
+
 
 if __name__ == "__main__":
     unittest.main()

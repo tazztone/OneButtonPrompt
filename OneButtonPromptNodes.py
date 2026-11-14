@@ -43,6 +43,16 @@ artifyamountofartistslist = ["random", "0", "1", "2", "3", "4", "5"]
 superprompterstyleslist = ['all']
 superprompterstyleslist += csv_to_list("superprompter_styles")
 
+_COMMON_TOOLTIPS = {
+    "seed": "Deterministic RNG seed (values > 0). Use 0 for non-deterministic generation and to force ComfyUI re-execution.",
+    "base_model": "Target model prompting style: SD1.5 (concise tags), SDXL (richer phrasing), Stable Cascade (natural phrasing, no weights), Anime Model (tag-based with 1girl/1boy), Natural Language (prose clauses, no weights/tag-spam).",
+    "prompt_enhancer": "Optional post-processor. 'superprompt-v1' expands the generated subject using the SuperPrompt model (downloads on first use).",
+    "subject": "Filter generated subject category and subtype, or leave on '------ all' to pick randomly from enabled config categories.",
+    "artist": "Artist pool/category filter. 'all' picks 0-3 cohesive artists; 'all (wild)' picks from all 3400+ artists; 'greg mode' favors popular artists + quality tags; 'none' omits artists.",
+    "imagetype": "Force an image medium/style or special generation mode (e.g. 'photograph', 'anime', 'only templates mode', 'massive madness mode'). 'all' picks normally with a chance of special modes.",
+    "imagemodechance": "1-in-X chance to trigger a special image type mode when 'imagetype' is 'all' or 'all - anime'. Lower = more frequent (1 = always).",
+}
+
 
 # Load up stuff for personal artists list, if any
 # find all artist files starting with personal_artits in userfiles
@@ -330,41 +340,47 @@ class OneButtonPrompt:
                     "default": 5,
                     "min": 1, #Minimum value
                     "max": 10, #Maximum value
-                    "step": 1 #Slider's step
+                    "step": 1, #Slider's step
+                    "tooltip": "Complexity and randomness level (1-10). Higher values add more descriptors, modifiers, and rare wildcards; 3-7 recommended.",
                 }),
                 },
             "optional": {
-                "artist": (artists, {"default": "all"}),
-                "imagetype": (imagetypes, {"default": "all"}),
+                "artist": (artists, {"default": "all", "tooltip": _COMMON_TOOLTIPS["artist"]}),
+                "imagetype": (imagetypes, {"default": "all", "tooltip": _COMMON_TOOLTIPS["imagetype"]}),
                 "imagemodechance": ("INT", {
                     "default": 20,
                     "min": 1, #Minimum value
                     "max": 100, #Maximum value
-                    "step": 1 #Slider's step
+                    "step": 1, #Slider's step
+                    "tooltip": _COMMON_TOOLTIPS["imagemodechance"],
                 }),
-                "subject": (subjects, {"default": "------ all"}),
+                "subject": (subjects, {"default": "------ all", "tooltip": _COMMON_TOOLTIPS["subject"]}),
                 "custom_subject": ("STRING", {
                     "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": ""
+                    "default": "",
+                    "tooltip": "Override the generated subject with custom text (e.g. a character or object + LoRA trigger). Set 'subject' to match for best results.",
                 }),
                 "custom_outfit": ("STRING", {
                     "multiline": False, # This is the overwrite for an outfit, super nice
-                    "default": ""
+                    "default": "",
+                    "tooltip": "Override generated clothing/outfit (e.g. 'space suit', 'red dress'). Works best with humanoid subjects.",
                 }),
                 "prompt_prefix": ("STRING", {
                     "multiline": False, # prefix the prompt
-                    "default": ""
+                    "default": "",
+                    "tooltip": "Text prepended to the start of the generated prompt (e.g. quality tags, LoRAs, trigger words).",
                 }),
                 "prompt_suffix": ("STRING", {
                     "multiline": False, # Suffix of the prompt
-                    "default": ""
+                    "default": "",
+                    "tooltip": "Text appended to the end of the generated prompt.",
                 }),
-                "humanoids_gender": (genders, {"default": "all"}),
-                "emojis":(emojis, {"default": False}),
-                "base_model":(models, {"default": "SDXL"}),
-                "prompt_enhancer":(prompt_enhancers, {"default": "none"}),
+                "humanoids_gender": (genders, {"default": "all", "tooltip": "Gender filter applied when generating humanoid subjects ('all', 'male', or 'female')."}),
+                "emojis":(emojis, {"default": False, "tooltip": "Hard-disable emoji insertion: True forces emojis off ('never'); False follows config emojichance (default: 'legendary')."}),
+                "base_model":(models, {"default": "SDXL", "tooltip": _COMMON_TOOLTIPS["base_model"]}),
+                "prompt_enhancer":(prompt_enhancers, {"default": "none", "tooltip": _COMMON_TOOLTIPS["prompt_enhancer"]}),
                 
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
         }
 
@@ -398,16 +414,17 @@ class CreatePromptVariant:
                
         return {
             "required": {
-                "prompt_input": ("STRING", {"default": '', "multiline": True}),
+                "prompt_input": ("STRING", {"default": '', "multiline": True, "tooltip": "Base prompt (or OBP -wildcard- text) to mutate into a randomized variant."}),
             },
             "optional": {
                 "insanitylevel": ("INT", {
                     "default": 5,
                     "min": 1, #Minimum value
                     "max": 10, #Maximum value
-                    "step": 1 #Slider's step
+                    "step": 1, #Slider's step
+                    "tooltip": "Variant mutation strength (1-10). Higher values swap or inject more descriptors, styles, and wildcards.",
                 }),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
         }
 
@@ -438,13 +455,13 @@ class SavePromptToFile:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "filename_prefix": ("STRING", {"default": "Prompt"}),
-                "positive_prompt": ("STRING",{"multiline": True}),
-                "negative_prompt": ("STRING",{"multiline": True}),
+                "filename_prefix": ("STRING", {"default": "Prompt", "tooltip": "Output filename prefix in ComfyUI output dir. Supports date tokens like '%date:yyyy-M-d%'."}),
+                "positive_prompt": ("STRING",{"multiline": True, "tooltip": "Positive prompt text saved to the .txt file and used to derive the filename slug."}),
+                "negative_prompt": ("STRING",{"multiline": True, "tooltip": "Negative prompt text written to the output .txt file."}),
             },
             "optional": {
-                "prompt_g": ("STRING",{"multiline": True}),
-                "prompt_l": ("STRING",{"multiline": True}),
+                "prompt_g": ("STRING",{"multiline": True, "tooltip": "Optional global/subject prompt (CLIP_G) written to the file when non-empty."}),
+                "prompt_l": ("STRING",{"multiline": True, "tooltip": "Optional local/style prompt (CLIP_L) written to the file when non-empty."}),
             },
         }
 
@@ -583,20 +600,22 @@ class OneButtonPreset:
                
         return {
             "required": {
-                "OneButtonPreset": (allpresets, {"default": "Standard"}),
+                "OneButtonPreset": (allpresets, {"default": "Standard", "tooltip": "Named preset controlling prompt settings. 'All (random)...' picks a random preset each run."}),
             },
             "optional": {
-                "base_model":(models, {"default": "SDXL"}),
-                "prompt_enhancer":(prompt_enhancers, {"default": "none"}),
+                "base_model":(models, {"default": "SDXL", "tooltip": _COMMON_TOOLTIPS["base_model"]}),
+                "prompt_enhancer":(prompt_enhancers, {"default": "none", "tooltip": _COMMON_TOOLTIPS["prompt_enhancer"]}),
                 "preset_prefix": ("STRING", {
                     "multiline": False, # prefix the preset
-                    "default": ""
+                    "default": "",
+                    "tooltip": "Text prepended before the preset's generated prompt (e.g. LoRAs or model trigger words).",
                 }),
                 "preset_suffix": ("STRING", {
                     "multiline": False, # Suffix of the preset
-                    "default": ""
+                    "default": "",
+                    "tooltip": "Text appended after the preset's generated prompt.",
                 }),   
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
         }
 
@@ -674,28 +693,31 @@ class AutoNegativePrompt:
                
         return {
             "required": {
-                "postive_prompt": ("STRING", {"default": '', "multiline": True}),
+                "postive_prompt": ("STRING", {"default": '', "multiline": True, "tooltip": "Positive prompt to analyze; generates contrasting negative terms (e.g. 'anime' adds 'photorealistic')."}),
             },
             "optional": {
                 "base_negative": ("STRING", {
                     "multiline": True, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": "text, watermark"
+                    "default": "text, watermark",
+                    "tooltip": "Base negative prompt appended to the generated negative terms (default: 'text, watermark').",
                 }),
                 "enhancenegative": ("INT", {
                     "default": 0, 
                     "min": 0, #Minimum value
                     "max": 1, #Maximum value
                     "step": 1, #Slider's step
+                    "tooltip": "Set to 1 to inject standard negative quality/artifact terms (lowres, blurry, worst quality, etc.); 0 disables.",
                 }),
                 "insanitylevel": ("INT", {
                     "default": 0,
                     "min": 0, #Minimum value
                     "max": 10, #Maximum value
-                    "step": 1 #Slider's step
+                    "step": 1, #Slider's step
+                    "tooltip": "Random pruning level (0-10): removes ~10% * level of generated negative terms per step. 0 keeps all.",
                 }),
-                "base_model":(models, {"default": "SDXL"}),
+                "base_model":(models, {"default": "SDXL", "tooltip": "Target model style; 'Stable Cascade' and 'Natural Language' strip (word:weight) emphasis syntax."}),
                 
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
         }
 
@@ -725,13 +747,13 @@ class OneButtonArtify:
                
         return {
             "required": {
-                "prompt": ("STRING", {"default": '', "multiline": True}),
-                "artist": (artifyartists, {"default": "all"}),
-                "amount_of_artists": (artifyamountofartistslist, {"default": "1"}),
-                "artify_mode": (artifymodeslist, {"default": "standard"})
+                "prompt": ("STRING", {"default": '', "multiline": True, "tooltip": "Input prompt to wrap with randomized artist names and style descriptors."}),
+                "artist": (artifyartists, {"default": "all", "tooltip": "Artist style category filter, 'all' (cohesive category), 'all (wild)' (any artist), or 'popular' / 'greg mode'."}),
+                "amount_of_artists": (artifyamountofartistslist, {"default": "1", "tooltip": "Number of artists to inject (0-5), or 'random' to pick 1-4 scaled by insanity."}),
+                "artify_mode": (artifymodeslist, {"default": "standard", "tooltip": "'standard' adds matching artist tags; 'remix' mixes tags from other artists; 'super remix turbo' injects many random style tags."})
             },
             "optional": {                
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
         }
 
@@ -762,12 +784,12 @@ class OneButtonFlufferize:
                
         return {
             "required": {
-                "prompt": ("STRING", {"default": '', "multiline": True}),
-                "amount_of_fluff": (amountofflufflist, {"default": "dynamic"}),
-                "reverse_polarity": (fluff_reverse_polarity, {"default": False}),
+                "prompt": ("STRING", {"default": '', "multiline": True, "tooltip": "Input prompt to append quality/aesthetic fluff tags onto."}),
+                "amount_of_fluff": (amountofflufflist, {"default": "dynamic", "tooltip": "Number of fluff tags to append: 'none' (off), 'dynamic' (scales inversely with prompt length), 'short' (4-6), 'medium' (5-8), 'long' (8-12)."}),
+                "reverse_polarity": (fluff_reverse_polarity, {"default": False, "tooltip": "When True, appends negative/anti-fluff words instead of positive quality tags."}),
             },
             "optional": {                
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
         }
 
@@ -798,17 +820,18 @@ class OneButtonSuperPrompt:
                
         return {
             "required": {
-                "prompt": ("STRING", {"default": '', "multiline": True}),
+                "prompt": ("STRING", {"default": '', "multiline": True, "tooltip": "Seed prompt/subject passed into the SuperPrompt-v1 model for natural-language expansion."}),
                 "insanitylevel": ("INT", {
                     "default": 5,
                     "min": 1, #Minimum value
                     "max": 10, #Maximum value
-                    "step": 1 #Slider's step
+                    "step": 1, #Slider's step
+                    "tooltip": "Controls SuperPrompt sampling temperature, top_p, and max_new_tokens (1-10; >=9 gets very experimental).",
                 }),
-                "superpromptstyle": (superprompterstyleslist, {"default": "all"}),
+                "superpromptstyle": (superprompterstyleslist, {"default": "all", "tooltip": "Optional style directive applied during SuperPrompt expansion ('all' applies none or picks randomly)."}),
             },
             "optional": {                
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
         }
 
@@ -844,40 +867,45 @@ class OneButtonPromptWild:
                     "min": 1,
                     "max": 10,
                     "step": 1,
+                    "tooltip": "Complexity and randomness level (1-10). Higher values add more descriptors, modifiers, and rare wildcards.",
                 }),
             },
             "optional": {
-                "subject": (subjects, {"default": "------ all"}),
-                "artist": (artists, {"default": "all"}),
-                "imagetype": (imagetypes, {"default": "all"}),
-                "base_model": (models, {"default": "Natural Language"}),
-                "coherence": (["strict", "balanced", "wild", "chaos"], {"default": "wild"}),
-                "grammar_mode": (["auto", "natural", "shuffled", "soup", "standard"], {"default": "auto"}),
-                "shuffle_bag": ("BOOLEAN", {"default": True}),
+                "subject": (subjects, {"default": "------ all", "tooltip": _COMMON_TOOLTIPS["subject"]}),
+                "artist": (artists, {"default": "all", "tooltip": _COMMON_TOOLTIPS["artist"]}),
+                "imagetype": (imagetypes, {"default": "all", "tooltip": _COMMON_TOOLTIPS["imagetype"]}),
+                "base_model": (models, {"default": "Natural Language", "tooltip": _COMMON_TOOLTIPS["base_model"]}),
+                "coherence": (["strict", "balanced", "wild", "chaos"], {"default": "wild", "tooltip": "Controls randomness vs structure: 'strict' avoids surreal modes/soup; 'balanced' is moderate; 'wild' drops 20% non-subject clauses in shuffled mode; 'chaos' drops 35% and disables saturation at max insanity."}),
+                "grammar_mode": (["auto", "natural", "shuffled", "soup", "standard"], {"default": "auto", "tooltip": "Sentence assembly strategy: 'auto' mixes natural/shuffled/soup; 'natural' builds prose frames; 'shuffled' randomizes clause order; 'soup' adds extra tokens/concepts and shuffles all; 'standard' keeps legacy order."}),
+                "shuffle_bag": ("BOOLEAN", {"default": True, "tooltip": "Per-node no-repeat shuffle bag for picks across consecutive runs while preserving deterministic seed replay."}),
                 "multi_subject_chance": ("FLOAT", {
                     "default": 0.25,
                     "min": 0.0,
                     "max": 1.0,
                     "step": 0.05,
+                    "tooltip": "Probability (0.0-1.0) of composing a relational multi-subject scene (e.g. subject A + interaction + subject B).",
                 }),
-                "mute_pop_culture": ("BOOLEAN", {"default": True}),
+                "mute_pop_culture": ("BOOLEAN", {"default": True, "tooltip": "When True, filters out pop-culture pools (fictional/non-fictional characters, Pokemon, videogame locations, card/episode titles) unless explicitly selected."}),
                 "imagemodechance": ("INT", {
                     "default": 5,
                     "min": 1,
                     "max": 100,
                     "step": 1,
+                    "tooltip": _COMMON_TOOLTIPS["imagemodechance"],
                 }),
-                "prompt_compounder": (["1", "2", "3", "4", "5"], {"default": "1"}),
-                "obp_preset": (["none"] + allpresets, {"default": "none"}),
+                "prompt_compounder": (["1", "2", "3", "4", "5"], {"default": "1", "tooltip": "Number of independent sub-prompts (1-5) to generate and join with ' | '."}),
+                "obp_preset": (["none"] + allpresets, {"default": "none", "tooltip": "Optional OneButtonPreset to load base prompt settings from ('none' uses this node's inputs directly)."}),
                 "antivalues": ("STRING", {
                     "multiline": False,
                     "default": "",
+                    "tooltip": "Comma-separated terms to exclude from all random CSV pools (merged with userfiles/antilist.csv).",
                 }),
                 "givensubject": ("STRING", {
                     "multiline": False,
                     "default": "",
+                    "tooltip": "Override the generated subject with custom text while still generating surrounding scene/style modifiers.",
                 }),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
             "hidden": {
                 "unique_id": "UNIQUE_ID",
