@@ -3,6 +3,16 @@ import random
 import os
 import shutil
 
+_CSV_CACHE = {}
+_ARTIST_CATEGORY_CACHE = {}
+_ARTIST_DESC_CACHE = {}
+
+
+def _file_stat(path):
+    if path and os.path.isfile(path):
+        return (True, os.stat(path).st_mtime_ns)
+    return (False, 0)
+
 def random_read_from_csv(filename):
     script_dir = os.path.dirname(os.path.abspath(__file__))  # Script directory
     full_path = os.path.join(script_dir, "./csvfiles/" )
@@ -19,126 +29,113 @@ def add_from_csv(completeprompt, csvfilename, addcomma, prefix, suffix):
                 return ", ".join([completeprompt,addtoprompt])
         return " ".join([completeprompt,addtoprompt])
 
-def csv_to_list(csvfilename, antilist=[], directory="./csvfiles/", lowerandstrip=0, delimiter=";", listoflistmode = False, skipheader = False, gender = "all", insanitylevel = -1):
+def _read_rows_from_file(filepath, delimiter, listoflistmode, skipheader, gender, lowerandstrip):
+        rows = []
+        with open(filepath, "r", newline="", encoding="utf8") as file:
+                reader = csv.reader(file, delimiter=delimiter)
+                if skipheader:
+                        next(reader, None)
+                if listoflistmode:
+                        return list(reader)
+                for row in reader:
+                        if not row:
+                                continue
+                        if (
+                                gender != "all" and (row[1] == gender or row[1] == "genderless" or row[1] == "both")
+                                or gender == "all"
+                        ):
+                                rows.append(row[0].lower().strip() if lowerandstrip == 1 else row[0])
+        return rows
+
+
+def csv_to_list(csvfilename, antilist=[], directory="./csvfiles/", lowerandstrip=0, delimiter=";", listoflistmode=False, skipheader=False, gender="all", insanitylevel=-1, bypass_subsets=False, rng=None, copy_list=True):
         replacing = False
+        orig_csvfilename = csvfilename
         userfilesdirectory = "./userfiles/"
-        userfileaddonname = csvfilename + "_addon.csv"
         userfilereplacename = csvfilename + "_replace.csv"
         lightfilename = csvfilename + "_light.csv"
         mediumfilename = csvfilename + "_medium.csv"
-        csvlist = []
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(script_dir, directory )
-        userfilesfolder = os.path.join(script_dir, userfilesdirectory )
-        directoryfilesfolder = os.path.join(script_dir, directory )
-        
-        # check if there is a replace file
-        if(directory=="./csvfiles/" or directory=="./csvfiles/special_lists/" or directory=="./csvfiles/templates/"):      
-                for filename in os.listdir(userfilesfolder):
-                        if(filename == userfilereplacename):
-                                # Just override the parameters, and let it run normally
-                                full_path = os.path.join(script_dir, userfilesdirectory )
-                                csvfilename = csvfilename + "_replace"
-                                replacing = True
+        full_path = os.path.join(script_dir, directory)
+        userfilesfolder = os.path.join(script_dir, userfilesdirectory)
+        resolved_directory = directory
 
+        is_standard_dir = directory in ("./csvfiles/", "./csvfiles/special_lists/", "./csvfiles/templates/")
+        replace_path = os.path.join(userfilesfolder, userfilereplacename) if is_standard_dir else None
+
+        # check if there is a replace file
+        if is_standard_dir:
+                if replace_path and os.path.isfile(replace_path):
+                        full_path = userfilesfolder
+                        resolved_directory = userfilesdirectory
+                        csvfilename = csvfilename + "_replace"
+                        replacing = True
 
                 # Go check for light or medium files if there is no override and there is an insanitylevel
-                if(replacing == False and insanitylevel > 0):
-                        if(insanitylevel < 4):   
-                                for filename in os.listdir(directoryfilesfolder):
-                                        if(filename == mediumfilename):
-                                                # Just override the parameters, and let it run normally
-                                                full_path = os.path.join(script_dir, directory )
-                                                csvfilename = csvfilename + "_light"
-                                                replacing = True
-                        # under 7, than only SOMETIMES take the full list
-                        if(insanitylevel < 7 and random.randint(0,13) < 12 and replacing == False):   
-                                for filename in os.listdir(directoryfilesfolder):
-                                        if(filename == lightfilename):
-                                                # Just override the parameters, and let it run normally
-                                                full_path = os.path.join(script_dir, directory )
-                                                csvfilename = csvfilename + "_medium"
-                                                replacing = True
-                        
-                        
+                if not replacing and not bypass_subsets and insanitylevel > 0:
+                        _rng = rng if rng is not None else random
+                        if insanitylevel < 4 and os.path.isfile(os.path.join(full_path, lightfilename)):
+                                csvfilename = csvfilename + "_light"
+                                replacing = True
+                        # under 7, then only SOMETIMES take the full list
+                        elif insanitylevel < 7 and _rng.randint(0, 13) < 12 and os.path.isfile(os.path.join(full_path, mediumfilename)):
+                                csvfilename = csvfilename + "_medium"
+                                replacing = True
 
-        # return empty list if we can't find the file. Build for antilist.csv
-        if(os.path.isfile(full_path + csvfilename + ".csv")):
-                with open(full_path + csvfilename + ".csv", "r", newline="",encoding="utf8") as file:
-                        reader = csv.reader(file, delimiter=delimiter)
-                        if(skipheader==True):
-                                next(reader)
-                        if(listoflistmode==True):
-                                csvlist = list(reader)
+        csv_path = os.path.join(full_path, csvfilename + ".csv")
+        txt_path = os.path.join(full_path, csvfilename + ".txt")
+        addon_dir_eligible = directory in ("./csvfiles/", "./csvfiles/special_lists/")
+        addon_path = os.path.join(userfilesfolder, orig_csvfilename + "_addon.csv") if addon_dir_eligible else None
+
+        cache_key = (
+                resolved_directory,
+                csvfilename,
+                lowerandstrip,
+                delimiter,
+                listoflistmode,
+                skipheader,
+                gender,
+                _file_stat(csv_path),
+                _file_stat(txt_path),
+                _file_stat(addon_path),
+                _file_stat(replace_path),
+        )
+
+        cached = _CSV_CACHE.get(cache_key)
+        if cached is None:
+                csvlist = []
+                if os.path.isfile(csv_path):
+                        csvlist.extend(_read_rows_from_file(csv_path, delimiter, listoflistmode, skipheader, gender, lowerandstrip))
+                if os.path.isfile(txt_path):
+                        csvlist.extend(_read_rows_from_file(txt_path, delimiter, listoflistmode, skipheader, gender, lowerandstrip))
+                if addon_path and os.path.isfile(addon_path):
+                        addon_rows = _read_rows_from_file(addon_path, delimiter, listoflistmode, skipheader, gender, lowerandstrip)
+                        if listoflistmode:
+                                csvlist.append(addon_rows)
                         else:
-                                for row in reader:
-                                        value = row[0]
-                                        if( 
-                                                gender != "all" and (row[1] == gender or row[1] == "genderless" or row[1] == "both")
-                                                or gender == "all"
-                                                ):
-                                                if(value.lower().strip() not in antilist):
-                                                        if(lowerandstrip == 1):
-                                                                csvlist.append(row[0].lower().strip())        
-                                                        else:
-                                                                csvlist.append(row[0])
-        # dirty hack for possible .txt files
-        if(os.path.isfile(full_path + csvfilename + ".txt")):
-                with open(full_path + csvfilename + ".txt", "r", newline="",encoding="utf8") as file:
-                        reader = csv.reader(file, delimiter=delimiter)
-                        if(skipheader==True):
-                                next(reader)
-                        if(listoflistmode==True):
-                                csvlist = list(reader)
-                        else:
-                                for row in reader:
-                                        value = row[0]
-                                        if( 
-                                                gender != "all" and (row[1] == gender or row[1] == "genderless" or row[1] == "both")
-                                                or gender == "all"
-                                                ):
-                                                if(value.lower().strip() not in antilist):
-                                                        if(lowerandstrip == 1):
-                                                                csvlist.append(row[0].lower().strip())        
-                                                        else:
-                                                                csvlist.append(row[0])
+                                csvlist.extend(addon_rows)
 
-        # do the add ons!
-        if(directory=="./csvfiles/" or directory=="./csvfiles/special_lists/"):
-                if(os.path.isfile(userfilesfolder + csvfilename + "_addon" + ".csv")):
-                        with open(userfilesfolder + csvfilename + "_addon" + ".csv", "r", newline="",encoding="utf8") as file:
-                                reader = csv.reader(file, delimiter=delimiter)
-                                if(skipheader==True):
-                                        next(reader)
-                                if(listoflistmode==True):
-                                        csvlist.append(list(reader))
-                                else:
-                                        for row in reader:
-                                                value = row[0]
-                                                if( 
-                                                gender != "all" and (row[1] == gender or row[1] == "genderless" or row[1] == "both")
-                                                or gender == "all"
-                                                ):
-                                                        if(value.lower().strip() not in antilist):
-                                                                if(lowerandstrip == 1):
-                                                                        csvlist.append(row[0].lower().strip())        
-                                                                else:
-                                                                        csvlist.append(row[0])
+                # remove duplicates, but check only for lowercase stuff
+                if not listoflistmode:
+                        deduplicated_list = []
+                        lowercase_elements = set()
+                        for element in csvlist:
+                                lowercase_element = element.lower()
+                                if lowercase_element not in lowercase_elements:
+                                        lowercase_elements.add(lowercase_element)
+                                        deduplicated_list.append(element)
+                else:
+                        deduplicated_list = csvlist
 
+                cached = tuple(deduplicated_list)
+                _CSV_CACHE[cache_key] = cached
 
-        # remove duplicates, but check only for lowercase stuff
-        deduplicated_list = []
-        lowercase_elements = set()
-        if(listoflistmode==False):
-                for element in csvlist:
-                        lowercase_element = element.lower()
-                        if lowercase_element not in lowercase_elements:
-                                lowercase_elements.add(lowercase_element)
-                                deduplicated_list.append(element)
-        else:
-                deduplicated_list = csvlist
-        
-        return deduplicated_list
+        if antilist and not listoflistmode:
+                anti_set = frozenset(antilist)
+                filtered = [el for el in cached if el.lower().strip() not in anti_set]
+                return filtered if copy_list else tuple(filtered)
+
+        return list(cached) if copy_list else cached
 
 def artist_category_by_category_csv_to_list(csvfilename,artist):
         csvlist = []
@@ -156,25 +153,35 @@ def artist_category_by_category_csv_to_list(csvfilename,artist):
         return csvlist, mediumlist, descriptionlist
 
 def artist_category_csv_to_list(csvfilename,category):
-        csvlist = []
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(script_dir, "./csvfiles/" )
-        with open(full_path + csvfilename + ".csv", "r", newline="",encoding="utf8") as file:
-                reader = csv.DictReader(file, delimiter=",")
-                for row in reader:
-                        if(row[category] == "1"):
-                                csvlist.append(row["Artist"])
-        return csvlist
+        filepath = os.path.join(script_dir, "./csvfiles/", csvfilename + ".csv")
+        cache_key = (csvfilename, category, _file_stat(filepath))
+        cached = _ARTIST_CATEGORY_CACHE.get(cache_key)
+        if cached is None:
+                csvlist = []
+                with open(filepath, "r", newline="", encoding="utf8") as file:
+                        reader = csv.DictReader(file, delimiter=",")
+                        for row in reader:
+                                if row[category] == "1":
+                                        csvlist.append(row["Artist"])
+                cached = tuple(csvlist)
+                _ARTIST_CATEGORY_CACHE[cache_key] = cached
+        return list(cached)
 
 def artist_descriptions_csv_to_list(csvfilename):
-        csvlist = []
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(script_dir, "./csvfiles/" )
-        with open(full_path + csvfilename + ".csv", "r", newline="",encoding="utf8") as file:
-                reader = csv.DictReader(file, delimiter=",")
-                for row in reader:
-                        csvlist.append(row["Description"])
-        return csvlist
+        filepath = os.path.join(script_dir, "./csvfiles/", csvfilename + ".csv")
+        cache_key = (csvfilename, _file_stat(filepath))
+        cached = _ARTIST_DESC_CACHE.get(cache_key)
+        if cached is None:
+                csvlist = []
+                with open(filepath, "r", newline="", encoding="utf8") as file:
+                        reader = csv.DictReader(file, delimiter=",")
+                        for row in reader:
+                                csvlist.append(row["Description"])
+                cached = tuple(csvlist)
+                _ARTIST_DESC_CACHE[cache_key] = cached
+        return list(cached)
 
 def load_config_csv(suffix=""):
         csvlist = []
