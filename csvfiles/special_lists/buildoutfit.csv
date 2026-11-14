@@ -12,3 +12,15 @@
 , -heshe- is OR(wearing a;dressed in) OR(;-hisher-;-hisher- -outfitdescriptor-;rare) -outfit-, OR(;OR(-hisher-;The;normal) -sameoutfit- OR(is tailored by -fashiondesigner- OR(; and -fashiondesigner-;uncommon);is inspired by the -charactertype- OR(;and -charactertype-;rare));rare)
 , -heshe- is OR(wearing a;dressed in) OR(;-hisher-;-hisher- -outfitdescriptor-;rare) -artmovement- fashion style -outfit-
 , OR(wearing;dressed in;in;normal) OR(;OR(;a very;rare) -outfitdescriptor-;normal) -outfit-
+, OR(wearing;dressed in;clad in;normal) a OR(;-outfitdescriptor-;uncommon) OR(;-color-;uncommon) -outfit-
+, OR(wearing;in;normal) OR(;-color-;uncommon) -outfit- with OR(;-outfitdescriptor-;uncommon) -outfit-
+, dressed in OR(;-outfitdescriptor-;uncommon) OR(;-material-;rare) -outfit- and -outfit-
+, wearing a OR(;-color-;uncommon) -outfit- layered over a -outfit-
+, in a OR(;-culture-;uncommon) OR(;-outfitdescriptor-;uncommon) -outfit-
+, clad in OR(;-material-;rare) -outfit- with OR(;-color-;uncommon) accents
+, wearing OR(;-outfitdescriptor-;uncommon) -outfit- from the -age-
+, dressed in a tailored OR(;-color-;uncommon) -outfit-
+, in casual OR(;-color-;uncommon) -outfit- and -outfit-
+, wearing weathered OR(;-material-;rare) -outfit-
+, dressed in ceremonial OR(;-color-;uncommon) -outfit-
+, in practical OR(;-outfitdescriptor-;uncommon) -outfit-

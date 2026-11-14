@@ -289,6 +289,97 @@ class TestHighVariancePrompts(unittest.TestCase):
                     self.assertIsInstance(tooltip, str, f"{node_name}.{section}.{input_name} missing string tooltip")
                     self.assertTrue(tooltip.strip(), f"{node_name}.{section}.{input_name} has empty tooltip")
 
+    def test_10_phase6_expanded_pools_and_cleanup(self):
+        import build_dynamic_prompt as _bdp_mod
+        # 1. Zero trailing ", ." in cleanup() and generated prompts
+        self.assertEqual(_bdp_mod.cleanup("a cabin, .", "SDXL"), "a cabin.")
+        for seed in range(500, 520):
+            p = build_dynamic_prompt(
+                insanitylevel=5,
+                seed=seed,
+                base_model="Natural Language",
+                coherence="wild",
+                grammar_mode="natural",
+            )
+            self.assertFalse(p.endswith(", ."), f"Trailing ', .' in seed {seed}: {p}")
+            self.assertNotIn("-storycue-", p, f"Leaked -storycue- in seed {seed}: {p}")
+
+        # 2. createpromptvariant resolves -storycue-
+        variant = _bdp_mod.createpromptvariant("a cabin with -storycue-")
+        self.assertNotIn("-storycue-", variant)
+        self.assertTrue(variant.strip())
+
+        # 3. Non-empty prompt_g in templatemode with prompt_g_and_l=True
+        res = build_dynamic_prompt(
+            insanitylevel=5,
+            seed=777,
+            base_model="Natural Language",
+            imagetype="only templates mode",
+            prompt_g_and_l=True,
+        )
+        self.assertIsInstance(res, tuple)
+        self.assertTrue(res[1].strip(), "prompt_g should be non-empty in templatemode")
+
+        # 4. Zero "cosplaying as" under mute_pop_culture=True
+        for seed in range(600, 625):
+            p = build_dynamic_prompt(
+                insanitylevel=7,
+                seed=seed,
+                forcesubject="humanoid",
+                mute_pop_culture=True,
+            )
+            self.assertNotIn("cosplaying as", p.lower())
+
+        # 5. manwomanrelations.csv ;female|male|genderless format
+        rel_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "csvfiles", "manwomanrelations.csv")
+        with open(rel_path, "r", encoding="utf-8") as f:
+            rel_lines = [l.strip() for l in f if l.strip()]
+        self.assertEqual(rel_lines[0], "manwomanrelation;gender")
+        self.assertGreaterEqual(len(rel_lines), 35)
+        for line in rel_lines[1:]:
+            parts = line.split(";")
+            self.assertEqual(len(parts), 2, f"Invalid manwomanrelations row: {line}")
+            self.assertIn(parts[1], ("female", "male", "genderless"), f"Invalid gender in: {line}")
+
+        # 6. Phase 6 CSV minimum counts
+        root = os.path.dirname(os.path.dirname(__file__))
+        min_counts = {
+            "csvfiles/cameras.csv": 80,
+            "csvfiles/lenses.csv": 78,
+            "csvfiles/lenses_medium.csv": 50,
+            "csvfiles/lighting.csv": 115,
+            "csvfiles/lighting_medium.csv": 60,
+            "csvfiles/descriptors.csv": 770,
+            "csvfiles/quality.csv": 88,
+            "csvfiles/events.csv": 340,
+            "csvfiles/locationsbiome.csv": 141,
+            "csvfiles/poses.csv": 160,
+            "csvfiles/focus_light.csv": 25,
+            "csvfiles/focus_medium.csv": 32,
+            "csvfiles/lenses_light.csv": 28,
+            "csvfiles/lighting_light.csv": 35,
+            "csvfiles/directions_light.csv": 28,
+            "csvfiles/directions_medium.csv": 38,
+            "csvfiles/directions.csv": 50,
+            "csvfiles/imagetypes_light.csv": 28,
+            "csvfiles/imagetypes_medium.csv": 40,
+            "csvfiles/shotsizes_light.csv": 32,
+            "csvfiles/moods_light.csv": 40,
+            "csvfiles/story_cues.csv": 60,
+            "csvfiles/templates/modern_templates.csv": 140,
+        }
+        for rel, minimum in min_counts.items():
+            with open(os.path.join(root, rel), "r", encoding="utf-8") as f:
+                count = sum(1 for l in f if l.strip())
+            self.assertGreaterEqual(count, minimum, f"{rel} has {count} < {minimum}")
+
+        # 7. modern_templates.csv wildcards resolve cleanly
+        with open(os.path.join(root, "csvfiles/templates/modern_templates.csv"), "r", encoding="utf-8") as f:
+            templates = [l.strip() for l in f if l.strip()]
+        for tmpl in templates[-20:]:
+            resolved = _bdp_mod.createpromptvariant(tmpl)
+            self.assertNotIn("-storycue-", resolved)
+
 
 if __name__ == "__main__":
     unittest.main()

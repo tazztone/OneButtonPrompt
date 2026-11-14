@@ -16,3 +16,31 @@ is in the style of -artmovement-
 OR(-materialcombination-;-colorcombination-)
 OR(fishnets;trinkets;bling)
 with a OR(asymetrical;bateau;grecian;collar;cowl;halter;illusion;jewel;keyhole;off-the-shoulder;one-shoulder;plunging;queen anne;round neck;scalloped;scoop;spaghetti strap;split crew;square;strapless;surplice;sweethearth;tie bow;turtleneck;U-shape;V-neck) neckline
+has OR(;intricate;subtle;delicate;normal) embroidery
+has OR(;weathered;polished;brass;silver;normal) buttons
+has OR(;flowing;pleated;tailored;layered;normal) sleeves
+has a OR(;high;folded;fur-trimmed;lace;normal) collar
+has OR(;frayed;stitched;ornate;clean;normal) hems
+has OR(;leather;canvas;velvet;silk;normal) trim
+has OR(;deep;patched;hidden;buttoned;normal) pockets
+has OR(;rolled-up;cuffed;belted;tapered;normal) cuffs
+has a OR(;draped;hooded;belted;asymmetric;normal) silhouette
+has OR(;subtle;bold;woven;printed;normal) pinstripes
+has OR(;quilted;ribbed;knitted;pleated;normal) texture
+has OR(;gold;silver;bronze;matte black;normal) hardware
+has a OR(;layered;fitted;oversized;structured;normal) drape
+has OR(;distressed;sun-faded;crisp;pressed;normal) fabric
+has OR(;lace-up;zippered;toggle;wrap;normal) front
+has OR(;tucked;flowing;cropped;belted;normal) waist
+has OR(;hand-stitched;reinforced;decorative;minimalist;normal) seams
+has OR(;matching;contrasting;textured;sheer;normal) lining
+has OR(;delicate;chunky;vintage;modern;normal) clasps
+has OR(;wide;narrow;braided;woven;normal) sash
+has OR(;scalloped;raw;bound;piped;normal) edges
+has OR(;subtle;vivid;faded;metallic;normal) sheen
+has OR(;ribbed;folded;open;layered;normal) neckline
+has OR(;functional;ornamental;minimal;heavy;normal) buckles
+has OR(;tailored;relaxed;boxy;flared;normal) cut
+has OR(;subtle;dense;geometric;floral;normal) jacquard
+has OR(;weathered;pristine;oiled;waxed;normal) finish
+has OR(;asymmetrical;symmetrical;layered;clean;normal) paneling

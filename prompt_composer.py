@@ -397,6 +397,8 @@ def compose_clauses(
     completeprompt = re.sub(r"[,;\s]+\.", ".", completeprompt)
     completeprompt = re.sub(r"\.{2,}", ".", completeprompt)
     prompt_g = ", ".join(p for p in g_parts if p)
+    if not prompt_g:
+        prompt_g = main_str or completeprompt
     prompt_l = ", ".join(p for p in l_parts if p)
     prompt_l = re.sub(r"\b(landscape|close\s+up)\s+of\s+an?\b", r"\1", prompt_l, flags=re.IGNORECASE)
 

@@ -13,3 +13,26 @@ Wife;female
 Husband;male
 Girlfriend;female
 Boyfriend;male
+Grandmother;female
+Grandfather;male
+Niece;female
+Nephew;male
+Cousin;genderless
+Twin;genderless
+Partner;genderless
+Spouse;genderless
+Mentor;genderless
+Apprentice;genderless
+Rival;genderless
+Companion;genderless
+Guardian;genderless
+Neighbor;genderless
+Colleague;genderless
+Friend;genderless
+Childhood friend;genderless
+Bodyguard;genderless
+Step-sister;female
+Step-brother;male
+Godmother;female
+Godfather;male
+Roommate;genderless

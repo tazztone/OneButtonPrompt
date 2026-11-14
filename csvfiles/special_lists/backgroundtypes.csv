@@ -2,7 +2,6 @@ OR(background is;at;near;inside a) OR(;-descriptor-;normal) OR(-location-;-build
 OR(;-descriptor-;normal) OR(-location-;-building-;-minilocation-) in background
 OR(;plain;simple;detailed;complex;centered;normal) OR(;-descriptor-;-color-;-color- and -color-;-colorscheme-;normal) background
 OR(-culture-;-space-;-flora-;-minilocation- and -flora-;-season-) background
-
 atmospheric -atmosphere- background
 -archstyle- architecture background
 blurred -location- background
@@ -25,3 +24,28 @@ cinematic -cinematicstyle- backdrop
 shadowy -occult- chamber background
 golden hour -locationcity- skyline
 starry night sky background
+softly blurred bokeh background
+misty mountain horizon
+sunlit forest canopy
+minimalist studio backdrop
+textured plaster wall
+weathered brick wall
+rain-streaked window
+starlit night sky
+glowing city skyline
+golden wheat field
+calm ocean horizon
+ancient stone archway
+warm wooden interior
+concrete brutalist wall
+overgrown garden
+dramatic storm clouds
+soft pastel gradient
+dark velvet backdrop
+sun-dappled courtyard
+foggy harbor
+neon-lit alley
+snow-covered pines
+desert dunes
+library bookshelves
+stained glass window

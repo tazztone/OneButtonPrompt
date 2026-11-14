@@ -540,6 +540,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     atmospherelist = csv_to_list("atmosphere", antilist, "./csvfiles/", 0, "?")
     mediaartifactlist = csv_to_list("media_artifacts", antilist, "./csvfiles/", 0, "?")
     scalemodlist = csv_to_list("scale_modifiers", antilist, "./csvfiles/", 0, "?")
+    storycuelist = csv_to_list("story_cues", antilist, "./csvfiles/", 0, "?")
     abstractconceptlist = csv_to_list("abstract_concepts", antilist, "./csvfiles/", 0, "?")
     weatherlist = csv_to_list("weather", antilist, "./csvfiles/", 0, "?", insanitylevel=insanitylevel, rng=ctx.rng)
     texturelist = csv_to_list("textures", antilist, "./csvfiles/", 0, "?", insanitylevel=insanitylevel, rng=ctx.rng)
@@ -552,6 +553,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     atmospherelist = csv_to_list("atmosphere", antilist, "./csvfiles/", 0, "?")
     mediaartifactlist = csv_to_list("media_artifacts", antilist, "./csvfiles/", 0, "?")
     scalemodlist = csv_to_list("scale_modifiers", antilist, "./csvfiles/", 0, "?")
+    storycuelist = csv_to_list("story_cues", antilist, "./csvfiles/", 0, "?")
     abstractconceptlist = csv_to_list("abstract_concepts", antilist, "./csvfiles/", 0, "?")
     overalladditionlist = csv_to_list("overalladditions", antilist,"./csvfiles/special_lists/",0,"?")
     imagetypemodelist = csv_to_list("imagetypemodes", antilist,"./csvfiles/special_lists/",0,"?")
@@ -719,6 +721,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     atmospherechance = 'uncommon'
     mediaartifactchance = 'rare'
     scalemodchance = 'rare'
+    storycuechance = 'rare'
     for item in config:
         # objects
         if item[0] == 'subject_vehicle' and item[1] != 'on':
@@ -832,6 +835,8 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             mediaartifactchance = item[1]
         if item[0] == 'scalemodchance':
             scalemodchance = item[1]
+        if item[0] == 'storycuechance':
+            storycuechance = item[1]
 
         if item[0] == 'subjectdescriptor1chance':
             subjectdescriptor1chance = item[1]
@@ -1198,6 +1203,9 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 for _tok in ("-fictional-", "-nonfictional-"):
                     if _tok in _lst and len(_lst) > 1:
                         _lst.remove(_tok)
+            _filtered_ha = [x for x in humanadditionlist if "-fictional-" not in x.lower()]
+            if _filtered_ha:
+                humanadditionlist = _filtered_ha
             _filtered_mwm = [
                 x for x in manwomanmultiplelist
                 if "-fictional-" not in x and "-nonfictional-" not in x
@@ -3067,6 +3075,9 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
                     if(ctx.chance(insanitylevel, artmovementchance) and generateartmovement == True):
                         completeprompt += "-artmovement-, "  
+
+                    if(not onlyartists and not anime_mode and not less_verbose and ctx.chance(insanitylevel, storycuechance)):
+                        completeprompt += "-storycue-, "
                     
                     _off_tech_start = len(completeprompt)
                     if(ctx.chance(insanitylevel, lightingchance) and generatelighting == True):
@@ -3832,15 +3843,16 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     "-atmosphere-" in completeprompt or
     "-mediaartifact-" in completeprompt or
     "-scalemod-" in completeprompt or
+    "-storycue-" in completeprompt or
     "-abstractconcept-" in completeprompt):
         allwildcardslistnohybrid = [ "-color-","-object-", "-animal-", "-fictional-","-nonfictional-","-building-","-vehicle-","-location-","-conceptprefix-","-food-","-haircolor-","-hairstyle-","-job-", "-accessory-", "-humanoid-", "-manwoman-", "-human-", "-colorscheme-", "-mood-", "-genderdescription-", "-artmovement-", "-malefemale-", "-bodytype-", "-minilocation-", "-minilocationaddition-", "-pose-", "-season-", "-minioutfit-", "-elaborateoutfit-", "-minivomit-", "-vomit-", "-rpgclass-", "-subjectfromfile-","-outfitfromfile-", "-brand-", "-space-", "-artist-", "-imagetype-", "-othertype-", "-quality-", "-lighting-", "-camera-", "-lens-","-imagetypequality-", "-poemline-", "-songline-", "-greatwork-", "-fantasyartist-", "-popularartist-", "-romanticismartist-", "-photographyartist-", "-emoji-", "-timeperiod-", "-shotsize-", "-musicgenre-", "-animaladdition-", "-addontolocationinside-", "-addontolocation-", "-objectaddition-", "-humanaddition-", "-overalladdition-", "-focus-", "-direction-", "-styletilora-", "-manwomanrelation-", "-waterlocation-", "-container-", "-firstname-", "-flora-", "-print-", "-miniactivity-", "-pattern-", "-animalsuffixaddition-", "-chair-", "-cardname-", "-covering-", "-heshe-", "-hisher-", "-himher-", "-outfitdescriptor-", "-hairdescriptor-", "-hairvomit-", "-humandescriptor-", "-manwomanmultiple-", "-facepart-", "-buildfacepart-", "-outfitvomit-", "-locationdescriptor-", "-basicbitchdescriptor-", "-animaldescriptor-", "-humanexpression-", "-humanvomit-", "-eyecolor-", "-fashiondesigner-", "-colorcombination-", "-materialcombination-", "-oppositefictional-", "-oppositenonfictional-", "-photoaddition-", "-age-", "-agecalculator-", "-gregmode-"
                                     ,"-portraitartist-", "-characterartist-" , "-landscapeartist-", "-scifiartist-", "-graphicdesignartist-", "-digitalartist-", "-architectartist-", "-cinemaartist-", "-setting-", "-charactertype-", "-objectstohold-", "-episodetitle-", "-token-", "-allstylessuffix-", "-fluff-", "-event-", "-background-"
                                     , "-occult-", "-locationfantasy-", "-locationscifi-", "-locationvideogame-", "-locationbiome-", "-locationcity-", "-bird-", "-cat-", "-dog-", "-insect-", "-pokemon-", "-pokemontype-", "-marinelife-"
-                                    , "-weather-", "-texture-", "-prop-", "-archstyle-", "-cinematicstyle-", "-interaction-", "-cameraangle-", "-composition-", "-atmosphere-", "-mediaartifact-", "-scalemod-", "-abstractconcept-"]
+                                    , "-weather-", "-texture-", "-prop-", "-archstyle-", "-cinematicstyle-", "-interaction-", "-cameraangle-", "-composition-", "-atmosphere-", "-mediaartifact-", "-scalemod-", "-storycue-", "-abstractconcept-"]
         allwildcardslistnohybridlists = [colorlist, objectlist, animallist, fictionallist, nonfictionallist, buildinglist, vehiclelist, locationlist,conceptprefixlist,foodlist,haircolorlist, hairstylelist,joblist, accessorielist, humanoidlist, manwomanlist, humanlist, colorschemelist, moodlist, genderdescriptionlist, artmovementlist, malefemalelist, bodytypelist, minilocationlist, minilocationadditionslist, poselist, seasonlist, minioutfitlist, elaborateoutfitlist, minivomitlist, vomitlist, rpgclasslist, customsubjectslist, customoutfitslist, brandlist, spacelist, artistlist, imagetypelist, othertypelist, qualitylist, lightinglist, cameralist, lenslist, imagetypequalitylist, poemlinelist, songlinelist, greatworklist, fantasyartistlist, popularartistlist, romanticismartistlist, photographyartistlist, emojilist, timeperiodlist, shotsizelist, musicgenrelist, animaladditionlist, addontolocationinsidelist, addontolocationlist, objectadditionslist, humanadditionlist, overalladditionlist, focuslist, directionlist, stylestiloralist, manwomanrelationlist, waterlocationlist, containerlist, firstnamelist, floralist, printlist, miniactivitylist, patternlist, animalsuffixadditionlist, chairlist, cardnamelist, coveringlist, heshelist, hisherlist, himherlist, outfitdescriptorlist, hairdescriptorlist, hairvomitlist, humandescriptorlist, manwomanmultiplelist, facepartlist, buildfacepartlist, outfitvomitlist, locationdescriptorlist, basicbitchdescriptorlist, animaldescriptorlist, humanexpressionlist, humanvomitlist, eyecolorlist, fashiondesignerlist, colorcombinationlist, materialcombinationlist, oppositefictionallist, oppositenonfictionallist, photoadditionlist, agelist, agecalculatorlist, gregmodelist
                                          , portraitartistlist, characterartistlist, landscapeartistlist, scifiartistlist, graphicdesignartistlist, digitalartistlist, architectartistlist, cinemaartistlist, settinglist, charactertypelist, objectstoholdlist, episodetitlelist, tokenlist, allstylessuffixlist, flufferlist, eventlist, backgroundlist
                                          , occultlist, locationfantasylist, locationscifilist, locationvideogamelist, locationbiomelist, locationcitylist, birdlist, catlist, doglist, insectlist, pokemonlist, pokemontypelist, marinelifelist
-                                         , weatherlist, texturelist, proplist, archstylelist, cinematicstylelist, interactionlist, cameraanglelist, compositionlist, atmospherelist, mediaartifactlist, scalemodlist, abstractconceptlist]
+                                         , weatherlist, texturelist, proplist, archstylelist, cinematicstylelist, interactionlist, cameraanglelist, compositionlist, atmospherelist, mediaartifactlist, scalemodlist, storycuelist, abstractconceptlist]
         
         allwildcardslistwithhybrid = ["-material-", "-descriptor-", "-outfit-", "-conceptsuffix-","-culture-", "-objecttotal-", "-outfitprinttotal-", "-element-"]
         allwildcardslistwithhybridlists = [materiallist, descriptorlist,outfitlist,conceptsuffixlist,culturelist, objecttotallist, outfitprinttotallist, elementlist]
@@ -4195,6 +4207,7 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
     atmospherelist = csv_to_list("atmosphere", antilist, "./csvfiles/", 0, "?")
     mediaartifactlist = csv_to_list("media_artifacts", antilist, "./csvfiles/", 0, "?")
     scalemodlist = csv_to_list("scale_modifiers", antilist, "./csvfiles/", 0, "?")
+    storycuelist = csv_to_list("story_cues", antilist, "./csvfiles/", 0, "?")
     abstractconceptlist = csv_to_list("abstract_concepts", antilist, "./csvfiles/", 0, "?")
     weatherlist = csv_to_list("weather", antilist, "./csvfiles/", 0, "?", insanitylevel=insanitylevel, rng=ctx.rng)
     texturelist = csv_to_list("textures", antilist, "./csvfiles/", 0, "?", insanitylevel=insanitylevel, rng=ctx.rng)
@@ -4207,6 +4220,7 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
     atmospherelist = csv_to_list("atmosphere", antilist, "./csvfiles/", 0, "?")
     mediaartifactlist = csv_to_list("media_artifacts", antilist, "./csvfiles/", 0, "?")
     scalemodlist = csv_to_list("scale_modifiers", antilist, "./csvfiles/", 0, "?")
+    storycuelist = csv_to_list("story_cues", antilist, "./csvfiles/", 0, "?")
     abstractconceptlist = csv_to_list("abstract_concepts", antilist, "./csvfiles/", 0, "?")
     overalladditionlist = csv_to_list("overalladditions", antilist,"./csvfiles/special_lists/",0,"?")
     imagetypemodelist = csv_to_list("imagetypemodes", antilist,"./csvfiles/special_lists/",0,"?")
@@ -4740,10 +4754,10 @@ def createpromptvariant(prompt = "", insanitylevel = 5, antivalues = "" , gender
         ):
             allwildcardslistnohybrid = [ "-color-","-object-", "-animal-", "-fictional-","-nonfictional-","-building-","-vehicle-","-location-","-conceptprefix-","-food-","-haircolor-","-hairstyle-","-job-", "-accessory-", "-humanoid-", "-manwoman-", "-human-", "-colorscheme-", "-mood-", "-genderdescription-", "-artmovement-", "-malefemale-", "-bodytype-", "-minilocation-", "-minilocationaddition-", "-pose-", "-season-", "-minioutfit-", "-elaborateoutfit-", "-minivomit-", "-vomit-", "-rpgclass-", "-subjectfromfile-", "-outfitfromfile-", "-brand-", "-space-", "-artist-", "-imagetype-", "-othertype-", "-quality-", "-lighting-", "-camera-", "-lens-","-imagetypequality-", "-poemline-", "-songline-", "-greatwork-", "-fantasyartist-", "-popularartist-", "-romanticismartist-", "-photographyartist-", "-emoji-", "-timeperiod-", "-shotsize-", "-musicgenre-", "-animaladdition-", "-objectaddition-", "-humanaddition-", "-overalladdition-", "-focus-", "-direction-", "-styletilora-", "-manwomanrelation-", "-waterlocation-", "-container-", "-firstname-", "-flora-", "-print-", "-miniactivity-", "-pattern-", "-chair-", "-cardname-", "-covering-", "-outfitdescriptor-", "-hairdescriptor-", "-hairvomit-", "-humandescriptor-", "-manwomanmultiple-", "-facepart-", "-locationdescriptor-", "-basicbitchdescriptor-", "-animaldescriptor-", "-humanexpression-", "-humanvomit-", "-eyecolor-", "-fashiondesigner-", "-colorcombination-", "-materialcombination-", "-photoaddition-", "-age-", "-agecalculator-", "-gregmode-"
                                         ,"-portraitartist-", "-characterartist-" , "-landscapeartist-", "-scifiartist-", "-graphicdesignartist-", "-digitalartist-", "-architectartist-", "-cinemaartist-", "-setting-", "-charactertype-", "-objectstohold-", "-episodetitle-", "-allstylessuffix-", "-fluff-", "-event-", "-background-"
-                                        , "-occult-", "-locationfantasy-", "-locationscifi-", "-locationvideogame-", "-locationbiome-", "-locationcity-", "-bird-", "-cat-", "-dog-", "-insect-", "-pokemon-", "-pokemontype-", "-marinelife-", "-weather-", "-texture-", "-prop-", "-archstyle-", "-cinematicstyle-", "-interaction-", "-cameraangle-", "-composition-", "-atmosphere-", "-mediaartifact-", "-scalemod-", "-abstractconcept-"]
+                                        , "-occult-", "-locationfantasy-", "-locationscifi-", "-locationvideogame-", "-locationbiome-", "-locationcity-", "-bird-", "-cat-", "-dog-", "-insect-", "-pokemon-", "-pokemontype-", "-marinelife-", "-weather-", "-texture-", "-prop-", "-archstyle-", "-cinematicstyle-", "-interaction-", "-cameraangle-", "-composition-", "-atmosphere-", "-mediaartifact-", "-scalemod-", "-storycue-", "-abstractconcept-"]
             allwildcardslistnohybridlists = [colorlist, objectlist, animallist, fictionallist, nonfictionallist, buildinglist, vehiclelist, locationlist,conceptprefixlist,foodlist,haircolorlist, hairstylelist,joblist, accessorielist, humanoidlist, manwomanlist, humanlist, colorschemelist, moodlist, genderdescriptionlist, artmovementlist, malefemalelist, bodytypelist, minilocationlist, minilocationadditionslist, poselist, seasonlist, minioutfitlist, elaborateoutfitlist, minivomitlist, vomitlist, rpgclasslist, customsubjectslist, customoutfitslist, brandlist, spacelist, artistlist, imagetypelist, othertypelist, qualitylist, lightinglist, cameralist, lenslist, imagetypequalitylist, poemlinelist, songlinelist, greatworklist, fantasyartistlist, popularartistlist, romanticismartistlist, photographyartistlist, emojilist, timeperiodlist, shotsizelist, musicgenrelist, animaladditionlist, objectadditionslist, humanadditionlist, overalladditionlist, focuslist, directionlist, stylestiloralist, manwomanrelationlist, waterlocationlist, containerlist, firstnamelist, floralist, printlist, miniactivitylist, patternlist, chairlist, cardnamelist, coveringlist, outfitdescriptorlist, hairdescriptorlist, hairvomitlist, humandescriptorlist, manwomanmultiplelist, facepartlist, locationdescriptorlist, basicbitchdescriptorlist, animaldescriptorlist, humanexpressionlist, humanvomitlist, eyecolorlist, fashiondesignerlist, colorcombinationlist, materialcombinationlist, photoadditionlist, agelist, agecalculatorlist, gregmodelist
                                              , portraitartistlist, characterartistlist, landscapeartistlist, scifiartistlist, graphicdesignartistlist, digitalartistlist, architectartistlist, cinemaartistlist, settinglist, charactertypelist, objectstoholdlist, episodetitlelist, allstylessuffixlist, flufferlist, eventlist, backgroundlist
-                                             , occultlist, locationfantasylist, locationscifilist, locationvideogamelist, locationbiomelist, locationcitylist, birdlist, catlist, doglist, insectlist, pokemonlist, pokemontypelist, marinelifelist, weatherlist, texturelist, proplist, archstylelist, cinematicstylelist, interactionlist, cameraanglelist, compositionlist, atmospherelist, mediaartifactlist, scalemodlist, abstractconceptlist]
+                                             , occultlist, locationfantasylist, locationscifilist, locationvideogamelist, locationbiomelist, locationcitylist, birdlist, catlist, doglist, insectlist, pokemonlist, pokemontypelist, marinelifelist, weatherlist, texturelist, proplist, archstylelist, cinematicstylelist, interactionlist, cameraanglelist, compositionlist, atmospherelist, mediaartifactlist, scalemodlist, storycuelist, abstractconceptlist]
             
             allwildcardslistwithhybrid = ["-material-", "-descriptor-", "-outfit-", "-conceptsuffix-","-culture-", "-objecttotal-", "-outfitprinttotal-", "-element-"]
             allwildcardslistwithhybridlists = [materiallist, descriptorlist,outfitlist,conceptsuffixlist,culturelist, objecttotallist, outfitprinttotallist, elementlist]
@@ -5428,11 +5442,9 @@ def cleanup(completeprompt, advancedprompting, insanitylevel = 5, remove_weights
     # Move the extracted LoRA's to the end of completeprompt
     #completeprompt += " " + " ".join(allLoRA)   
 
-    completeprompt = completeprompt.replace(' . ', '. ')
-    completeprompt = completeprompt.replace(', . ', '. ')
-    completeprompt = completeprompt.replace(',. ', '. ')
+    completeprompt = re.sub(r'[,;\s]+\.(?=\s|$)', '.', completeprompt)
+    completeprompt = re.sub(r'\.{2,}', '.', completeprompt)
     completeprompt = completeprompt.replace('., ', '. ')
-    completeprompt = completeprompt.replace('. . ', '. ')
 
     completeprompt = completeprompt.strip(", ")
 

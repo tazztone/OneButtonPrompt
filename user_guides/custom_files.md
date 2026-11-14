@@ -85,4 +85,4 @@ In the user_files folder, you can place a file called custom_subjects.csv . If y
 ## New & Imported Wildcard CSVs
 
 - Imported `dev` pools: `weather.csv` (`-weather-`), `textures.csv` (`-texture-`), `props.csv` (`-prop-`), `architectural_styles.csv` (`-archstyle-`), `cinematicstyles.csv` (`-cinematicstyle-`).
-- New pools: `interactions.csv` (`-interaction-`), `camera_angles.csv` (`-cameraangle-`), `compositions.csv` (`-composition-`), `atmosphere.csv` (`-atmosphere-`), `media_artifacts.csv` (`-mediaartifact-`), `scale_modifiers.csv` (`-scalemod-`), `abstract_concepts.csv` (`-abstractconcept-`), and `templates/modern_templates.csv`.
+- New pools: `interactions.csv` (`-interaction-`), `camera_angles.csv` (`-cameraangle-`), `compositions.csv` (`-composition-`), `atmosphere.csv` (`-atmosphere-`), `media_artifacts.csv` (`-mediaartifact-`), `scale_modifiers.csv` (`-scalemod-`), `abstract_concepts.csv` (`-abstractconcept-`), `story_cues.csv` (`-storycue-`, controlled by `storycuechance` in `default_config.csv`), and `templates/modern_templates.csv`.

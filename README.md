@@ -245,4 +245,4 @@ Everyone at the [stable diffusion subreddit](https://www.reddit.com/r/StableDiff
 ## High-Variance Natural Language Mode & `OneButtonPromptWild`
 
 - **`OneButtonPromptWild` (`"One Button Prompt (Wild)"`)**: Side-by-side ComfyUI node tailored for modern natural-language models (`base_model="Natural Language"`, `coherence="wild"`, `grammar_mode="auto"`, `shuffle_bag=True`, `multi_subject_chance=0.25`, `mute_pop_culture=True`). Legacy `OneButtonPrompt` remains untouched for A/B comparison.
-- **`Natural Language` `base_model`**: Strips A1111 `(weight:1.2)` weights and `[A|B]` brackets, disables `vomit`/`quality` tag spam, and uses `csvfiles/templates/modern_templates.csv` in template mode.
+- **`Natural Language` `base_model`**: Strips A1111 `(weight:1.2)` weights and `[A|B]` brackets, disables `vomit`/`quality` tag spam, and uses `csvfiles/templates/modern_templates.csv` (including `-storycue-` environmental storytelling cues from `csvfiles/story_cues.csv` via `storycuechance`) in template mode.
