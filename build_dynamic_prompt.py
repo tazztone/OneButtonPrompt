@@ -1032,6 +1032,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     if(generateinsect):
         animalwildcardlist.append("-insect-")
 
+    generatepokemon = bool(pokemonlist) and generatepokemon
     if(generatepokemon):
         animalwildcardlist.append("-pokemon-")
     
@@ -1054,7 +1055,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         hybridlist.append("-fictional-")
         hybridhumanlist.append("-fictional-")
 
-    if(generatefictionalcharacter):
+    if(generatenonfictionalcharacter):
         humanoidsubjectchooserlist.append("non fictional")
         hybridlist.append("-nonfictional-")
         hybridhumanlist.append("-nonfictional-")
@@ -1172,10 +1173,37 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     if(bool(conceptmixerlist)):
         eventsubjectchooserlist.append("conceptmixer")
 
-    if mute_pop_culture and forcesubject == "all":
-        for _pop_evt in ("cardname", "episodetitle"):
-            if _pop_evt in eventsubjectchooserlist and len(eventsubjectchooserlist) > 1:
-                eventsubjectchooserlist.remove(_pop_evt)
+    if mute_pop_culture:
+        if subtypeconcept == "all":
+            for _pop_evt in ("cardname", "episodetitle"):
+                if _pop_evt in eventsubjectchooserlist and len(eventsubjectchooserlist) > 1:
+                    eventsubjectchooserlist.remove(_pop_evt)
+        if subtypeanimal == "all":
+            for _lst in (animalwildcardlist, hybridlist):
+                if "-pokemon-" in _lst and len(_lst) > 1:
+                    _lst.remove("-pokemon-")
+            _filtered_aa = [x for x in animaladditionlist if "pokemon" not in x.lower()]
+            if _filtered_aa:
+                animaladditionlist = _filtered_aa
+            _filtered_asa = [x for x in animalsuffixadditionlist if "pokemon" not in x.lower()]
+            if _filtered_asa:
+                animalsuffixadditionlist = _filtered_asa
+        if subtypelocation == "all":
+            if "-locationvideogame-" in locationwildcardlist and len(locationwildcardlist) > 1:
+                locationwildcardlist.remove("-locationvideogame-")
+            if "videogame location" in locationsubjectchooserlist and len(locationsubjectchooserlist) > 1:
+                locationsubjectchooserlist.remove("videogame location")
+        if subtypehumanoid == "all":
+            for _lst in (hybridlist, hybridhumanlist):
+                for _tok in ("-fictional-", "-nonfictional-"):
+                    if _tok in _lst and len(_lst) > 1:
+                        _lst.remove(_tok)
+            _filtered_mwm = [
+                x for x in manwomanmultiplelist
+                if "-fictional-" not in x and "-nonfictional-" not in x
+            ]
+            if _filtered_mwm:
+                manwomanmultiplelist = _filtered_mwm
 
     if(generateconcept):
         mainchooserlist.append("concept")
@@ -1507,6 +1535,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         buildingfullmode = False
         subjectchooser = ""
         mainchooser = ""
+        _off_artist_end = -1
+        _off_medium_end = -1
+        _off_tech_start = -1
+        _off_tech_end = -1
+        _off_weather_start = -1
+        _off_weather_end = -1
       
         #completeprompt += prefixprompt
 
@@ -1514,6 +1548,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
         if(templatemode==True and natural_language==True):
             modern_templatelist = csv_to_list("modern_templates", antilist, "./csvfiles/templates/", 0, "?")
+            if mute_pop_culture and modern_templatelist:
+                _pop_tags = ("-fictional-", "-nonfictional-", "-pokemon-", "-locationvideogame-", "-cardname-", "-episodetitle-")
+                _filtered_mt = [t for t in modern_templatelist if not any(tag in t for tag in _pop_tags)]
+                if _filtered_mt:
+                    modern_templatelist = _filtered_mt
             if modern_templatelist:
                 completeprompt += ctx.pick(modern_templatelist, key="modern_templates")
         elif(templatemode==True):
@@ -1658,7 +1697,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 humanoidsubjectchooserlist.remove("human")
 
             # if we accidently remove everything, then restore the backup list
-            if mute_pop_culture and forcesubject == "all" and subtypehumanoid == "all":
+            if mute_pop_culture and subtypehumanoid == "all":
                 for _pop_h in ("fictional", "non fictional"):
                     if _pop_h in humanoidsubjectchooserlist and len(humanoidsubjectchooserlist) > 2:
                         humanoidsubjectchooserlist.remove(_pop_h)
@@ -2076,7 +2115,8 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
             if artistmode in ["enhancing"]:
                 completeprompt += " ["
-        
+
+        _off_artist_end = len(completeprompt)
 
         # start tokinator here
         if(thetokinatormode == True):
@@ -2183,6 +2223,8 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             completeprompt += giventypeofimage + " of a "
 
 
+        _off_medium_end = len(completeprompt)
+
         ## do less insane stuff while working for superprompter
         if(superprompter == True):
             insanitylevel = max(1, insanitylevel-4)
@@ -2202,15 +2244,17 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
 
         
+        _has_camera_angle = False
         if not onlyartists:
-            if ctx.chance(insanitylevel, cameraanglechance):
+            _has_camera_angle = ctx.chance(insanitylevel, cameraanglechance) and "portrait" not in completeprompt
+            if _has_camera_angle:
                 completeprompt += "-cameraangle-, "
             if ctx.chance(insanitylevel, compositionchance):
                 completeprompt += "-composition-, "
 
         # start shot size
 
-        if(mainchooser in ["object", "animal", "humanoid", "concept"] and othertype == 0 and "portrait" not in completeprompt and generateshot == True and ctx.chance(insanitylevel,shotsizechance)):
+        if(mainchooser in ["object", "animal", "humanoid", "concept"] and othertype == 0 and "portrait" not in completeprompt and generateshot == True and not _has_camera_angle and ctx.chance(insanitylevel,shotsizechance)):
             completeprompt += "-shotsize- of a "
         elif("portrait" in completeprompt and generateshot == True and partlystylemode == False):
             completeprompt += " , close up of a "
@@ -3020,10 +3064,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     # add in some more mini vomits
                     if(ctx.chance(insanitylevel, minivomitsuffixchance) and generateminivomit == True):
                         completeprompt += " -minivomit-, "
-                
+
                     if(ctx.chance(insanitylevel, artmovementchance) and generateartmovement == True):
                         completeprompt += "-artmovement-, "  
                     
+                    _off_tech_start = len(completeprompt)
                     if(ctx.chance(insanitylevel, lightingchance) and generatelighting == True):
                         completeprompt += "-lighting-, "  
 
@@ -3040,6 +3085,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     if(ctx.chance(insanitylevel, lenschance) or isphoto == 1):
                         if(generatelens == True):
                             completeprompt += "-lens-, "
+                    _off_tech_end = len(completeprompt)
 
                     if(ctx.chance(insanitylevel, colorschemechance) and generatecolorscheme == True):
                         completeprompt += "-colorscheme-, "
@@ -3076,6 +3122,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
         
         
+        _off_weather_start = len(completeprompt)
         if partlystylemode == False and not onlyartists:
             if ctx.chance(insanitylevel, weatherchance):
                 completeprompt += ", -weather-"
@@ -3083,6 +3130,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 completeprompt += ", -atmosphere-"
             if ctx.chance(insanitylevel, mediaartifactchance):
                 completeprompt += ", -mediaartifact-"
+        _off_weather_end = len(completeprompt)
 
         # start second part of art blaster here
         if(artblastermode==True):
@@ -3418,6 +3466,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         completeprompt += " -tempnewwords- "
         completeprompt += ", "
 
+        _raw_body = completeprompt
         completeprompt = prefixprompt + ", " + completeprompt
         completeprompt += suffixprompt
 
@@ -3425,9 +3474,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         compound_chunk = completeprompt.strip(" ,")
         if compound_chunk:
             accumulated_compounds.append(compound_chunk)
-            _c_parts = compound_chunk.split("@@@")
-            if len(_c_parts) >= 3:
-                _f, _s, _d = _c_parts[0], _c_parts[1], ", ".join(_c_parts[2:])
+            if compoundcounter == 0 and prefixprompt.strip(" ,"):
+                compound_clauses.append(PromptClause(compoundcounter, "user_prefix", prefixprompt.strip(" ,"), is_subject=False))
+            _c_parts = _raw_body.split("@@@")
+            if len(_c_parts) >= 3 and not specialmode and not partlystylemode:
+                _s = _c_parts[1]
                 if multi_subject_chance > 0 and ctx.random() < multi_subject_chance:
                     _rel_pools = {
                         "animal": animallist,
@@ -3444,6 +3495,62 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                     _rel_subj = build_relational_subject(_rel_pools, ctx, mute_pop_culture=mute_pop_culture)
                     if _rel_subj:
                         _s = _rel_subj
+
+                _subj_start = _raw_body.find("@@@")
+                _subj_end = _raw_body.find("@@@", _subj_start + 3)
+                if _off_artist_end >= 0 and _off_medium_end >= _off_artist_end and _subj_start >= _off_medium_end:
+                    _ar = _raw_body[:_off_artist_end].strip(" ,")
+                    _m = _raw_body[_off_artist_end:_off_medium_end].strip(" ,")
+                    _f = _raw_body[_off_medium_end:_subj_start].strip(" ,")
+                else:
+                    _ar, _m, _f = "", "", _c_parts[0].strip(" ,")
+
+                _tail_start = _subj_end + 3
+                _atmo_parts = []
+                if 0 <= _off_tech_start <= _off_tech_end:
+                    _tp = _raw_body[_off_tech_start:_off_tech_end].strip(" ,")
+                    if _tp:
+                        _atmo_parts.append(_tp)
+                if 0 <= _off_weather_start <= _off_weather_end:
+                    _wp = _raw_body[_off_weather_start:_off_weather_end].strip(" ,")
+                    if _wp:
+                        _atmo_parts.append(_wp)
+                _a = ", ".join(_atmo_parts)
+
+                _detail_parts = []
+                if _off_tech_start >= _tail_start:
+                    _dp1 = _raw_body[_tail_start:_off_tech_start].strip(" ,")
+                    if _dp1:
+                        _detail_parts.append(_dp1)
+                    if _off_tech_end >= 0 and _off_weather_start >= _off_tech_end:
+                        _dp2 = _raw_body[_off_tech_end:_off_weather_start].strip(" ,")
+                        if _dp2:
+                            _detail_parts.append(_dp2)
+                elif _off_weather_start >= _tail_start:
+                    _dp1 = _raw_body[_tail_start:_off_weather_start].strip(" ,")
+                    if _dp1:
+                        _detail_parts.append(_dp1)
+                else:
+                    _dp1 = _raw_body[_tail_start:].strip(" ,")
+                    if _dp1:
+                        _detail_parts.append(_dp1)
+                _d = ", ".join(_detail_parts)
+
+                _st = _raw_body[_off_weather_end:].strip(" ,") if _off_weather_end >= _tail_start else ""
+
+                for _b_name, _b_val, _is_subj in (
+                    ("artist", _ar, False),
+                    ("medium", _m, False),
+                    ("framing", _f, False),
+                    ("subject", _s.strip(" ,"), True),
+                    ("details", _d, False),
+                    ("atmosphere_tech", _a, False),
+                    ("style", _st, False),
+                ):
+                    if _b_val:
+                        compound_clauses.append(PromptClause(compoundcounter, _b_name, _b_val, is_subject=_is_subj))
+            elif len(_c_parts) >= 3:
+                _f, _s, _d = _c_parts[0], _c_parts[1], ", ".join(_c_parts[2:])
                 if _f.strip():
                     compound_clauses.append(PromptClause(compoundcounter, "framing", _f, is_subject=False))
                 if _s.strip():
@@ -3451,7 +3558,9 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 if _d.strip():
                     compound_clauses.append(PromptClause(compoundcounter, "details", _d, is_subject=False))
             else:
-                compound_clauses.append(PromptClause(compoundcounter, "monolith", compound_chunk.replace("@@@", ""), is_subject=False))
+                compound_clauses.append(PromptClause(compoundcounter, "monolith", _raw_body.replace("@@@", "").strip(" ,"), is_subject=False))
+            if compoundcounter == 0 and suffixprompt.strip(" ,"):
+                compound_clauses.append(PromptClause(compoundcounter, "user_suffix", suffixprompt.strip(" ,"), is_subject=False))
         compoundcounter += 1
         
         # Here comes all the seperator stuff for prompt compounding
@@ -3471,81 +3580,6 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     
 
 
-    # In front and the back?
-    if(dynamictemplatesmode == False):
-        completeprompt = parse_custom_functions(completeprompt, insanitylevel, ctx=ctx)
-    
-    # Sometimes change he/she to the actual subject
-    # Doesnt work if someone puts in a manual subject
-    if(mainchooser == "humanoid" and (givensubject == "" or subjectingivensubject and givensubject != "") and subjectchooser != "manwomanmultiple"):
-        samehumanreplacementlist = ["-heshe-","-heshe-","-heshe-","-heshe-","-heshe-", "-samehumansubject-", "-samehumansubject-", "-samehumansubject-", "-samehumansubject-", "-samehumansubject-"]
-        ctx.shuffle(samehumanreplacementlist)
-        
-        # Convert completeprompt to a list to allow character-wise manipulation
-        completeprompt_list = list(completeprompt)
-        # Iterate over the characters in completeprompt_list
-        for i in range(len(completeprompt_list) - len("-heshe-") + 1):
-            if "".join(completeprompt_list[i:i+len("-heshe-")]) == "-heshe-":
-                # Replace -heshe- with a value from the shuffled list
-                if(samehumanreplacementlist):
-                    replacement = samehumanreplacementlist.pop()
-                else:
-                    replacement = "-heshe-"    
-                    
-                completeprompt_list[i:i+len("-heshe-")] = replacement
-
-        # Convert the list back to a string
-        completeprompt = "".join(completeprompt_list)
-    
-        # Sometimes change he/she to the actual subject
-    if(mainchooser in  ["animal", "object"] and (givensubject == "" or subjectingivensubject and givensubject != "")):
-        sameobjectreplacementlist = ["-heshe-","-heshe-","-heshe-","-heshe-","-heshe-", "-sameothersubject-", "-sameothersubject-", "-sameothersubject-", "-sameothersubject-", "-sameothersubject-"]
-        ctx.shuffle(sameobjectreplacementlist)
-        # Convert completeprompt to a list to allow character-wise manipulation
-        completeprompt_list = list(completeprompt)
-
-        # Iterate over the characters in completeprompt_list
-        for i in range(len(completeprompt_list) - len("-heshe-") + 1):
-            if "".join(completeprompt_list[i:i+len("-heshe-")]) == "-heshe-":
-                # Replace -heshe- with a value from the shuffled list
-                if(sameobjectreplacementlist):
-                    replacement = sameobjectreplacementlist.pop()
-                else:
-                    replacement = "-heshe-"    
-                    
-                completeprompt_list[i:i+len("-heshe-")] = replacement
-        # Convert the list back to a string
-        completeprompt = "".join(completeprompt_list)
-
-    # hair descriptor
-    if(ctx.chance(insanitylevel, 'rare')): # Use base hair descriptor, until we are not.
-        completeprompt = completeprompt.replace("-hairdescriptor-", "-descriptor-")
-    
-    # human descriptor
-    if(ctx.chance(insanitylevel, 'rare')): # Use base human descriptor, until we are not.
-        completeprompt = completeprompt.replace("-humandescriptor-", "-descriptor-")
-    
-    # location descriptor
-    if(ctx.chance(insanitylevel, 'rare')): # Use base location descriptor, until we are not.
-        completeprompt = completeprompt.replace("-locationdescriptor-", "-descriptor-")
-    
-    # animeal descriptor
-    if(ctx.chance(insanitylevel, 'rare')): # Use base animal descriptor, until we are not.
-        completeprompt = completeprompt.replace("-animaldescriptor-", "-descriptor-")
-
-
-    # sometimes, culture becomes traditional!
-    if(ctx.chance(insanitylevel, 'unique')):
-        completeprompt = completeprompt.replace("-culture-", "traditional -culture-")
-
-
-    # first some manual stuff for outfit
-
-    if(ctx.chance(insanitylevel, 'unique')): # sometimes, its just nice to have descriptor and a normal "outfit". We use mini outfits for this!
-        completeprompt = completeprompt.replace("-outfit-", "-minioutfit-",1)
-    if(ctx.chance(insanitylevel, 'rare')): # Use base outfit descriptor, until we are not.
-        completeprompt = completeprompt.replace("-outfitdescriptor-", "-descriptor-")
-    
     # if -outfit- is in the override, we want a consistent result
     if("-outfit-" in overrideoutfit):
         if(ctx.chance(insanitylevel, "common")):
@@ -3553,79 +3587,94 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         else:
             overrideoutfit = overrideoutfit.replace("-outfit-", ctx.pick(minioutfitlist))
 
-    if(overrideoutfit != ""):
-        completeprompt = completeprompt.replace("-sameoutfit-", overrideoutfit)
-        completeprompt = completeprompt.replace("-outfit-", overrideoutfit,1)
-        completeprompt = completeprompt.replace("-minioutfit-", overrideoutfit,1)
-        completeprompt = completeprompt.replace("-overrideoutfit-", overrideoutfit)
+    def _apply_pre_wildcard_transforms(text):
+        if(dynamictemplatesmode == False):
+            text = parse_custom_functions(text, insanitylevel, ctx=ctx)
 
-    if(givensubject != "" and subjectingivensubject == False):
-        completeprompt = completeprompt.replace("-samehumansubject-", givensubject)
-        completeprompt = completeprompt.replace("-sameothersubject-", givensubject)
-        
-            
-    
-    # If we don't have an override outfit, then remove this part
-    completeprompt = completeprompt.replace("-overrideoutfit-", "")
+        if(mainchooser == "humanoid" and (givensubject == "" or subjectingivensubject and givensubject != "") and subjectchooser != "manwomanmultiple"):
+            samehumanreplacementlist = ["-heshe-","-heshe-","-heshe-","-heshe-","-heshe-", "-samehumansubject-", "-samehumansubject-", "-samehumansubject-", "-samehumansubject-", "-samehumansubject-"]
+            ctx.shuffle(samehumanreplacementlist)
+            text_list = list(text)
+            for i in range(len(text_list) - len("-heshe-") + 1):
+                if "".join(text_list[i:i+len("-heshe-")]) == "-heshe-":
+                    replacement = samehumanreplacementlist.pop() if samehumanreplacementlist else "-heshe-"
+                    text_list[i:i+len("-heshe-")] = replacement
+            text = "".join(text_list)
 
-    # sometimes replace one descriptor with a artmovement, only on high insanitylevels
-    if(insanitylevel > 7 and ctx.chance(insanitylevel, 'unique')):
-        completeprompt = completeprompt.replace("-descriptor-", "-artmovement-",1)
+        if(mainchooser in ["animal", "object"] and (givensubject == "" or subjectingivensubject and givensubject != "")):
+            sameobjectreplacementlist = ["-heshe-","-heshe-","-heshe-","-heshe-","-heshe-", "-sameothersubject-", "-sameothersubject-", "-sameothersubject-", "-sameothersubject-", "-sameothersubject-"]
+            ctx.shuffle(sameobjectreplacementlist)
+            text_list = list(text)
+            for i in range(len(text_list) - len("-heshe-") + 1):
+                if "".join(text_list[i:i+len("-heshe-")]) == "-heshe-":
+                    replacement = sameobjectreplacementlist.pop() if sameobjectreplacementlist else "-heshe-"
+                    text_list[i:i+len("-heshe-")] = replacement
+            text = "".join(text_list)
 
-    # On low insanity levels (lower than 5) ,a chance refer to the basic bitch list on some occasions
-    if(ctx.randint(0,insanitylevel) == 0 and insanitylevel < 5): 
-        completeprompt = completeprompt.replace("-locationdescriptor-", "-basicbitchdescriptor-")
-        completeprompt = completeprompt.replace("-humandescriptor-", "-basicbitchdescriptor-")
-        completeprompt = completeprompt.replace("-outfitdescriptor-", "-basicbitchdescriptor-")
-        completeprompt = completeprompt.replace("-descriptor-", "-basicbitchdescriptor-")
-        completeprompt = completeprompt.replace("-animaldescriptor-", "-basicbitchdescriptor-")
+        if(ctx.chance(insanitylevel, 'rare')):
+            text = text.replace("-hairdescriptor-", "-descriptor-")
+        if(ctx.chance(insanitylevel, 'rare')):
+            text = text.replace("-humandescriptor-", "-descriptor-")
+        if(ctx.chance(insanitylevel, 'rare')):
+            text = text.replace("-locationdescriptor-", "-descriptor-")
+        if(ctx.chance(insanitylevel, 'rare')):
+            text = text.replace("-animaldescriptor-", "-descriptor-")
 
-    # we now have color combinations, which are stronger than just color. So lets change them while we are at it.
-    if(ctx.randint(0,max(0, insanitylevel - 2)) <= 0):
-        completeprompt = completeprompt.replace("-color- and -color-", "-colorcombination-") # any color and color becomes a color combination
+        if(ctx.chance(insanitylevel, 'unique')):
+            text = text.replace("-culture-", "traditional -culture-")
 
-        colorreplacementlist = ["-color-","-color-","-color-","-colorcombination-","-colorcombination-", "-colorcombination-", "-colorcombination-", "-colorcombination-", "-colorcombination-", "-colorcombination-"]
-        ctx.shuffle(colorreplacementlist)
-        
-        # Convert completeprompt to a list to allow character-wise manipulation
-        completeprompt_list = list(completeprompt)
-        # Iterate over the characters in completeprompt_list
-        for i in range(len(completeprompt_list) - len("-color-") + 1):
-            if "".join(completeprompt_list[i:i+len("-color-")]) == "-color-":
-                # Replace -heshe- with a value from the shuffled list
-                if(colorreplacementlist):
-                    replacement = colorreplacementlist.pop()
-                else:
-                    replacement = "-color-"
+        if(ctx.chance(insanitylevel, 'unique')):
+            text = text.replace("-outfit-", "-minioutfit-", 1)
+        if(ctx.chance(insanitylevel, 'rare')):
+            text = text.replace("-outfitdescriptor-", "-descriptor-")
 
-                completeprompt_list[i:i+len("-color-")] = replacement
+        if(overrideoutfit != ""):
+            text = text.replace("-sameoutfit-", overrideoutfit)
+            text = text.replace("-outfit-", overrideoutfit, 1)
+            text = text.replace("-minioutfit-", overrideoutfit, 1)
+            text = text.replace("-overrideoutfit-", overrideoutfit)
 
-        # Convert the list back to a string
-        completeprompt = "".join(completeprompt_list)
+        if(givensubject != "" and subjectingivensubject == False):
+            text = text.replace("-samehumansubject-", givensubject)
+            text = text.replace("-sameothersubject-", givensubject)
 
+        text = text.replace("-overrideoutfit-", "")
 
-     # we now have material combinations, which are stronger than just one material. So lets change them while we are at it.
-    if(ctx.randint(0,max(0, insanitylevel - 4)) <= 0):
-        completeprompt = completeprompt.replace("-material- and -material-", "-materialcombination-") # any color and color becomes a color combination
+        if(insanitylevel > 7 and ctx.chance(insanitylevel, 'unique')):
+            text = text.replace("-descriptor-", "-artmovement-", 1)
 
-        materialreplacementlist = ["-material-","-material-","-material-","-materialcombination-","-materialcombination-", "-materialcombination-", "-materialcombination-", "-materialcombination-", "-materialcombination-", "-materialcombination-"]
-        ctx.shuffle(materialreplacementlist)
-        
-        # Convert completeprompt to a list to allow character-wise manipulation
-        completeprompt_list = list(completeprompt)
-        # Iterate over the characters in completeprompt_list
-        for i in range(len(completeprompt_list) - len("-material-") + 1):
-            if "".join(completeprompt_list[i:i+len("-material-")]) == "-material-":
-                # Replace -heshe- with a value from the shuffled list
-                if(materialreplacementlist):
-                    replacement = materialreplacementlist.pop()
-                else:
-                    replacement = "-material-"
-                
-                completeprompt_list[i:i+len("-material-")] = replacement
+        if(ctx.randint(0,insanitylevel) == 0 and insanitylevel < 5):
+            text = text.replace("-locationdescriptor-", "-basicbitchdescriptor-")
+            text = text.replace("-humandescriptor-", "-basicbitchdescriptor-")
+            text = text.replace("-outfitdescriptor-", "-basicbitchdescriptor-")
+            text = text.replace("-descriptor-", "-basicbitchdescriptor-")
+            text = text.replace("-animaldescriptor-", "-basicbitchdescriptor-")
 
-        # Convert the list back to a string
-        completeprompt = "".join(completeprompt_list)
+        if(ctx.randint(0,max(0, insanitylevel - 2)) <= 0):
+            text = text.replace("-color- and -color-", "-colorcombination-")
+            colorreplacementlist = ["-color-","-color-","-color-","-colorcombination-","-colorcombination-", "-colorcombination-", "-colorcombination-", "-colorcombination-", "-colorcombination-", "-colorcombination-"]
+            ctx.shuffle(colorreplacementlist)
+            text_list = list(text)
+            for i in range(len(text_list) - len("-color-") + 1):
+                if "".join(text_list[i:i+len("-color-")]) == "-color-":
+                    replacement = colorreplacementlist.pop() if colorreplacementlist else "-color-"
+                    text_list[i:i+len("-color-")] = replacement
+            text = "".join(text_list)
+
+        if(ctx.randint(0,max(0, insanitylevel - 4)) <= 0):
+            text = text.replace("-material- and -material-", "-materialcombination-")
+            materialreplacementlist = ["-material-","-material-","-material-","-materialcombination-","-materialcombination-", "-materialcombination-", "-materialcombination-", "-materialcombination-", "-materialcombination-", "-materialcombination-"]
+            ctx.shuffle(materialreplacementlist)
+            text_list = list(text)
+            for i in range(len(text_list) - len("-material-") + 1):
+                if "".join(text_list[i:i+len("-material-")]) == "-material-":
+                    replacement = materialreplacementlist.pop() if materialreplacementlist else "-material-"
+                    text_list[i:i+len("-material-")] = replacement
+            text = "".join(text_list)
+
+        return text
+
+    completeprompt = _apply_pre_wildcard_transforms(completeprompt)
 
         
     #    print(completeprompt)
@@ -3862,6 +3911,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     if grammar_mode != "standard" or multi_subject_chance > 0 or natural_language:
         _res_state = ResolutionState()
         for _cl in compound_clauses:
+            _cl.text = _apply_pre_wildcard_transforms(_cl.text)
             _cl.text = resolve_wildcards(
                 _cl.text,
                 allwildcardslistnohybrid, allwildcardslistnohybridlists,
@@ -4919,6 +4969,7 @@ def replacewildcard(completeprompt, insanitylevel, wildcard,listname, activatehy
     return completeprompt
 
 def build_dynamic_negative(positive_prompt = "", insanitylevel = 0, enhance = False, existing_negative_prompt = "", base_model="SD1.5"):
+    ctx = PickContext()
 
 
     negative_primer = []
@@ -4927,13 +4978,13 @@ def build_dynamic_negative(positive_prompt = "", insanitylevel = 0, enhance = Fa
     remove_weights = False
 
     # Base model options, used to change things in prompt generation. Might be able to extend to different forms like animatediff as well?
-    base_model_options = ["SD1.5", "SDXL", "Stable Cascade"]
+    base_model_options = ["SD1.5", "SDXL", "Stable Cascade", "Natural Language"]
     if base_model not in base_model_options:
         base_model = "SD1.5" # Just in case there is no option here.
     # "SD1.5" -- Standard, future: More original style prompting
     # "SDXL" -- Standard (for now), future: More natural language
     # "Stable Cascade" -- Remove weights
-    if base_model == "Stable Cascade":
+    if base_model in ("Stable Cascade", "Natural Language"):
         remove_weights = True
     
     # negavite_primer, all words that should trigger a negative result
@@ -5235,6 +5286,7 @@ def replace_match(match):
 def cleanup(completeprompt, advancedprompting, insanitylevel = 5, remove_weights = False, ctx = None):
     if remove_weights:
         completeprompt = strip_a1111_syntax(completeprompt, ctx=ctx)
+    completeprompt = re.sub(r'\ban?\s+(hundreds|dozens|thousands|millions)\s+of\b', r'\1 of', completeprompt, flags=re.IGNORECASE)
 
     # This part is turned off, will bring it back later as an option
     

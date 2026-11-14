@@ -6,3 +6,29 @@ OR(large;small;short;long;cute;Button;Upturned;Snub;Sharp;Flat;High-bridged;Bulb
 OR(strong;pronounced;weak;small;large;Chiseled;Square;Defined;Dimpled;Round;Double;Slender;Soft) chin
 OR(oval;wide;large;small;triangle;round-;square-;hearth-;diamond-;pear-;Rectangular;Long;Angular;Symmetrical;Asymmetrical;full;Slim;Narrow) shaped face
 OR(rosy;defined;Chubby;Sculpted;cute;beautiful;hollow;dimpled;peachy;defined;flushed;plump;rounded;high;subtle) cheeks
+
+OR(piercing;warm;gentle;sharp;almond-shaped;deep-set;bright;expressive;doe-like;hooded) eyes
+OR(aquiline;button;straight;sculpted;upturned;broad;delicate;refined) nose
+OR(arched;bushy;thin;furrowed;defined;feathered;sharp;expressive) eyebrows
+OR(high;sculpted;prominent;soft;defined;angular;rosy) cheekbones
+OR(sharp;chiseled;soft;angular;defined;strong;delicate) jawline
+OR(cleft;pointed;rounded;strong;delicate;determined) chin
+OR(broad;smooth;furrowed;high;creased) forehead
+OR(long;thick;fluttering;dark;delicate;curled) eyelashes
+OR(light;scattered;sun-kissed;faint;dense) freckles
+OR(deep;subtle;charming;faint) dimples
+OR(pointed;delicate;pierced;small;rounded) ears
+OR(tense;relaxed;soft;weathered;sun-tanned) cheeks
+OR(bright;warm;guarded;knowing;subtle;genuine) smile
+OR(furrowed;knitted;calm;expressive) brow
+OR(flawless;weathered;porcelain;olive;sun-bronzed;freckled;glowing) skin
+OR(striking;amber;hazel;emerald;cobalt;dark;luminous) irises
+OR(defined;crisp;sculpted;soft) cupid's bow
+OR(faint;deep;laughing;weathered) smile lines
+OR(sharp;strong;delicate;aristocratic) facial structure
+OR(neat;sculpted;untamed;swept) hairline
+OR(bright;clear;reflective;narrowed) pupils
+OR(heavy;drooping;delicate;creased) eyelids
+OR(warm;cool;radiant;pale;golden) complexion
+OR(subtle;faint;characterful) crow's feet
+OR(straight;narrow;broad;sculpted) bridge of the nose

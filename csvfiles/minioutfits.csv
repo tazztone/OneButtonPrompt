@@ -8,3 +8,37 @@ costume OR(;tailored by -fashiondesigner-;uncommon)?both
 OR(;-materialcombination-;uncommon) tunic?both
 OR(-colorcombination-;-colorscheme-;-eyecolor-;uncommon) garb OR(;tailored by -fashiondesigner-;uncommon)?both
 OR(OR(armor;outfit) of -conceptsuffix-;-conceptsuffix- OR(armor;outfit);uncommon)?both
+
+tailored -color- blazer?both
+weathered -material- jacket?both
+oversized knit sweater?both
+crisp linen shirt?both
+flowing -color- cloak?both
+utility jumpsuit?both
+sleek turtleneck?both
+hooded -color- parka?both
+pleated -color- skirt?female
+flowing -material- gown?female
+structured -color- sundress?female
+corseted -material- bodice?female
+tailored -color- waistcoat?male
+rugged -material- vest?male
+double-breasted -color- coat?both
+embroidered -culture- tunic?both
+cropped -material- jacket?both
+high-waisted -color- trousers?both
+layered -color- kimono?both
+ribbed -color- cardigan?both
+fitted -material- trench coat?both
+minimalist -color- jumpsuit?both
+distressed denim jacket?both
+quilted -color- vest?both
+draped -material- shawl?both
+belted -color- robe?both
+sleeveless -color- tunic?both
+padded -material- flight jacket?both
+relaxed -color- hoodie?both
+button-down -color- oxford shirt?both
+wrap-around -material- dress?female
+structured -color- suit?both
+embroidered -color- vest?both

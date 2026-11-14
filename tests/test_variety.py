@@ -187,6 +187,97 @@ class TestHighVariancePrompts(unittest.TestCase):
                 if row:
                     self.assertGreaterEqual(len(row), 2, f"{fname}.csv has short row: {row}")
 
+    def test_07_phase5_composer_and_syntax(self):
+        from build_dynamic_prompt import build_dynamic_negative
+        dangling_ends = (" to", " into", " beside", " atop", " for")
+        for i in range(25):
+            p = build_dynamic_prompt(
+                insanitylevel=6,
+                base_model="Natural Language",
+                coherence="chaos",
+                grammar_mode="soup",
+                seed=500 + i,
+            )
+            self.assertFalse(p.lower().rstrip(".").endswith(dangling_ends), f"Dangling soup ending: {p}")
+
+        for i in range(25):
+            p = build_dynamic_prompt(
+                insanitylevel=6,
+                base_model="Natural Language",
+                coherence="wild",
+                grammar_mode="natural",
+                prefixprompt="USER_PRE",
+                suffixprompt="USER_SUF",
+                seed=600 + i,
+            )
+            self.assertNotIn("framed by art by", p.lower())
+            self.assertNotIn("captured with ,", p.lower())
+            self.assertTrue(p.startswith("USER_PRE"), f"Missing user_prefix: {p}")
+            self.assertTrue(p.endswith("USER_SUF"), f"Missing user_suffix: {p}")
+
+        neg = build_dynamic_negative(
+            positive_prompt="a cat",
+            insanitylevel=3,
+            base_model="Natural Language",
+        )
+        self.assertNotRegex(neg, r":[0-9]+\.[0-9]+")
+
+        p_comp = build_dynamic_prompt(
+            insanitylevel=5,
+            base_model="Natural Language",
+            coherence="wild",
+            grammar_mode="natural",
+            promptcompounderlevel="2",
+            prefixprompt="USER_PRE",
+            suffixprompt="USER_SUF",
+            seed=650,
+        )
+        self.assertEqual(p_comp.count("USER_PRE"), 1)
+        self.assertEqual(p_comp.count("USER_SUF"), 1)
+
+    def test_08_phase5_mute_pop_culture_and_expanded_csvs(self):
+        for subj in ("all", "humanoid", "animal", "landscape"):
+            for i in range(10):
+                p = build_dynamic_prompt(
+                    insanitylevel=6,
+                    forcesubject=subj,
+                    base_model="Natural Language",
+                    coherence="wild",
+                    grammar_mode="auto",
+                    mute_pop_culture=True,
+                    seed=700 + i,
+                )
+                self.assertNotIn("-pokemon-", p)
+                self.assertNotIn("-locationvideogame-", p)
+                self.assertNotIn("-fictional-", p)
+                self.assertNotIn("-nonfictional-", p)
+
+        min_sizes = [
+            ("faceparts", "./csvfiles/", 35, ";"),
+            ("hairvomit", "./csvfiles/", 35, "?"),
+            ("minioutfits", "./csvfiles/", 40, "?"),
+            ("prints", "./csvfiles/", 40, ";"),
+            ("elements", "./csvfiles/", 40, ";"),
+            ("focus", "./csvfiles/", 40, ";"),
+            ("buildfaceparts", "./csvfiles/special_lists/", 30, "?"),
+            ("animaladditions", "./csvfiles/special_lists/", 32, "?"),
+            ("animalsuffixadditions", "./csvfiles/special_lists/", 35, "?"),
+            ("miniactivity", "./csvfiles/special_lists/", 45, "?"),
+            ("modern_templates", "./csvfiles/templates/", 90, "?"),
+        ]
+        for name, directory, min_len, delim in min_sizes:
+            rows = csv_to_list(name, directory=directory, delimiter=delim, bypass_subsets=True)
+            self.assertGreaterEqual(len(rows), min_len, f"{name}.csv has {len(rows)} < {min_len}")
+
+        with open(os.path.join(REPO_ROOT, "csvfiles/minioutfits.csv"), "r", encoding="utf-8") as f:
+            for line_no, line in enumerate(f, 1):
+                s = line.strip()
+                if not s:
+                    continue
+                parts = s.split("?")
+                self.assertEqual(len(parts), 2, f"minioutfits.csv:{line_no} invalid format: {s}")
+                self.assertIn(parts[1], ("both", "female", "male"), f"minioutfits.csv:{line_no} invalid gender: {s}")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -153,24 +153,76 @@ def build_relational_subject(pools: dict, ctx, mute_pop_culture: bool = False) -
 
 
 _NATURAL_FRAMES = [
-    lambda f, s, d, st, a: f"{f + ', ' if f else ''}{s}{', ' + d if d else ''}{', ' + a if a else ''}{', ' + st if st else ''}.",
-    lambda f, s, d, st, a: f"In a scene framed by {f}, {s}{', ' + d if d else ''}{', ' + a if a else ''}{'. ' + st if st else '.'}" if f else f"{s}{', ' + d if d else ''}{', ' + a if a else ''}{', ' + st if st else ''}.",
-    lambda f, s, d, st, a: f"{s}{', ' + d if d else ''}, set against {a}{', ' + f if f else ''}{', ' + st if st else ''}." if a else f"{f + ', ' if f else ''}{s}{', ' + d if d else ''}{', ' + st if st else ''}.",
-    lambda f, s, d, st, a: f"{st + ': ' if st else ''}{f + ', ' if f else ''}{s}{', ' + d if d else ''}{', ' + a if a else ''}.",
-    lambda f, s, d, st, a: f"Captured with {a}, {s}{', ' + d if d else ''}{', ' + f if f else ''}{', ' + st if st else ''}." if a else f"{s}{', ' + d if d else ''}{', ' + f if f else ''}{', ' + st if st else ''}.",
-    lambda f, s, d, st, a: f"{s} emerges{' amidst ' + a if a else ''}{', ' + d if d else ''}{', ' + f if f else ''}{', ' + st if st else ''}.",
-    lambda f, s, d, st, a: f"A {st + ' ' if st else ''}view of {s}{', ' + d if d else ''}{', ' + f if f else ''}{', ' + a if a else ''}.",
-    lambda f, s, d, st, a: f"{f + ' — ' if f else ''}{s}{', ' + d if d else ''}{', ' + a if a else ''}{', ' + st if st else ''}.",
-    lambda f, s, d, st, a: f"The focus rests on {s}{', ' + d if d else ''}{', ' + a if a else ''}{', ' + f if f else ''}{', ' + st if st else ''}.",
-    lambda f, s, d, st, a: f"{s}{', ' + d if d else ''}; {a + ', ' if a else ''}{f + ', ' if f else ''}{st}.".rstrip(", ;") + ".",
-    lambda f, s, d, st, a: f"With {f}, {s}{', ' + d if d else ''}{', ' + a if a else ''}{', ' + st if st else ''}." if f else f"{s}{', ' + d if d else ''}{', ' + a if a else ''}{', ' + st if st else ''}.",
-    lambda f, s, d, st, a: f"{a + ', ' if a else ''}{s}{', ' + d if d else ''}{', ' + f if f else ''}{', ' + st if st else ''}.",
+    lambda f, m, ar, s, d, st, a: ", ".join(p for p in (m, f, s, d, a, st, ar) if p) + ".",
+    lambda f, m, ar, s, d, st, a: (
+        f"In a scene framed by {f}, {s}"
+        + "".join(f", {p}" for p in (d, m, a, ar) if p)
+        + (f". {st}." if st else ".")
+        if f
+        else ", ".join(p for p in (m, s, d, a, st, ar) if p) + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"{s}{', ' + d if d else ''}, set against {a}"
+        + "".join(f", {p}" for p in (f, m, st, ar) if p)
+        + "."
+        if a
+        else ", ".join(p for p in (m, f, s, d, st, ar) if p) + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"{st + ': ' if st else ''}"
+        + ", ".join(p for p in (m, f, s, d, a, ar) if p)
+        + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"Captured with {a}, "
+        + ", ".join(p for p in (m, s, d, f, st, ar) if p)
+        + "."
+        if a
+        else ", ".join(p for p in (m, f, s, d, st, ar) if p) + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"{s} emerges{' amidst ' + a if a else ''}"
+        + "".join(f", {p}" for p in (d, f, m, st, ar) if p)
+        + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"A {m + ' ' if m else ''}view of {s}"
+        + "".join(f", {p}" for p in (d, f, a, st, ar) if p)
+        + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"{f + ' — ' if f else ''}"
+        + ", ".join(p for p in (m, s, d, a, st, ar) if p)
+        + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"The focus rests on {s}"
+        + "".join(f", {p}" for p in (d, a, f, m, st, ar) if p)
+        + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"{s}{', ' + d if d else ''}"
+        + ("; " + ", ".join(p for p in (a, f, m, st, ar) if p) if any((a, f, m, st, ar)) else "")
+        + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        f"With {f}, "
+        + ", ".join(p for p in (m, s, d, a, st, ar) if p)
+        + "."
+        if f
+        else ", ".join(p for p in (m, s, d, a, st, ar) if p) + "."
+    ),
+    lambda f, m, ar, s, d, st, a: (
+        ", ".join(p for p in (ar, m, s, d, f, a, st) if p) + "."
+    ),
 ]
 
 
 def _format_natural_compound(buckets: dict, ctx, natural_language: bool = False) -> str:
     f = _clean_fragment(buckets.get("framing", ""))
     f = re.sub(r"\b(?:of\s+a|of)\s*$", "", f, flags=re.IGNORECASE).strip(" ,;")
+    m = _clean_fragment(buckets.get("medium", ""))
+    ar = _clean_fragment(buckets.get("artist", ""))
     s = _clean_fragment(buckets.get("subject", ""))
     d = _clean_fragment(buckets.get("details", ""))
     st = _clean_fragment(buckets.get("style", ""))
@@ -179,19 +231,20 @@ def _format_natural_compound(buckets: dict, ctx, natural_language: bool = False)
     # Separate tag-salad fragments into trailing qualifiers
     trailing_tags = []
     f, t_f = _split_tag_salad(f, drop_spam=natural_language)
+    m, t_m = _split_tag_salad(m, drop_spam=natural_language)
     d, t_d = _split_tag_salad(d, drop_spam=natural_language)
     st, t_st = _split_tag_salad(st, drop_spam=natural_language)
     a, t_a = _split_tag_salad(a, drop_spam=natural_language)
-    for t in (t_f, t_d, t_st, t_a):
+    for t in (t_f, t_m, t_d, t_st, t_a):
         if t:
             trailing_tags.append(t)
 
     if not s:
-        parts = [p for p in (f, d, a, st) if p]
+        parts = [p for p in (m, f, d, a, st, ar) if p]
         base = ", ".join(parts)
     else:
         frame_fn = ctx.pick(_NATURAL_FRAMES, key="natural_frame")
-        base = frame_fn(f, s, d, st, a)
+        base = frame_fn(f, m, ar, s, d, st, a)
 
     base = _clean_fragment(base)
     base = re.sub(r"[,;\s]+\.", ".", base)
@@ -207,7 +260,7 @@ def _strip_trailing_of_a(text: str) -> str:
 
 
 def _format_shuffled_compound(buckets: dict, coherence: str, ctx) -> str:
-    non_subj_keys = [k for k in ("framing", "details", "style", "atmosphere_tech") if buckets.get(k)]
+    non_subj_keys = [k for k in ("framing", "medium", "artist", "details", "style", "atmosphere_tech") if buckets.get(k)]
     ctx.shuffle(non_subj_keys)
 
     drop_chance = 0.0
@@ -242,7 +295,7 @@ def _format_soup_compound(buckets: dict, soup_pools: dict, ctx) -> str:
         if val:
             parts.append(val)
     if soup_pools:
-        for key in ("tokens", "abstract_concepts", "interactions", "media_artifacts"):
+        for key in ("tokens", "abstract_concepts", "media_artifacts"):
             pool = soup_pools.get(key)
             if pool and ctx.randint(1, 2) == 1:
                 parts.append(ctx.pick(pool, key=f"soup_{key}"))
