@@ -122,3 +122,11 @@ custominputsuffixrepeats;2
 custominputsuffixchance;uncommon
 # artists stuff;
 artistsatbackchance;uncommon
+
+# high-variance scene & framing chances;
+cameraanglechance;uncommon
+compositionchance;uncommon
+weatherchance;uncommon
+atmospherechance;uncommon
+mediaartifactchance;rare
+scalemodchance;rare

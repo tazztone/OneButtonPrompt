@@ -35,3 +35,32 @@ the -subject- -job- of -conceptsuffix-@-malefemale-
 -subject- set in a -setting- setting@OR(-manwoman-;-animal-)
 -greatwork- but with -subject-@OR(-nonfictional-;-fictional-;-animal-)
 the -event- reenacted by -subject-@OR(-nonfictional-;-fictional-;-animal-)
+
+a -scalemod- -animal- exploring a -location-@-animal-
+a -job- conversing with a -fictional-@-malefemale-
+an -archstyle- -building- overgrown with -flora-@-location-
+a -material- -object- floating above a -waterlocation-@-objecttotal-
+a -culture- -rpgclass- holding a -prop-@-malefemale-
+a -bird- perched on a -vehicle- in -weather-@-animal-
+a -cat- wearing a -accessory- inside a -minilocation-@-animal-
+a -dog- guarding a -material- -container-@-animal-
+an -insect- made of -material- and -color- glass@-animal-
+a -marinelife- swimming through -atmosphere-@-animal-
+a -humanoid- studying a -occult- artifact@-humanoid-
+a -nonfictional- reimagined in -locationscifi-@-nonfictional-
+a -fictional- wandering through -locationfantasy-@-fictional-
+a -vehicle- powered by -element- in -timeperiod-@-vehicle-
+a -food- sculpted like a -building-@-food-
+a -prop- infused with -abstractconcept-@-objecttotal-
+a -manwoman- -interaction- a -animal-@-malefemale-
+a -humanoid- -interaction- a -fictional-@-humanoid-
+a -humanoid- or -fictional- tending a -flora- garden@-humanoid-
+a -job- navigating a -locationbiome- during -weather-@-malefemale-
+a -charactertype- -manwoman- in -cinematicstyle- lighting@-malefemale-
+a -animal- with -texture- fur amidst -atmosphere-@-animal-
+a -building- shaped like a -object-@-building-
+a -locationcity- street transformed by -abstractconcept-@-location-
+a -scalemod- -vehicle- crossing a -waterlocation-@-vehicle-
+a -manwoman- discovering a -occult- -prop-@-malefemale-
+a -fictional- resting inside a -minilocation-@-fictional-
+a -animal- carrying a -prop- through -locationbiome-@-animal-

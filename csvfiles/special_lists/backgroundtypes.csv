@@ -2,3 +2,26 @@ OR(background is;at;near;inside a) OR(;-descriptor-;normal) OR(-location-;-build
 OR(;-descriptor-;normal) OR(-location-;-building-;-minilocation-) in background
 OR(;plain;simple;detailed;complex;centered;normal) OR(;-descriptor-;-color-;-color- and -color-;-colorscheme-;normal) background
 OR(-culture-;-space-;-flora-;-minilocation- and -flora-;-season-) background
+
+atmospheric -atmosphere- background
+-archstyle- architecture background
+blurred -location- background
+minimalist -color- backdrop
+dramatic -weather- background
+textured -material- wall background
+soft-focus -locationbiome- background
+industrial -building- background
+ornate -culture- interior background
+moody -timeperiod- street background
+lush -flora- garden background
+vast -locationfantasy- horizon
+sleek -locationscifi- corridor background
+vintage -colorscheme- studio backdrop
+sunlit -minilocation- background
+misty -waterlocation- background
+geometric -pattern- background
+weathered -texture- surface background
+cinematic -cinematicstyle- backdrop
+shadowy -occult- chamber background
+golden hour -locationcity- skyline
+starry night sky background
