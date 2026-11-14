@@ -44,12 +44,13 @@ superprompterstyleslist = ['all']
 superprompterstyleslist += csv_to_list("superprompter_styles")
 
 _COMMON_TOOLTIPS = {
-    "seed": "Deterministic RNG seed (values > 0). Use 0 for non-deterministic generation and to force ComfyUI re-execution.",
+    "seed": "Deterministic RNG seed (values > 0). Use 0 for non-deterministic generation and to force ComfyUI re-execution (or use ComfyUI's control_after_generate).",
+    "seed_cache_buster": "Re-execution trigger only (does not seed RNG deterministically on this node). Change or set to randomize in ComfyUI to generate a fresh result each run.",
     "base_model": "Target model prompting style: SD1.5 (concise tags), SDXL (richer phrasing), Stable Cascade (natural phrasing, no weights), Anime Model (tag-based with 1girl/1boy), Natural Language (prose clauses, no weights/tag-spam).",
-    "prompt_enhancer": "Optional post-processor. 'superprompt-v1' expands the generated subject using the SuperPrompt model (downloads on first use).",
+    "prompt_enhancer": "Optional post-processor. 'superprompt-v1' expands the generated subject using the SuperPrompt model (downloads on first use), forces 'Stable Cascade' weight-removal rules, and may retry up to 10x when custom_subject/custom_outfit overrides are set.",
     "subject": "Filter generated subject category and subtype, or leave on '------ all' to pick randomly from enabled config categories.",
     "artist": "Artist pool/category filter. 'all' picks 0-3 cohesive artists; 'all (wild)' picks from all 3400+ artists; 'greg mode' favors popular artists + quality tags; 'none' omits artists.",
-    "imagetype": "Force an image medium/style or special generation mode (e.g. 'photograph', 'anime', 'only templates mode', 'massive madness mode'). 'all' picks normally with a chance of special modes.",
+    "imagetype": "Force an image medium/style or special generation mode (e.g. 'photograph', 'anime', 'all - anime' for Anime Model, 'subject only mode' great with superprompt-v1, 'only templates mode', 'massive madness mode'). 'all' picks normally with a chance of special modes.",
     "imagemodechance": "1-in-X chance to trigger a special image type mode when 'imagetype' is 'all' or 'all - anime'. Lower = more frequent (1 = always).",
 }
 
@@ -358,7 +359,7 @@ class OneButtonPrompt:
                 "custom_subject": ("STRING", {
                     "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
                     "default": "",
-                    "tooltip": "Override the generated subject with custom text (e.g. a character or object + LoRA trigger). Set 'subject' to match for best results.",
+                    "tooltip": "Override the generated subject with custom text (e.g. 'cyberpunk fox' or 'Jane <lora:...>'). Set 'subject' to match for best modifiers. Smart Subject detection auto-skips body type/outfit generation if phrases like 'wearing ...' are present.",
                 }),
                 "custom_outfit": ("STRING", {
                     "multiline": False, # This is the overwrite for an outfit, super nice
@@ -424,7 +425,7 @@ class CreatePromptVariant:
                     "step": 1, #Slider's step
                     "tooltip": "Variant mutation strength (1-10). Higher values swap or inject more descriptors, styles, and wildcards.",
                 }),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed_cache_buster"]}),
             },
         }
 
@@ -455,7 +456,7 @@ class SavePromptToFile:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "filename_prefix": ("STRING", {"default": "Prompt", "tooltip": "Output filename prefix in ComfyUI output dir. Supports date tokens like '%date:yyyy-M-d%'."}),
+                "filename_prefix": ("STRING", {"default": "Prompt", "tooltip": "Output filename prefix in ComfyUI's output dir (uses counter +1 to match SaveImage pairing). Supports date tokens like '%date:yyyy-M-d%'."}),
                 "positive_prompt": ("STRING",{"multiline": True, "tooltip": "Positive prompt text saved to the .txt file and used to derive the filename slug."}),
                 "negative_prompt": ("STRING",{"multiline": True, "tooltip": "Negative prompt text written to the output .txt file."}),
             },
@@ -600,7 +601,7 @@ class OneButtonPreset:
                
         return {
             "required": {
-                "OneButtonPreset": (allpresets, {"default": "Standard", "tooltip": "Named preset controlling prompt settings. 'All (random)...' picks a random preset each run."}),
+                "OneButtonPreset": (allpresets, {"default": "Standard", "tooltip": "Named preset controlling prompt settings. 'All (random)...' picks a random preset each run. Use preset_prefix/preset_suffix to wrap without editing userfiles/obp_presets.json."}),
             },
             "optional": {
                 "base_model":(models, {"default": "SDXL", "tooltip": _COMMON_TOOLTIPS["base_model"]}),
@@ -713,11 +714,11 @@ class AutoNegativePrompt:
                     "min": 0, #Minimum value
                     "max": 10, #Maximum value
                     "step": 1, #Slider's step
-                    "tooltip": "Random pruning level (0-10): removes ~10% * level of generated negative terms per step. 0 keeps all.",
+                    "tooltip": "Random pruning level (0-10): removes ~10% * level of generated negative terms per step (inverse of prompt insanitylevel). 0 keeps all; 10 removes nearly all.",
                 }),
-                "base_model":(models, {"default": "SDXL", "tooltip": "Target model style; 'Stable Cascade' and 'Natural Language' strip (word:weight) emphasis syntax."}),
+                "base_model":(models, {"default": "SDXL", "tooltip": "Target model style; 'Anime Model' keeps weights like 'SD1.5'/'SDXL', while only 'Stable Cascade' and 'Natural Language' strip (word:weight) emphasis syntax."}),
                 
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed_cache_buster"]}),
             },
         }
 
@@ -749,7 +750,7 @@ class OneButtonArtify:
             "required": {
                 "prompt": ("STRING", {"default": '', "multiline": True, "tooltip": "Input prompt to wrap with randomized artist names and style descriptors."}),
                 "artist": (artifyartists, {"default": "all", "tooltip": "Artist style category filter, 'all' (cohesive category), 'all (wild)' (any artist), or 'popular' / 'greg mode'."}),
-                "amount_of_artists": (artifyamountofartistslist, {"default": "1", "tooltip": "Number of artists to inject (0-5), or 'random' to pick 1-4 scaled by insanity."}),
+                "amount_of_artists": (artifyamountofartistslist, {"default": "1", "tooltip": "Number of artists to prepend (0-5), or 'random' to pick 1-2 artists."}),
                 "artify_mode": (artifymodeslist, {"default": "standard", "tooltip": "'standard' adds matching artist tags; 'remix' mixes tags from other artists; 'super remix turbo' injects many random style tags."})
             },
             "optional": {                
@@ -883,7 +884,7 @@ class OneButtonPromptWild:
                     "min": 0.0,
                     "max": 1.0,
                     "step": 0.05,
-                    "tooltip": "Probability (0.0-1.0) of composing a relational multi-subject scene (e.g. subject A + interaction + subject B).",
+                    "tooltip": "Probability (0.0-1.0) of composing a relational multi-subject scene (A <interaction> B). When triggered (non-special modes only), replaces the subject (including custom_subject).",
                 }),
                 "mute_pop_culture": ("BOOLEAN", {"default": True, "tooltip": "When True, filters out pop-culture pools (fictional/non-fictional characters, Pokemon, videogame locations, card/episode titles) unless explicitly selected."}),
                 "imagemodechance": ("INT", {
@@ -893,17 +894,17 @@ class OneButtonPromptWild:
                     "step": 1,
                     "tooltip": _COMMON_TOOLTIPS["imagemodechance"],
                 }),
-                "prompt_compounder": (["1", "2", "3", "4", "5"], {"default": "1", "tooltip": "Number of independent sub-prompts (1-5) to generate and join with ' | '."}),
-                "obp_preset": (["none"] + allpresets, {"default": "none", "tooltip": "Optional OneButtonPreset to load base prompt settings from ('none' uses this node's inputs directly)."}),
-                "antivalues": ("STRING", {
+                "prompt_compounder": (["1", "2", "3", "4", "5"], {"default": "1", "tooltip": "Number of independent sub-prompts (1-5) to generate. Joined with ' | ' in composer/Natural Language modes, or ', ' in legacy 'standard' mode."}),
+                "preset": (["none"] + allpresets, {"default": "none", "tooltip": "Optional OneButtonPreset to load base prompt settings from. Any value other than 'none' overrides insanitylevel, subject, artist, imagetype, imagemodechance, and custom_subject while keeping base_model, coherence, grammar_mode, shuffle_bag, multi_subject_chance, mute_pop_culture, prompt_compounder, exclude_terms, and seed active."}),
+                "exclude_terms": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "Comma-separated terms to exclude from all random CSV pools (merged with userfiles/antilist.csv).",
+                    "tooltip": "Case-insensitive comma-separated terms to exclude from all random CSV pools (e.g. 'film grain, purple, cat'), merged with userfiles/antilist.csv.",
                 }),
-                "givensubject": ("STRING", {
+                "custom_subject": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "Override the generated subject with custom text while still generating surrounding scene/style modifiers.",
+                    "tooltip": "Override the generated subject with custom text (e.g. 'cyberpunk fox' or 'Jane <lora:...>'). Set 'subject' to match for best modifiers.",
                 }),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF, "tooltip": _COMMON_TOOLTIPS["seed"]}),
             },
@@ -933,22 +934,22 @@ class OneButtonPromptWild:
         mute_pop_culture=True,
         imagemodechance=5,
         prompt_compounder="1",
-        obp_preset="none",
-        antivalues="",
-        givensubject="",
+        preset="none",
+        exclude_terms="",
+        custom_subject="",
         seed=0,
         unique_id=None,
     ):
-        resolved_preset = "" if obp_preset == "none" else obp_preset
+        resolved_preset = "" if preset == "none" else preset
         generatedpromptlist = build_dynamic_prompt(
             insanitylevel=insanitylevel,
             forcesubject=subject,
             artists=artist,
             imagetype=imagetype,
             onlyartists=False,
-            antivalues=antivalues,
+            antivalues=exclude_terms,
             promptcompounderlevel=prompt_compounder,
-            givensubject=givensubject,
+            givensubject=custom_subject,
             imagemodechance=imagemodechance,
             seed=seed,
             prompt_g_and_l=True,

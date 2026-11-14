@@ -380,6 +380,40 @@ class TestHighVariancePrompts(unittest.TestCase):
             resolved = _bdp_mod.createpromptvariant(tmpl)
             self.assertNotIn("-storycue-", resolved)
 
+    def test_11_frontend_labels_and_wild_renames(self):
+        import re
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "__init__.py"), "r", encoding="utf-8") as f:
+            init_src = f.read()
+        self.assertIn('WEB_DIRECTORY = "./web"', init_src)
+        self.assertIn("WEB_DIRECTORY", init_src)
+
+        js_path = os.path.join(root, "web", "js", "obp_labels.js")
+        self.assertTrue(os.path.isfile(js_path), f"Missing {js_path}")
+        with open(js_path, "r", encoding="utf-8") as f:
+            js_src = f.read()
+
+        block_match = re.search(r"const LABEL_OVERRIDES\s*=\s*\{(.*?)\n\};", js_src, re.S)
+        self.assertIsNotNone(block_match, "LABEL_OVERRIDES not found in obp_labels.js")
+        for node_name, body in re.findall(r"(\w+)\s*:\s*\{([^}]*)\}", block_match.group(1)):
+            self.assertIn(node_name, OneButtonPromptNodes.NODE_CLASS_MAPPINGS)
+            it = OneButtonPromptNodes.NODE_CLASS_MAPPINGS[node_name].INPUT_TYPES()
+            all_keys = set(it.get("required", {})) | set(it.get("optional", {}))
+            for py_key in re.findall(r"(\w+)\s*:", body):
+                self.assertIn(py_key, all_keys, f"{node_name}.{py_key} missing from INPUT_TYPES()")
+
+        wild_cls = OneButtonPromptNodes.NODE_CLASS_MAPPINGS["OneButtonPromptWild"]
+        wild_opt = wild_cls.INPUT_TYPES()["optional"]
+        for new_k in ("custom_subject", "exclude_terms", "preset"):
+            self.assertIn(new_k, wild_opt)
+        for old_k in ("givensubject", "antivalues", "obp_preset"):
+            self.assertNotIn(old_k, wild_opt)
+        out = wild_cls().Comfy_OBP_Wild(
+            insanitylevel=5, seed=42, custom_subject="cyberpunk fox", exclude_terms="cat", preset="none"
+        )
+        self.assertEqual(len(out), 3)
+        self.assertTrue(len(out[0]) > 0)
+
 
 if __name__ == "__main__":
     unittest.main()
