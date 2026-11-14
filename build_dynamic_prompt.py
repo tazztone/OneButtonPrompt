@@ -7,6 +7,7 @@ if __package__ is None or __package__ == '':
     from csv_reader import *
     from random_functions import *
     from one_button_presets import OneButtonPresets
+    from prompt_composer import PromptClause, ResolutionState, strip_a1111_syntax, build_relational_subject, compose_clauses
     from superprompter.superprompter import *
 else:
     # ComfyUI style (imported as a package)
@@ -14,6 +15,7 @@ else:
     from .csv_reader import *
     from .random_functions import *
     from .one_button_presets import OneButtonPresets
+    from .prompt_composer import PromptClause, ResolutionState, strip_a1111_syntax, build_relational_subject, compose_clauses
     from .superprompter.superprompter import *
 
 OBPresets = OneButtonPresets()
@@ -25,13 +27,14 @@ OBPresets = OneButtonPresets()
 # insanity level controls randomness of propmt 0-10
 # forcesubject van be used to force a certain type of subject
 # Set artistmode to none, to exclude artists 
-def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", use_shuffle_bag = False, stream_id = ""):
+def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all", imagetype = "all", onlyartists = False, antivalues = "", prefixprompt = "", suffixprompt ="",promptcompounderlevel ="1", seperator = "comma", givensubject="",smartsubject = True,giventypeofimage="", imagemodechance = 20, gender = "all", subtypeobject="all", subtypehumanoid="all", subtypeconcept="all", advancedprompting=True, hardturnoffemojis=False, seed=-1, overrideoutfit="", prompt_g_and_l = False, base_model = "SD1.5", OBP_preset = "", prompt_enhancer = "none", subtypeanimal="all", subtypelocation="all", preset_prefix = "", preset_suffix = "", coherence = "balanced", grammar_mode = "standard", use_shuffle_bag = False, multi_subject_chance = 0.0, mute_pop_culture = False, stream_id = ""):
 
     remove_weights = False
     less_verbose = False
     add_vomit = True
     add_quality = True
     anime_mode = False
+    natural_language = False
     configfilesuffix = ""
     if(forcesubject ==  "------ all"):
         forcesubject = "all"
@@ -80,7 +83,8 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
             promptcompounderlevel, givensubject, smartsubject, giventypeofimage,
             imagemodechance, gender, subtypeobject, subtypehumanoid, subtypeconcept,
             advancedprompting, hardturnoffemojis, overrideoutfit, prompt_g_and_l,
-            subtypeanimal, subtypelocation, preset_prefix, preset_suffix, use_shuffle_bag,
+            subtypeanimal, subtypelocation, preset_prefix, preset_suffix,
+            coherence, grammar_mode, use_shuffle_bag, multi_subject_chance, mute_pop_culture,
         )
         _cached_prompt = get_replay_result(_replay_key)
         if _cached_prompt is not None:
@@ -92,6 +96,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         rng=_rng,
         bag=get_stream_bag(_stream_key) if use_shuffle_bag else None,
         use_bag=use_shuffle_bag,
+        saturate_at_max=(coherence != "chaos"),
     )
 
     originalinsanitylevel = insanitylevel
@@ -181,7 +186,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     if(OBP_preset=='Waifu''s' or OBP_preset=='Husbando''s'):
         basemodel = "Anime Model"
     # Base model options, used to change things in prompt generation. Might be able to extend to different forms like animatediff as well?
-    base_model_options = ["SD1.5", "SDXL", "Stable Cascade", "Anime Model"]
+    base_model_options = ["SD1.5", "SDXL", "Stable Cascade", "Anime Model", "Natural Language"]
     if base_model not in base_model_options:
         base_model = "SD1.5" # Just in case there is no option here.
     # "SD1.5" -- Standard, future: More original style prompting
@@ -198,6 +203,12 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         advancedprompting = False
         anime_mode = True
         configfilesuffix = "anime"
+    if(base_model == "Natural Language"):
+        remove_weights = True
+        add_vomit = False
+        add_quality = False
+        advancedprompting = False
+        natural_language = True
     
     # Hard overwrite some stuff because people dont config this themselves
     if((anime_mode or imagetype == "all - anime") and (artists == "all" or ctx.chance(insanitylevel, 'normal'))):
@@ -1161,6 +1172,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     if(bool(conceptmixerlist)):
         eventsubjectchooserlist.append("conceptmixer")
 
+    if mute_pop_culture and forcesubject == "all":
+        for _pop_evt in ("cardname", "episodetitle"):
+            if _pop_evt in eventsubjectchooserlist and len(eventsubjectchooserlist) > 1:
+                eventsubjectchooserlist.remove(_pop_evt)
+
     if(generateconcept):
         mainchooserlist.append("concept")
 
@@ -1170,6 +1186,10 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     if(ctx.randint(1,int(imagemodechance)) == 1 and (imagetype == "all" or imagetype == "all - anime") and giventypeofimage == "" and onlyartists == False):
         if(less_verbose):
             imagetypemodelist.remove("dynamic templates mode")
+        if(coherence == "strict"):
+            for _surreal_mode in ("massive madness mode", "quality vomit mode"):
+                if _surreal_mode in imagetypemodelist and len(imagetypemodelist) > 1:
+                    imagetypemodelist.remove(_surreal_mode)
         if(anime_mode):
             imagetypemodelist.remove("only templates mode")
             imagetypemodelist.remove("massive madness mode")
@@ -1471,7 +1491,10 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     promptstocompound = int(promptcompounderlevel)
     compoundcounter = 0
 
+    accumulated_compounds = []
+    compound_clauses = []
     while compoundcounter < promptstocompound:
+        completeprompt = ""
         isphoto = 0
         othertype = 0
         humanspecial = 0
@@ -1489,7 +1512,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
 
         completeprompt += ", "
 
-        if(templatemode==True):
+        if(templatemode==True and natural_language==True):
+            modern_templatelist = csv_to_list("modern_templates", antilist, "./csvfiles/templates/", 0, "?")
+            if modern_templatelist:
+                completeprompt += ctx.pick(modern_templatelist, key="modern_templates")
+        elif(templatemode==True):
             templatelist = csv_to_list("templates", antilist,"./csvfiles/templates/",1,";",True)
 
             
@@ -1631,6 +1658,11 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 humanoidsubjectchooserlist.remove("human")
 
             # if we accidently remove everything, then restore the backup list
+            if mute_pop_culture and forcesubject == "all" and subtypehumanoid == "all":
+                for _pop_h in ("fictional", "non fictional"):
+                    if _pop_h in humanoidsubjectchooserlist and len(humanoidsubjectchooserlist) > 2:
+                        humanoidsubjectchooserlist.remove(_pop_h)
+
             if(not bool(humanoidsubjectchooserlist)):
                 humanoidsubjectchooserlist = humanoidsubjectchooserlistbackup
                         
@@ -3390,6 +3422,36 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
         completeprompt += suffixprompt
 
         # and then up the compounding stuff
+        compound_chunk = completeprompt.strip(" ,")
+        if compound_chunk:
+            accumulated_compounds.append(compound_chunk)
+            _c_parts = compound_chunk.split("@@@")
+            if len(_c_parts) >= 3:
+                _f, _s, _d = _c_parts[0], _c_parts[1], ", ".join(_c_parts[2:])
+                if multi_subject_chance > 0 and ctx.random() < multi_subject_chance:
+                    _rel_pools = {
+                        "animal": animallist,
+                        "manwoman": manwomanlist,
+                        "humanoid": humanoidlist,
+                        "object": objectlist,
+                        "fictional": fictionallist,
+                        "nonfictional": nonfictionallist,
+                        "scalemod": scalemodlist,
+                        "interaction": interactionlist,
+                        "prop": proplist,
+                        "flora": floralist,
+                    }
+                    _rel_subj = build_relational_subject(_rel_pools, ctx, mute_pop_culture=mute_pop_culture)
+                    if _rel_subj:
+                        _s = _rel_subj
+                if _f.strip():
+                    compound_clauses.append(PromptClause(compoundcounter, "framing", _f, is_subject=False))
+                if _s.strip():
+                    compound_clauses.append(PromptClause(compoundcounter, "subject", _s, is_subject=True))
+                if _d.strip():
+                    compound_clauses.append(PromptClause(compoundcounter, "details", _d, is_subject=False))
+            else:
+                compound_clauses.append(PromptClause(compoundcounter, "monolith", compound_chunk.replace("@@@", ""), is_subject=False))
         compoundcounter += 1
         
         # Here comes all the seperator stuff for prompt compounding
@@ -3398,6 +3460,7 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
                 completeprompt += " \n , "
             else:
                 completeprompt += " \n " + seperator + " "
+    completeprompt = ", ".join(accumulated_compounds)
 
 
 
@@ -3796,13 +3859,47 @@ def build_dynamic_prompt(insanitylevel = 5, forcesubject = "all", artists = "all
     completeprompt = completeprompt.replace("-tempnewwords-", "")
        
     # clean it up
-    completeprompt = cleanup(completeprompt, advancedprompting, insanitylevel)
+    if grammar_mode != "standard" or multi_subject_chance > 0 or natural_language:
+        _res_state = ResolutionState()
+        for _cl in compound_clauses:
+            _cl.text = resolve_wildcards(
+                _cl.text,
+                allwildcardslistnohybrid, allwildcardslistnohybridlists,
+                allwildcardslistwithhybrid, allwildcardslistwithhybridlists,
+                insanitylevel=insanitylevel, advancedprompting=advancedprompting,
+                artiststyleselector=artiststyleselector, ctx=ctx, used_values=_res_state.used_values,
+            )
+            _cl.text = replace_user_wildcards(_cl.text, ctx=ctx)
+            _cl.text = parse_custom_functions(_cl.text, insanitylevel, ctx=ctx)
+            _cl.text = _cl.text.replace("-objectstrengthstart-", "").replace("-objectstrengthend-", "").replace("-tempnewwords-", "")
 
-    # Split it up for support for prompt_g (subject) and prompt_l (style)
-    if("@@@" in completeprompt and prompt_g_and_l == True):
-        promptlist = completeprompt.split("@@@")
-        prompt_g = cleanup(promptlist[1], advancedprompting, insanitylevel)
-        prompt_l = cleanup((promptlist[0] + ", " + promptlist[2]).replace("of a",""), advancedprompting, insanitylevel)
+        soup_pools = {
+            "tokens": tokenlist,
+            "abstract_concepts": abstractconceptlist,
+            "interactions": interactionlist,
+            "media_artifacts": mediaartifactlist,
+        }
+        completeprompt, composed_g, composed_l = compose_clauses(
+            compound_clauses,
+            grammar_mode=grammar_mode,
+            coherence=coherence,
+            ctx=ctx,
+            remove_weights=remove_weights,
+            natural_language=natural_language,
+            soup_pools=soup_pools,
+        )
+        completeprompt = cleanup(completeprompt, advancedprompting, insanitylevel, remove_weights=remove_weights, ctx=ctx)
+        if prompt_g_and_l:
+            prompt_g = cleanup(composed_g, advancedprompting, insanitylevel, remove_weights=remove_weights, ctx=ctx)
+            prompt_l = cleanup(composed_l, advancedprompting, insanitylevel, remove_weights=remove_weights, ctx=ctx)
+    else:
+        completeprompt = cleanup(completeprompt, advancedprompting, insanitylevel, remove_weights=remove_weights, ctx=ctx)
+
+        # Split it up for support for prompt_g (subject) and prompt_l (style)
+        if("@@@" in completeprompt and prompt_g_and_l == True):
+            promptlist = completeprompt.split("@@@")
+            prompt_g = cleanup(promptlist[1], advancedprompting, insanitylevel, remove_weights=remove_weights, ctx=ctx)
+            prompt_l = cleanup((promptlist[0] + ", " + promptlist[2]).replace("of a",""), advancedprompting, insanitylevel, remove_weights=remove_weights, ctx=ctx)
     if("@@@" in completeprompt and superprompter == True):
         #load_models()
         promptlist = completeprompt.split("@@@")
@@ -5135,7 +5232,9 @@ def replace_match(match):
     words = match.group(0)[1:-1].split('|')
     return words[0]
 
-def cleanup(completeprompt, advancedprompting, insanitylevel = 5):
+def cleanup(completeprompt, advancedprompting, insanitylevel = 5, remove_weights = False, ctx = None):
+    if remove_weights:
+        completeprompt = strip_a1111_syntax(completeprompt, ctx=ctx)
 
     # This part is turned off, will bring it back later as an option
     
